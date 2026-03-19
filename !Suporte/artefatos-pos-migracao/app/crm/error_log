@@ -1,5 +1,0 @@
-[16-Dec-2025 07:57:04 America/Fortaleza] PHP Fatal error:  Uncaught PDOException: SQLSTATE[23000]: Integrity constraint violation: 1451 Cannot delete or update a parent row: a foreign key constraint fails (`mwtech63_matricula`.`tbLogNotificaTarefa`, CONSTRAINT `tbLogNotificaTarefa_ibfk_1` FOREIGN KEY (`IdTarefa`) REFERENCES `tbTarefa` (`IdTarefa`)) in /home1/mwtech63/iteva.com.br/conectaosc/app/crm/crmController.php:55
-Stack trace:
-#0 /home1/mwtech63/iteva.com.br/conectaosc/app/crm/crmController.php(55): PDOStatement->execute(Array)
-#1 {main}
-  thrown in /home1/mwtech63/iteva.com.br/conectaosc/app/crm/crmController.php on line 55
