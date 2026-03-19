@@ -1,0 +1,40 @@
+=== api\get\getSwotPDF.php ===
+
+Parse error: syntax error, unexpected identifier "Ãâ€ ââ‚¬â„¢ÃÆ�...", expecting ")" in api\get\getSwotPDF.php on line 43
+Errors parsing api\get\getSwotPDF.php
+
+=== api\get\getPDF_ficha_cadastro.php ===
+
+Parse error: syntax error, unexpected identifier "Ãâ€ ââ‚¬â„¢ÃÆ�...", expecting "," or ";" in api\get\getPDF_ficha_cadastro.php on line 25
+Errors parsing api\get\getPDF_ficha_cadastro.php
+
+=== api\get\getPDFInterval.php ===
+
+Parse error: syntax error, unexpected identifier "Ãâ€ ââ‚¬â„¢ÃÆ�...", expecting ")" in api\get\getPDFInterval.php on line 217
+Errors parsing api\get\getPDFInterval.php
+
+=== api\get\getPDF.php ===
+
+Parse error: syntax error, unexpected identifier "Ãâ€ ââ‚¬â„¢ÃÆ�...", expecting ")" in api\get\getPDF.php on line 228
+Errors parsing api\get\getPDF.php
+
+=== api\get\getFrequencia_root.php ===
+
+Parse error: syntax error, unexpected identifier "Ãâ€šÃ‚¡lidos", expecting "]" in api\get\getFrequencia_root.php on line 59
+Errors parsing api\get\getFrequencia_root.php
+
+=== api\lib\dompdf\vendor\sabberworm\php-css-parser\src\Parsing\UnexpectedTokenException.php ===
+
+Parse error: syntax error, unexpected double-quote mark in api\lib\dompdf\vendor\sabberworm\php-css-parser\src\Parsing\UnexpectedTokenException.php on line 38
+Errors parsing api\lib\dompdf\vendor\sabberworm\php-css-parser\src\Parsing\UnexpectedTokenException.php
+
+=== api\lib\dompdf\vendor\masterminds\html5\src\HTML5\Serializer\HTML5Entities.php ===
+
+Parse error: syntax error, unexpected single-quoted string " => ", expecting ")" in api\lib\dompdf\vendor\masterminds\html5\src\HTML5\Serializer\HTML5Entities.php on line 456
+Errors parsing api\lib\dompdf\vendor\masterminds\html5\src\HTML5\Serializer\HTML5Entities.php
+
+=== api\lib\dompdf\vendor\masterminds\html5\src\HTML5\Entities.php ===
+
+Parse error: syntax error, unexpected single-quoted string ",", expecting ")" in api\lib\dompdf\vendor\masterminds\html5\src\HTML5\Entities.php on line 302
+Errors parsing api\lib\dompdf\vendor\masterminds\html5\src\HTML5\Entities.php
+

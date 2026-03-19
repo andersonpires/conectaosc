@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Allow only the front entrypoint and static assets to be served directly.
+    RewriteRule ^index\.php$ - [L]
+    RewriteRule ^assets/ - [L]
+    RewriteRule ^storage/ - [L]
+
+    # Block direct web access to internal MVC layers and legacy compatibility files.
+    RewriteRule ^(config|controllers|core|models|repositories|routes|services|views|src|migrations)(/|$) - [F,L]
+
+    # Deny any other direct access under /app.
+    RewriteRule ^ - [F,L]
+</IfModule>

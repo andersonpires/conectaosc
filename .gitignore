@@ -1,0 +1,13 @@
+temp/
+!Suporte/
+.vscode/
+backup-versa-1.93/
+banco/
+clinica/!Suporte/
+get/
+storage/
+tools/
+vendor/
+.codex_root_page.html
+.editorconfig
+.

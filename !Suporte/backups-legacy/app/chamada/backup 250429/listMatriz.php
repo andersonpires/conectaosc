@@ -1,0 +1,234 @@
+<?php
+session_set_cookie_params(['httponly' => true]);
+ini_set('session.gc_maxlifetime', 86400); // 24 horas
+session_start();
+session_regenerate_id(true);
+date_default_timezone_set('America/Sao_Paulo');
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+// Verifica se as variÒ¡veis de sessÒ£o BASE_para_PATH e BASE_para_URL estÒ£o definidas
+if (!isset($_SESSION['BASE_para_PATH']) || !isset($_SESSION['BASE_para_URL'])) {
+    // Salva a URL atual para redirecionar o usuÒ¡rio apÒ³s o login
+    $redirect_url = urlencode($_SERVER['REQUEST_URI']); // Codifica o endereÒ§o atual
+    header("Location:" . dirname($_SERVER['SERVER_NAME']) . "/../../login.php?redirect=$redirect_url"); // Redireciona para o login com o endereÒ§o de volta via GET
+    exit(); // Garante que o cÒ³digo abaixo nÒ£o serÒ¡ executado
+}
+
+// require_once $_SESSION['BASE_para_PATH'] . '/api/legacy/checa-token.php';
+
+
+?>
+
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <?php
+    $cod = $_SESSION['Cod'];
+    require_once $_SESSION['BASE_para_PATH'] . '/app/template/header.php';
+    require_once 'funcoes.php';
+    require_once $_SESSION['BASE_para_PATH'] . '/api/conectabd/conexao.php';
+
+    try {
+        // Prepara a query
+        $stmt = $pdo->prepare("
+            SELECT c.IdAluno, a.IdUsuario, a.Nome, c.Data
+            FROM tbChamada AS c
+            INNER JOIN tbAluno AS a ON a.IdUsuario = c.IdAluno
+            ORDER BY a.Nome, c.Data
+        ");
+        $stmt->execute();
+
+        $dados = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        die("Erro ao buscar dados: " . $e->getMessage());
+    }
+    ?>
+
+    <style>
+        #dataSelecionada {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #333;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #dataSelecionada:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        #search-input {
+            flex: 1;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        #clear-search {
+            padding: 8px 12px;
+            font-size: 14px;
+            background-color: #f44336;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #clear-search:hover {
+            background-color: #d32f2f;
+        }
+
+        .tooltip-inner {
+            background-color: rgba(0, 43, 85, 0.9) !important;
+            /* azul escuro */
+            color: #fff;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 5px;
+        }
+
+        .tooltip.bs-tooltip-top .tooltip-arrow::before {
+            border-top-color: #002b55 !important;
+        }
+
+        .tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+            border-bottom-color: #002b55 !important;
+        }
+
+        .tooltip.bs-tooltip-start .tooltip-arrow::before {
+            border-left-color: #002b55 !important;
+        }
+
+        .tooltip.bs-tooltip-end .tooltip-arrow::before {
+            border-right-color: #002b55 !important;
+        }
+    </style>
+    <title>Lista de Chamada</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #eee;
+        }
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link rel="stylesheet" type="text/css" href="<?php echo $_SESSION['BASE_para_URL']; ?>/assets/css/turma-foto.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+</head>
+
+<body>
+    <div class="wrapper">
+        <?php require_once $_SESSION['BASE_para_PATH'] . '/app/template/menu.php'; ?>
+
+        <div class="main">
+            <?php require_once $_SESSION['BASE_para_PATH'] . '/app/template/topo.php'; ?>
+
+            <main class="content">
+                <h2>Lista de Chamada</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Id Aluno</th>
+                            <th>Id UsuÒ¡rio</th>
+                            <th>Nome</th>
+                            <th>Data</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $numero = 1;
+                        foreach ($dados as $linha) {
+                            $dataFormatada = date('d/m/Y', strtotime($linha['Data']));
+                            echo "<tr>";
+                            echo "<td>{$numero}</td>";
+                            echo "<td>{$linha['IdAluno']}</td>";
+                            echo "<td>{$linha['IdUsuario']}</td>";
+                            echo "<td>{$linha['Nome']}</td>";
+                            echo "<td>{$dataFormatada}</td>";
+                            echo "</tr>";
+                            $numero++;
+                        }
+                        ?>
+                    </tbody>
+                </table>
+                <footer class="footer">
+                    <?php require_once $_SESSION['BASE_para_PATH'] . '/app/template/footer.php'; ?>
+                </footer>
+        </div>
+    </div>
+
+    <!-- Modal para confirmar exclusÒ£o de presenÒ§a -->
+    <div class="modal fade" id="modalExcluirPresenca" tabindex="-1" aria-labelledby="modalExcluirPresencaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalExcluirPresencaLabel">AtenÒ§Ò£o!</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    Deseja retirar o registro desse aluno neste dia?<br>
+                    <strong>Todos os botÒµes ficarÒ£o desativados.</strong>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="confirmarExclusao">Retirar registro</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de mensagem de retorno -->
+    <div class="modal fade" id="modalMensagem" tabindex="-1" aria-labelledby="modalMensagemLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalMensagemLabel">Aviso</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body" id="conteudoMensagem">
+                    <!-- ConteÒºdo dinÒ¢mico vem aqui -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="<?php echo $_SESSION['BASE_para_URL']; ?>/assets/js/app.js"></script>
+</body>
+
+</html>

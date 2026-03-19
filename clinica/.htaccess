@@ -1,0 +1,17 @@
+# Garantir que index.php rode primeiro (valida sessão antes do SPA)
+<IfModule mod_dir.c>
+    DirectoryIndex index.php index.html
+</IfModule>
+
+# Impedir acesso direto a index.html (bypass da verificação de profissional_saude)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Manter arquivos e pastas existentes funcionando normalmente.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    RewriteRule ^index\.html$ index.php [L]
+    RewriteRule . index.php [L]
+</IfModule>

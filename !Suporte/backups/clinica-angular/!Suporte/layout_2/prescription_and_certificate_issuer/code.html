@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Emissão de Documentos</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13c8ec",
+                        "background-light": "#f6f8f8",
+                        "background-dark": "#101f22",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        body {
+            min-height: max(884px, 100dvh);
+        }
+        .nav-shadow {
+            box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.05);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen w-full flex-col overflow-x-hidden max-w-md mx-auto bg-white dark:bg-background-dark shadow-xl">
+<header class="sticky top-0 z-10 flex items-center bg-white/80 dark:bg-background-dark/80 backdrop-blur-md p-4 border-b border-slate-200 dark:border-slate-800">
+<button class="text-slate-900 dark:text-slate-100 flex size-10 items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800">
+<span class="material-symbols-outlined">arrow_back_ios_new</span>
+</button>
+<h1 class="flex-1 text-center text-lg font-bold leading-tight tracking-tight pr-10">Emitir Documento</h1>
+</header>
+<main class="flex-1 overflow-y-auto pb-48">
+<div class="px-4 py-4">
+<div class="flex h-12 w-full items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 p-1">
+<button class="flex h-full grow items-center justify-center rounded-lg bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white text-sm font-semibold transition-all">
+                        Receita
+                    </button>
+<button class="flex h-full grow items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 text-sm font-medium transition-all">
+                        Atestado
+                    </button>
+</div>
+</div>
+<div class="px-4 py-2">
+<div class="group relative flex w-full flex-col">
+<label class="mb-1.5 text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 px-1">BUSCAR PACIENTE</label>
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-slate-400">search</span>
+<input class="w-full rounded-xl border-none bg-slate-100 dark:bg-slate-800 py-3.5 pl-12 pr-4 text-sm focus:ring-2 focus:ring-primary/50 transition-all placeholder:text-slate-400 dark:text-white" placeholder="Buscar paciente por nome ou ID" type="text"/>
+</div>
+</div>
+</div>
+<div class="px-4 py-4">
+<div class="flex items-center gap-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+<div class="size-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">account_circle</span>
+</div>
+<div>
+<p class="font-bold text-slate-900 dark:text-white">Marcus Richardson</p>
+<p class="text-xs text-slate-500">ID: #88219 • 34 Anos • Masculino</p>
+</div>
+</div>
+</div>
+<div class="px-4 pt-6 pb-2">
+<h2 class="text-lg font-bold text-slate-900 dark:text-white">Detalhes do Medicamento</h2>
+</div>
+<div class="space-y-4 px-4">
+<div class="relative rounded-xl border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+<button class="absolute top-3 right-3 text-slate-300 hover:text-red-500 transition-colors">
+<span class="material-symbols-outlined">cancel</span>
+</button>
+<div class="grid grid-cols-1 gap-4">
+<div>
+<label class="text-xs font-semibold text-slate-500">Nome do Medicamento</label>
+<input class="mt-1 w-full border-b border-slate-200 dark:border-slate-700 bg-transparent py-1 text-sm font-medium focus:border-primary focus:ring-0" type="text" value="Amoxicilina 500mg"/>
+</div>
+<div class="flex gap-4">
+<div class="flex-1">
+<label class="text-xs font-semibold text-slate-500">Dosagem</label>
+<select class="mt-1 w-full border-b border-slate-200 dark:border-slate-700 bg-transparent py-1 text-sm font-medium focus:border-primary focus:ring-0">
+<option>1 Comprimido</option>
+<option>2 Comprimidos</option>
+<option>5ml Xarope</option>
+</select>
+</div>
+<div class="flex-1">
+<label class="text-xs font-semibold text-slate-500">Frequência</label>
+<input class="mt-1 w-full border-b border-slate-200 dark:border-slate-700 bg-transparent py-1 text-sm font-medium focus:border-primary focus:ring-0" type="text" value="3x ao Dia"/>
+</div>
+</div>
+</div>
+</div>
+<button class="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 py-4 text-slate-400 hover:border-primary/50 hover:text-primary transition-all">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="text-sm font-semibold">Adicionar Medicamento</span>
+</button>
+</div>
+<div class="px-4 pt-8">
+<div class="flex items-center justify-between mb-2">
+<label class="text-xs font-bold uppercase tracking-wider text-slate-500">ASSINATURA DO MÉDICO</label>
+<button class="text-xs font-semibold text-primary">Limpar</button>
+</div>
+<div class="relative h-32 w-full rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+<div class="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
+<span class="material-symbols-outlined text-6xl">draw</span>
+</div>
+<div class="text-center z-10 border-2 border-primary/40 rounded px-3 py-1 rotate-[-2deg]">
+<p class="text-[10px] font-bold text-primary uppercase leading-tight">Dra. Elena Vance</p>
+<p class="text-[8px] font-medium text-primary">CRM #2049-X</p>
+</div>
+</div>
+</div>
+</main>
+<div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto z-20">
+<div class="px-4 pb-4 pt-2 bg-gradient-to-t from-white via-white dark:from-background-dark dark:via-background-dark to-transparent">
+<button class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-4 text-white shadow-lg shadow-primary/30 transition-transform active:scale-95">
+<span class="material-symbols-outlined">print</span>
+<span class="font-bold">Emitir e Imprimir Receita</span>
+</button>
+</div>
+<nav class="flex h-16 w-full items-center justify-around border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-background-dark/95 backdrop-blur-sm px-4 nav-shadow">
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium">Início</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="text-[10px] font-medium">Agenda</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-[10px] font-medium">Pacientes</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1">clinical_notes</span>
+<span class="text-[10px] font-medium">Prontuário</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Ajustes</span>
+</a>
+</nav>
+</div>
+</div>
+
+</body></html>

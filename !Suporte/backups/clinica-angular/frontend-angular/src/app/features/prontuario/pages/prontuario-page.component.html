@@ -1,0 +1,103 @@
+@if (loading && !selectedPatient && !patients.length) {
+  <section class="state-card skeleton-shell">
+    <div class="skeleton-line w-40"></div>
+    <div class="skeleton-line w-85"></div>
+    <div class="skeleton-line w-70"></div>
+  </section>
+} @else if (error) {
+  <section class="state-card error">{{ error }}</section>
+} @else {
+  <div class="page">
+    <header class="top-head">
+      <button type="button"><span class="material-symbols-outlined">arrow_back_ios_new</span></button>
+      <h1>Emitir Documento</h1>
+      <div class="spacer"></div>
+    </header>
+
+    <main>
+      <section class="tabs">
+        <button type="button" [ngClass]="{ active: tab === 'receita' }" (click)="setTab('receita')">Receita</button>
+        <button type="button" [ngClass]="{ active: tab === 'atestado' }" (click)="setTab('atestado')">Atestado</button>
+      </section>
+
+      <section class="search-box">
+        <label>BUSCAR PACIENTE</label>
+        <div class="input-wrap">
+          <span class="material-symbols-outlined">search</span>
+          <input
+            [value]="search"
+            (input)="onSearch($any($event.target).value)"
+            placeholder="Buscar paciente por nome"
+            type="text"
+          />
+        </div>
+      </section>
+
+      @if (selectedPatient; as patient) {
+        <section class="patient-card">
+          <div class="icon"><span class="material-symbols-outlined">account_circle</span></div>
+          <div>
+            <p class="name">{{ patient.Nome }}</p>
+            <small>ID: #{{ patient.IdUsuario }} • {{ patient.Nascimento || 'Nascimento nao informado' }}</small>
+          </div>
+        </section>
+      }
+
+      @if (patients.length > 1) {
+        <section class="patient-list">
+          @for (patient of patients; track patient.aluno_id) {
+            <button type="button" (click)="selectPatient(patient.aluno_id)">{{ patient.paciente_nome }}</button>
+          }
+        </section>
+      }
+
+      <section class="records">
+        <h2>{{ tab === 'receita' ? 'Detalhes da Receita' : 'Detalhes do Atestado' }}</h2>
+
+        @if (!records.length) {
+          <article class="record empty">Nenhum prontuario encontrado para emissao.</article>
+        } @else {
+          @for (record of records; track record.id) {
+            <article class="record">
+              <button type="button" class="remove"><span class="material-symbols-outlined">cancel</span></button>
+              <p class="record-title">Registro #{{ record.id }}</p>
+              <small>{{ record.data_consulta || record.created_at }}</small>
+              <p class="excerpt">{{ (record.conteudo_editado || record.conteudo_ia || 'Sem conteudo') | slice: 0:180 }}...</p>
+              <div class="status" [ngClass]="record.status">{{ record.status }}</div>
+            </article>
+          }
+        }
+
+        <button class="add-med" type="button">
+          <span class="material-symbols-outlined">add_circle</span>
+          <span>{{ tab === 'receita' ? 'Adicionar Medicamento' : 'Adicionar Observacao' }}</span>
+        </button>
+      </section>
+
+      <section class="signature">
+        <div class="head">
+          <label>ASSINATURA DO PROFISSIONAL</label>
+          <button type="button">Limpar</button>
+        </div>
+        <div class="box">
+          <span class="material-symbols-outlined">draw</span>
+          <div class="stamp">
+            <p>Equipe Clinica</p>
+            <small>CRM #2049-X</small>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="action-area">
+      <button type="button" class="secondary" (click)="openAnamnese()">
+        <span class="material-symbols-outlined">description</span>
+        <span>Abrir Anamnese</span>
+      </button>
+      <button type="button">
+        <span class="material-symbols-outlined">print</span>
+        <span>{{ tab === 'receita' ? 'Emitir e Imprimir Receita' : 'Emitir e Imprimir Atestado' }}</span>
+      </button>
+    </div>
+  </div>
+}

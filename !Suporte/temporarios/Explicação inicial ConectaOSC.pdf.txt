@@ -1,0 +1,119 @@
+[00:00]
+Primeira etapa é a gente aprender a acessar o sistema. O endereço é iteva.com.br/conectaosque. Ela vai te levar para tela de login, que é essa daqui. Aí você vai colocar o seu e-mail e a sua senha cadastrada. Lembrando que se você tiver algum erro na hora informar que o seu login está incorreto, ou informar que você a sua senha tá dando erro, você pode colocar na opção de esqueci a senha, esqueceu a senha.
+
+[00:30]
+senha e ela vai levar para a sua senha a ser e a sua senha vai ser refeita. E a sua senha vai ser redefinida, tá certo? Por exemplo, vou colocar em esqueceu a senha, ele vai pedir o meu e-mail e vai pedir o meu CPF. Então, vou colocar o meu e-mail cadastrado e aí ele pede para colocar o CPF.
+
+[01:00]
+e clique em redefinir senha. A sua senha vai ser redefinida ao padrão inicial, que são os seis primeiros dígitos do seu CPF. Você pode então voltar para o login e digitar a sua o seu e-mail com a sua senha, com os seis primeiros dígitos do seu CPF e pede pedir para ele se conectar, que aí você vai conseguir acessar o sistema. A primeira tela do sistema é o dashboard. O dashboard nós estamos vendo na versão web.
+
+[01:25]
+Na versão mobile, ele vai aparecer pequenininho no seu celular com o menu menu escondido. Para acessar o menu lateral, você tem que clicar nesse botão que é chamado de botão hambúrguer. E aí você tem todas as opções de menu aqui. Mas eu vou voltar para o modo web para ser mais fácil de explicar.
+
+[01:45]
+Ao lado, a gente tem uma série de itens aqui e nem todos você vai conseguir abrir. Vai depender do tipo de licença que você tem. Os mais usuais, a gente já deixa nos acessos rápidos, que são a chamada, alguns tipos de relatório Acesso aos beneficiários, cadastrar um beneficiário, listar os dados dele, colocar mais dados, inserir mais dados do do idoso ou incluir a matrícula desse idoso em um novo curso.
+
+[02:13]
+No item cursos e turmas, você consegue ter acesso aos cursos cadastrados, as turmas disponibilizadas e as matrículas já realizadas. Como eu faço para incluir um curso novo? Se for pelo acesso, você pode ir aqui na item curso ou você pode ir no menu cursos e turmas turma e clicar em cadastrar cursos. Em cima nós temos o card para cadastrar novos cursos.
+
+[02:37]
+Então você pode colocar o nome do curso, a carga horária, a duração dele, que pode ser em meses, dias, semanas, horas ou outros. Você pode deixar ele ativo ou marcá-lo como concluído. Ao ter um curso concluído não é possível criar turma, não é possível incluir novos alunos e não é possível fazer novas chamadas. O curso também pode ter uma idade mínima ou idade máxima. Cursos geralmente ligados à criança adolescente tem idade máxima de 17 anos.
+
+[03:05]
+Então, se você colocar 17 anos, o sistema impede de cadastrar pessoas acima de 17 anos no projeto, fazendo com que ele fique mais protegido. Cursos geralmente ligados a pessoas idosas, ele tem uma idade mínima de 60 anos. Então, se você preencher a tela 60 anos, 60, colocar número 60 aqui na idade mínima, então o sistema não vai permitir que pessoas com menos de 60 anos sejam inclusos.
+
+[03:30]
+Isso também ajuda a você, é, bloquear por segurança pessoas que estão na faixa dos seus 50 anos e não poderiam estar matriculados. Agora, se o projeto não tem idade mínima e não tem idade máxima, basta você deixar em branco. Termo de parceria, precisa ser inserido o termo que gerou aquele projeto para que a gente possa administrativamente podendo organizá-lo. E isso geralmente é dado pela equipe do financeiro.
+
+[03:55]
+Todo projeto Todo curso vai participar de algum projeto e aqui nós temos os projetos que são hoje disponibilizados no ITEVA. Então, se você vai fazer o curso Fundamentos do Uso de Celulares e Smartphones, ele está conectado, por exemplo, ao projeto Conectividade. Mas lembrando que o Conectividade, ele tem mais de três cursos. Então, você pode ter outros cursos cadastrados no mesmo projeto.
+
+[04:18]
+Todos esses projetos, eles fazem parte de dois programas, ou o programa Media Com, quando são projetos ligados à criança adolescente, ou o programa Bem-Estar. Lembrando que novos programas podem ser inseridos ao ao longo do tempo. Embaixo nós vamos ter todos os cursos cadastrados. Esses cursos são mostrados apenas os 10 primeiros cursos, como pode ser aqui visto aqui no exibir. Mas embaixo a gente consegue ver quantos cursos existem.
+
+[04:43]
+Então está mostrando que está apresentando um de até 10, porém nós temos 17 cursos registrados. Para ver mais cursos você pode tanto a passar aqui para frente, ver a segunda página ou o próximo, ou pode também aqui aumentar e colocar mais visualizações. Esses cursos, eles têm algumas informações, como o nome, o número de termo, projeto, programa e olha que interessante, ele tem a situação. Se o projeto já está concluído ou se ele ainda está ativo.
+
+[05:11]
+Se você quiser filtrar Você pode colocar que em vez de colocar todos, você pode deixar só os projetos concluídos, só os projetos ativos e aí isso te ajuda a encontrar mais rápido. O nome do projeto do curso, ele tem um padrão. Ele deve iniciar com a sigla do projeto. Então CC é de Construcom, CI é de conectividade, EJ é de Podera Jovem, NC é de no corre.
+
+[05:39]
+Então ele sempre inicia com a sigla do projeto e depois três letras que informam o nome do município. Então, nesse caso, nós estamos aqui com o exemplo de CC HOR, é Consucon em Horizonte. Ah, mas pode ter mais de um Consucon em Horizonte. O número do termo vai indicar se ele é um projeto diferente. E aí depois nós temos o nome do curso.
+
+[06:02]
+Nesse curso, instalações elétricas, instalações hidrossanitárias, pintura residencial e e produção e pequenos reparos. São quatro cursos dados no mesmo projeto no mesmo município. Para localizar também mais rápido, você pode vir aqui em pesquisar e digitar o nome do projeto. E ele vai achar o projeto mais rapidamente. Aqui nós temos o botão de edição, se você quiser alterar alguma informação do projeto e temos o botão de excluir.
+
+[06:33]
+O mesmo vale para turmas. Lembrando que um projeto ele pode ter mais de uma turma, mas o funcionamento é o mesmo, em cima eu cadastro a turma, em baixo eu vejo as turmas cadastradas e a situação delas. Como o projeto pode ter mais de uma turma, quando você selecionar qual é o curso que você quer incluir o projeto, por exemplo, conectividade, beberibe, fundamentos dos smartphones, selecionei esse. Eu quero lhe colocar turmas. Você pode vir aqui e adicionar uma turma.
+
+[07:02]
+A turma, ela também recebe um padrão. Ela vai ter o nome do projeto, conectividade, vai ter o município, beberibe e ele vai ter vai ter que indicar quais são os dias que ele ocorre. Se o projeto ocorre segunda e quarta apenas, por exemplo, então ele vai ter aqui o 2 e o 4. Qual é a hora de início dele? Se ele começa às 8:30, ele vai ter 8 h minúsculo 30.
+
+[07:30]
+E vai indicar onde aquela turma acontece. Se aquela turma acontece, por exemplo, na sede do ITEVA, a gente vai colocar as três iniciais de ITEVA e cada lugar vai poder ter uma nomenclatura diferente, identificando que aquela a turma pode ocorrer em mais de um local. Ah, mas eu quero encaixar duas turmas ao mesmo tempo. Você pode clicar no botão adicionar nome de turma e ele vai adicionar quantas turmas você quiser. Você pode cadastrar quantas turmas quiser simultaneamente e todas as turmas vão aparecer.
+
+[07:58]
+Um outro ponto interessante na hora de cadastro da turma, que assim como cadastrando o curso, a gente consegue ter idade mínima e idade máxima, aqui a gente consegue colocar também na turma o máximo de pessoas. Então, se uma turma estiver cadastrada que o máximo é 15 e você tentar matricular sem querer uma décima sexta pessoa, o sistema vai te informar e vai dizer que tem limite de pessoas.
+
+[08:21]
+Se por acaso tiver que ser editado e alterado depois, porque a turma passou a ser maior quantidade de pessoas, você consegue depois editar e dizer que aquela turma ela vai ter o número maior de pessoas, como por exemplo, a turma pode ter um ouvinte. Por mais que a turma tenha no máximo 20 pessoas, você quer colocar um ouvinte, você pode cadastrar ela dizendo que aquela turma em específico vai ter 21 pessoas. Isso é feito pelo botão de edição aqui.
+
+[08:46]
+No na lista de turmas, a gente consegue ver quantos alunos já foram cadastrados naquela turma. Isso é uma informação muito importante. Então você pega esse projeto, por exemplo, no Corre, Pilates e Eusébio. Que turma é essa? É a turma de segunda e quarta às 7 horas da manhã. Ela ocorre no ITEVA? Não, ela ocorre no 100. O que que é o 100? É o centro dia. Quantas pessoas tá cadastrada nessa turma? Eu tenho seis pessoas cadastradas nessa turma. Então eu já tô com o máximo de pessoas. Mas essa por exemplo, só tem cinco. Ela poderia ter mais uma pessoa ainda.
+
+[09:15]
+Então, eu consigo ver o número quantidade de alunos pela lista. E se eu quiser ver quais são os alunos, eu posso clicar diretamente no nome da turma e isso me leva para o local onde eu vejo todos os alunos que estão ativos e inativos e aqui eu posso mostrar somente os ativos, somente os inativos e ele vai alterando, alternando com ativo ou com inativo. E eu consigo ver quais são os alunos qual é a matrícula deles, data de nascimento e tudo mais.
+
+[09:51]
+Para realizar uma matrícula é fácil, você vai em curso e turmas, clica na opção realizar matrículas, seleciona quais são as pessoas que você quer matricular, então você pode selecionar utilizando o checkbox e se para você encontrar a pessoa, você pode pesquisar aqui no item procurar. Então eu encontro, por exemplo, dona Maria Célia. Encontrei a D. Maria Célia. Tem duas Maria Célias. Eh, qual é? A de cima ou a de baixo? A foto tá muito pequena.
+
+[10:20]
+Eu posso passar o mouse em cima e a foto aumenta para eu ver qual é a Maria que que eu estou buscando. Ao saber qual é a Maria Maria, eu seleciono o check box para poder matriculá-lo. Mas eu posso matricular mais de uma pessoa ao mesmo tempo. Então eu posso buscar o segundo aluno. Senhor João Domingos. Pronto, encontrei São João Domingos, seleciono ele.
+
+[10:47]
+Já tenho duas pessoas selecionadas e assim por diante. Eu posso ir selecionando várias pessoas e depois clicar no botão Matricular Aluno. Essas pessoas vão ser levadas para tela de matrícula e vão ser apresentados alunos aqui para ver se são esses mesmos alunos que de fato eu quero matricular. Ao saber que são eles, eu posso selecionar qual curso eles farão, em que turma eu quero matriculá-los.
+
+[11:15]
+Tem que ser num curso obviamente que esteja ativo, né? E eu posso inclusive matricular eles em mais de um curso e mais de uma turma ao mesmo tempo. Escolho a data de matrícula o sistema sempre vai apontar a data de hoje, mas você pode fazer uma matrícula com data retroativa. Então você seleciona qual o dia, qual o curso, quais as turmas, pode adicionar como eu falei quantas turmas você quiser e depois clica em efetuar matrícula e todos vão ser matriculados naquela turma.
+
+[11:40]
+Lembrando que se houver alguma pessoa que não atenda as regras, por exemplo, a pessoa ela deveria ter mais de 60 e não tem, ou ela deveria ter no máximo 17 anos e não tem, o sistema vai matricular apenas aqueles alunos que passarem pela régua, os que não passarem, ele não vai conseguir fazer a matrícula e vai te informar. Para você ver as matrículas listadas, você pode listar as matrículas que já ocorreram, você pode clicar aqui em listar matrículas.
+
+[12:08]
+O sistema vai mostrar todos os cursos que existem e todas as situações que são ativas, está em progresso e você pode procurar ele em ativo, em concluído, todos e buscar para o registro. Sempre o sistema vai dar essas opções para você.
+
+[12:23]
+E se você quiser imprimir os os contratos daquele curso para que os alunos possam assinar o contrato, você seleciona qual é a turma que você quer imprimir o contrato, clica sobre essa turma e você pode imprimir o contrato individual de cada um. Não tem como imprimir todos? Tem, você pode imprimir todos clicando em gerar contratos, escolhendo qual o e-mail você quer que envie e aí você faz a solicitação.
+
+[12:50]
+O minuto, o sistema ele demora até 5 minutos para poder encaminhar o e-mail para você. com o link para download de todos os contratos realizados, assim como ele também mostra o contrato feito aqui. Lembrando que contratos individuais, caso eles já tenham sido gerados, o sistema vai te avisar que o contrato já foi gerado e se você quer imprimir o contrato antigo ou se você quer gerar um novo. Sistemas em lote não, sempre os contratos serão gerados todos novamente.
+
+[13:19]
+Você também pode alterar o as suas informações de perfil. Você clica sobre o seu nome, vai em perfil e aqui você consegue alterar nome, sobrenome, foto, senha, você consegue fazer algumas alterações possíveis.
+
+[13:51]
+No dashboard você consegue ver algumas informações como total de beneficiários, matriculas que estão ativas, alguns dados relacionados ao curso, número de pessoas cadastradas separadas em idades, ele te dá algumas informações básicas.
+
+[14:06]
+Em relatórios, você pode imprimir o relatório de frequência, um relatório customizado, um relatório de presença por aula turma, que é o relatório geralmente para verificar, fazer a checagem, se alguma turma deixou sem presença, sem formar presença ou falta de algum aluno e também o relatório de matrícula Em frequência, é muito simples o sistema, você escolhe qual é o curso que você quer imprimir, qual é a turma, podendo ser todas as turmas.
+
+[14:55]
+pode escolher se você só querem os alunos que estão ativos e matriculados, quer que insira a turma e escolha a data de frequência. Vamos tirar a frequência, por exemplo, do mês de fevereiro.
+
+[15:05]
+Do dia 1 ao dia 28 de fevereiro, clica em gerar relatório, aparece na tela com as fotos e com os nomes, de indicando qual a quantidade de presença, de falta e de falta justificada que houveram, quantas aulas tiveram e indica quais são os dias que a pessoa veio e se ela teve presença, falta justificada ou falta.
+
+[15:26]
+Você pode transformar isso tanto em Excel para fazer fórmulas, como pode também converter isso no PDF e ele libera o sinal de frequência já no ponto de assinatura. E se clicar no nome de algum aluno, você também pode ir diretamente para a ficha dele. Tá o justo que você tinha pedido. Tá vendo? Pode verificar na ficha dele. O customizado, ele te dá todas as informações que podem ser levantadas sobre o aluno e você decide quais você precisa.
+
+[15:57]
+E o presença por turma é para verificar se alguma turma ficou sem presença no determinado dia. Portanto, se você escolher aqui um curso que só funciona as segundas e quartas, você pode escolher para ele imprimir apenas as frequências segunda e quarta, em vez de andar imprimir todos os dias que não tem aula. Você pode tanto gerar a tabela quanto exportar para o Excel. E para sair do sistema, você pode clicar na foto e em sair.
+
+[16:32]
+Para fazer a transferência de um aluno de uma turma para outra, não adianta você apenas vir até o o projeto. Deixa eu primeiro listar pegar um curso ativo. Progresso. Não adianta você vir numa turma já funcionando e excluir essa aluna. Porque essa aluna ela não será excluída, ela vai ser apenas desmatriculada do projeto e depois matricular ela um novo projeto. Não funciona assim.
+
+[17:00]
+Se ela foi matriculada numa turma e ela quer ser transferida para outra turma, precisa ser feito a transferência. Como eu faço a transferência? Eu clico em editar, seleciono qual é o a turma que ela quer ir agora e troco apenas para a turma que ela quiser ir, dentro do mesmo curso. E aí quando eu salvo a alteração, ela automaticamente será matriculada na nova turma.
+
+[17:22]
+Não adianta excluir e tentar matricular ela de novo, porque o sistema vai entender que ela desistiu do curso e, portanto, não vai deixar ela se matricular no mesmo curso, mesmo que seja em outra turma.

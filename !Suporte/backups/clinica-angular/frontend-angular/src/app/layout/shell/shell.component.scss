@@ -1,0 +1,61 @@
+:host {
+  display: block;
+}
+
+.app-bg {
+  min-height: 100dvh;
+  background:
+    radial-gradient(circle at 18% 0%, #caecef 0%, transparent 44%),
+    radial-gradient(circle at 100% 20%, #dce8ff 0%, transparent 40%),
+    #e6edf5;
+  padding: 0.9rem;
+}
+
+.app-frame {
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1080px;
+  min-height: calc(100dvh - 1.8rem);
+  border-radius: 1.6rem;
+  overflow: hidden;
+  background: #f7fafc;
+  box-shadow: 0 26px 56px rgba(15, 23, 42, 0.18);
+  position: relative;
+}
+
+.page-content {
+  min-height: 100%;
+  padding-bottom: 6rem;
+}
+
+.global-bottom-nav {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  width: min(1080px, calc(100% - 1.8rem));
+  border-top: 1px solid #dce5ef;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  padding: 0.6rem 0.45rem 1rem;
+  display: flex;
+  justify-content: space-around;
+  z-index: 100;
+}
+
+.global-bottom-nav a {
+  text-decoration: none;
+  color: #94a3b8;
+  display: grid;
+  justify-items: center;
+  gap: 0.05rem;
+}
+
+.global-bottom-nav a small {
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.global-bottom-nav a.active {
+  color: #13c8ec;
+}

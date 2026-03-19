@@ -1,0 +1,40 @@
+<IfModule mod_mime.c>
+    AddDefaultCharset UTF-8
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Do not interfere with the Clinica app routing.
+    RewriteRule ^clinica(/|$) - [L]
+
+    # New API entrypoint.
+    RewriteRule ^api/v1/?$ api/public/index.php [QSA,L]
+    RewriteRule ^api/v1/(.*)$ api/public/index.php [QSA,L]
+
+    # Shared image repository (conectaosc) for dev/prod uploads.
+    RewriteCond %{DOCUMENT_ROOT}/conectaosc/assets/img -d
+    RewriteRule ^assets/img/(.*)$ /conectaosc/assets/img/$1 [QSA,L]
+    RewriteCond %{DOCUMENT_ROOT}/conectaosc/assets/img/icons/icon-48x48.png -f
+    RewriteRule ^favicon\.ico$ /conectaosc/assets/img/icons/icon-48x48.png [QSA,L]
+
+    # Serve frontend assets from app/assets without keeping a root assets folder.
+    RewriteRule ^assets/(.*)$ app/assets/$1 [QSA,L]
+
+    # Keep legacy /get/* endpoints accessible from api/get.
+    RewriteRule ^get/(.*)$ api/get/$1 [QSA,L]
+
+    # Legacy direct endpoint: /index.php -> login with explicit error message.
+    # Redirect only on direct browser request (avoid loop on internal rewrite to index.php).
+    RewriteCond %{THE_REQUEST} \s/+[^\s]*index\.php(?:[\s?]|$) [NC]
+    RewriteRule ^index\.php$ /conectaosc/login/?logout=1&erro=Rota+n%C3%A3o+encontrada.+Fa%C3%A7a+o+login+novamente. [R=302,L,NE]
+
+    # Keep existing files and folders untouched.
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Front-controller entrypoint (Front MVC).
+    RewriteRule ^$ index.php [QSA,L]
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>

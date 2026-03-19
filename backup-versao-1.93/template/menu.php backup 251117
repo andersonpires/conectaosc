@@ -1,0 +1,204 @@
+<nav id="sidebar" class="sidebar js-sidebar">
+	<div class="sidebar-content js-simplebar">
+		<a class="sidebar-brand" href="<?php echo $_SESSION['BASE_URL'] ?>/index.php">
+			<center>
+				<image src="<?php echo $_SESSION['BASE_URL'] ?>/assets/img/sistema/logo.png" class="align-middle" style="width: 90%;">
+			</center>
+		</a>
+		<ul class="sidebar-nav">
+			<li class="sidebar-item" id="index.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL'] ?>/index.php">
+					<i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Dashboard</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="listTipoChamada.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL'] ?>/app/chamada/listTipoChamada.php">
+					<i class="align-middle" data-feather="user-check"></i> <span class="align-middle">Chamada</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="">
+				<a class="sidebar-link" href="#" onclick="abrirTelaInteira('<?php echo $_SESSION['BASE_URL'] ?>/app/atendimento/index.php'); return false;">
+					<i class="align-middle" data-feather="heart"></i> <span class="align-middle">Atendimento clínico</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="crm.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL'] ?>/app/crm/crm.php">
+					<i class="align-middle" data-feather="phone-call"></i> <span class="align-middle">CRM</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="alerta.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL'] ?>/app/alerta/alerta.php">
+					<i class="align-middle" data-feather="alert-triangle"></i> <span class="align-middle">Alerta</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="listPermissao.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL'] ?>/app/permissao/listPermissao.php">
+					<i class="align-middle" data-feather="lock"></i> <span class="align-middle">Permissões</span>
+				</a>
+			</li>
+
+			<?php
+			if ($_SESSION['Tipo'] == "Administrador") {
+			?>
+				<li class="sidebar-item" id="formPaginas.php">
+					<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL'] ?>/app/permissao/formPaginas.php">
+						<i class="align-middle" data-feather="file-plus"></i> <span class="align-middle">Nova página</span>
+					</a>
+				</li>
+			<?php
+			}
+			?>
+
+			<li class="sidebar-header">
+				Beneficiários
+			</li>
+
+			<li class="sidebar-item" id="formBeneficiario.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL'] ?>/app/beneficiario/formBeneficiario.php">
+					<i class="align-middle" data-feather="user-plus"></i> <span class="align-middle">Cadastrar aluno</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="listagemSBenef.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL'] ?>/app/beneficiario/listagemSBenef.php">
+					<i class="align-middle" data-feather="align-left"></i> <span class="align-middle">Lista rápida de alunos</span>
+				</a>
+			</li>
+			<li class="sidebar-item" id="listagemBeneficiarios.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL'] ?>/app/beneficiario/listagemBeneficiarios.php">
+					<i class="align-middle" data-feather="list"></i> <span class="align-middle">Dados de alunos</span>
+				</a>
+			</li>
+			<li class="sidebar-item" id="aniversariantes.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL'] ?>/app/aniversariantes/aniversariantes.php">
+					<i class="align-middle" data-feather="gift"></i> <span class="align-middle">Aniversariantes</span>
+				</a>
+			</li>
+
+			<li class="sidebar-header">
+				Cursos e turmas
+			</li>
+
+			<li class="sidebar-item" id="formCurso.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/curso/formCurso.php">
+					<i class="align-middle" data-feather="shopping-cart"></i> <span class="align-middle">Cadastrar Cursos</span>
+				</a>
+			</li>
+			<li class="sidebar-item" id="formTurma.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/turma/formTurma.php">
+					<i class="align-middle" data-feather="shopping-cart"></i> <span class="align-middle">Cadastrar Turmas</span>
+				</a>
+			</li>
+			<li class="sidebar-item" id="listagemSBenef.php?msg='Selecione as pessoas e clique em Matricular Aluno'">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/beneficiario/listagemSBenef.php?msg='Selecione as pessoas e clique em Matricular Aluno'&matricula=1">
+					<i class="align-middle" data-feather="shopping-bag"></i> <span class="align-middle">Realizar matrículas</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="listagemMatriculas.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/matricula/listagemMatriculas.php">
+					<i class="align-middle" data-feather="list"></i> <span class="align-middle">Listar matrículas</span>
+				</a>
+			</li>
+
+
+			<li class="sidebar-header">
+				Dados de colaboradores
+			</li>
+
+			<li class="sidebar-item" id="index.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/login.php">
+					<i class="align-middle" data-feather="log-in"></i> <span class="align-middle">Login</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="formColaborador.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/colaborador/formColaborador.php">
+					<i class="align-middle" data-feather="user-plus"></i> <span class="align-middle">Colaboradores</span>
+				</a>
+			</li>
+			<li class="sidebar-item" id="#">
+				<a class="sidebar-link" href="#">
+					<i class="align-middle" data-feather="unlock"></i> <span class="align-middle">Reset Senha</span>
+				</a>
+			</li>
+
+			<li class="sidebar-header">
+				Evento 3o setor
+			</li>
+
+			<li class="sidebar-item" id="formInscricao.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/evento/formInscricao.php">
+					<i class="align-middle" data-feather="bar-chart-2"></i> <span class="align-middle">Inscrever</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="listagemInscritos.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/evento/listagemInscritos.php">
+					<i class="align-middle" data-feather="bar-chart-2"></i> <span class="align-middle">Lista de inscritos</span>
+				</a>
+			</li>
+			<li class="sidebar-header">
+				Relatórios
+			</li>
+
+			<li class="sidebar-item" id="relFrequencia.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/relatorio/relFrequencia.php">
+					<i class="align-middle" data-feather="bar-chart-2"></i> <span class="align-middle">Frequência</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="relCustomize.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/relatorio/relCustomize.php">
+					<i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Customizado</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="relatorioPresencaCursoTurma.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/relatorio/relatorioPresencaCursoTurma.php">
+					<i class="align-middle" data-feather="sliders"></i> <span class="align-middle">Presença por aula/turma</span>
+				</a>
+			</li>
+
+			<li class="sidebar-item" id="relMatriculados.php">
+				<a class="sidebar-link" href="<?php echo $_SESSION['BASE_URL']; ?>/app/relatorio/relMatriculados.php">
+					<i class="align-middle" data-feather="bookmark"></i> <span class="align-middle">Matriculados</span>
+				</a>
+			</li>
+		</ul>
+		<p> </p>
+		<p> </p>
+		<p> </p>
+		<p> </p>
+		<p> .</p>
+	</div>
+</nav>
+<?php
+$paginaAtual = basename($_SERVER['PHP_SELF']);
+
+// Atribuir a classe "active" ao item da página atual
+$idSeguro = preg_replace('/[^a-zA-Z0-9_-]/', '_', $paginaAtual);
+echo '<script>
+    var elemento = document.getElementById("' . $paginaAtual . '");
+    if (elemento) {
+        elemento.classList.add("active");
+    }
+</script>';
+?>
+<script>
+	function abrirTelaInteira(url) {
+		const largura = window.screen.availWidth;
+		const altura = window.screen.availHeight;
+
+		window.open(
+			url,
+			'_blank',
+			`toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes,width=${largura},height=${altura},top=0,left=0`
+		);
+	}
+</script>

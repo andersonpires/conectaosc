@@ -1,0 +1,1435 @@
+<?php
+$runtime = require __DIR__ . '/../../../bootstrap/runtime.php';
+$BASE_para_PATH = $runtime['base_para_path'];
+$BASE_para_URL = $runtime['base_para_url'];
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    ini_set('session.gc_maxlifetime', '86400');
+} // 24 horas
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+// Verifica se as variáveis de sessão BASE_para_PATH e BASE_para_URL estão definidas
+if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
+    // Salva a URL atual para redirecionar o usuário após o login
+    $redirect_url = urlencode($_SERVER['REQUEST_URI']); // Codifica o endereço atual
+    header("Location: " . rtrim((string) ($BASE_para_URL ?? ''), '/') . "/login/?redirect=$redirect_url");
+    exit(); // Garante que o código abaixo não será executado
+}
+
+// require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
+?>
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <?php
+    $cod = (int)($_SESSION['Cod'] ?? 0);
+    $tipoSessao = (string)($_SESSION['Tipo'] ?? '');
+    require_once $BASE_para_PATH . '/app/views/partials/header.php';
+    require_once __DIR__ . '/funcoes.php';
+    require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
+    ?>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+        }
+
+        #dataSelecionada {
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 8px 12px;
+            cursor: pointer;
+            color: #333;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        #dataSelecionada:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        #search-input {
+            flex: 1;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        #clear-search {
+            padding: 8px 12px;
+            font-size: 14px;
+            background-color: #f44336;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #clear-search:hover {
+            background-color: #d32f2f;
+        }
+
+        .tooltip-inner {
+            background-color: rgba(0, 43, 85, 0.9) !important;
+            /* azul escuro */
+            color: #fff;
+            font-size: 13px;
+            padding: 6px 10px;
+            border-radius: 5px;
+        }
+
+        .tooltip.bs-tooltip-top .tooltip-arrow::before {
+            border-top-color: #002b55 !important;
+        }
+
+        .tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+            border-bottom-color: #002b55 !important;
+        }
+
+        .tooltip.bs-tooltip-start .tooltip-arrow::before {
+            border-left-color: #002b55 !important;
+        }
+
+        .tooltip.bs-tooltip-end .tooltip-arrow::before {
+            border-right-color: #002b55 !important;
+        }
+
+        .card-container .card {
+            position: relative;
+            overflow: visible;
+        }
+
+        .card-container .card.card-birthday {
+            background-image:
+                linear-gradient(rgba(255, 255, 255, .82), rgba(255, 255, 255, .82)),
+                url('<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/assets/img/gif/confete-niver.gif');
+            background-repeat: no-repeat, repeat;
+            background-position: center center, center center;
+            background-size: cover, cover;
+        }
+
+        .birthday-badge {
+            position: absolute;
+            top: 6px;
+            right: 8px;
+            z-index: 3;
+            font-size: 2.35rem;
+            line-height: 1;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .24));
+            animation: birthdayPulse 1.1s ease-in-out infinite;
+            transform-origin: center;
+            pointer-events: none;
+        }
+
+        @keyframes birthdayPulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.28);
+            }
+        }
+
+        .birthday-info {
+            margin: .25rem 0 .5rem;
+            font-size: .9rem;
+            font-weight: 600;
+            color: #8a1800;
+            text-align: center;
+        }
+
+        .plano-aula-card {
+            border: 1px solid #dfe7f3;
+            border-radius: .8rem;
+            padding: .8rem;
+            background: #f8fbff;
+            margin-bottom: .7rem;
+        }
+
+        .plano-aula-card .meta {
+            font-size: .82rem;
+            color: #516178;
+        }
+
+        .plano-status-badge {
+            display: inline-block;
+            border-radius: 999px;
+            padding: .15rem .55rem;
+            font-size: .75rem;
+            font-weight: 700;
+        }
+
+        .plano-status-realizada { background: #d6f6dc; color: #166534; }
+        .plano-status-futura { background: #fff5cc; color: #7a5a00; }
+        .plano-status-atrasada { background: #ffd9d9; color: #8a1d1d; }
+        .plano-status-pendente { background: #e8edf7; color: #334155; }
+        .plano-status-adiada { background: #eadcff; color: #4b2f91; }
+
+        .plano-aula-anchor {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+    </style>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="<?php echo $BASE_para_URL; ?>/assets/css/turma-foto.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+</head>
+
+<body>
+    <div class="wrapper">
+        <?php require_once $BASE_para_PATH . '/app/views/partials/menu.php'; ?>
+
+        <div class="main">
+            <?php require_once $BASE_para_PATH . '/app/views/partials/topo.php'; ?>
+
+            <main class="content">
+                <?php
+                // Recebe os dados enviados via POST
+                $idBotao = $_GET['id'] ?? null;
+                $dataSelecionada = $_GET['dataSelecionada'] ?? null;
+                $NNomeCurso = $_GET['NNomeCurso'] ?? null;
+                $NNomeTurma = $_GET['NNomeTurma'] ?? null;
+                $Id__Curso = $_GET['NNomeCurso'] ?? null;
+                $Id__Turma = $_GET['NNomeTurma'] ?? null;
+                $nomeCurso = '';
+                $nomeTurma = '';
+                $cursosAtivos = $pdo->query("SELECT IdCurso, NomeCurso FROM tbCurso WHERE Habilitado = 1 ORDER BY NomeCurso ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+                if ($NNomeCurso && $NNomeTurma) {
+                    $sqlCursoTurma = "SELECT c.NomeCurso, t.NomeTurma
+                      FROM tbCurso c
+                      JOIN tbTurma t ON c.IdCurso = t.IdCurso
+                      WHERE c.IdCurso = ? AND t.IdTurma = ?";
+                    $stmtCursoTurma = $pdo->prepare($sqlCursoTurma);
+                    $stmtCursoTurma->execute([$NNomeCurso, $NNomeTurma]);
+                    $rowCursoTurma = $stmtCursoTurma->fetch(PDO::FETCH_ASSOC);
+                    if ($rowCursoTurma) {
+                        $nomeCurso = $rowCursoTurma['NomeCurso'];
+                        $nomeTurma = $rowCursoTurma['NomeTurma'];
+                    }
+                }
+                $resultado = turma_foto($pdo, $dataSelecionada, $dataSelecionada, $NNomeCurso, $NNomeTurma, (string)$BASE_para_URL);
+                $TotalCards = $resultado['totalCards'];
+                ?>
+                <div class="info-container">
+                    <h2>Dados selecionados</h2>
+                    <form id="dataForm" method="GET" action="<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/lista/">
+                        <div class="mb-2">
+                            <label for="NomeCurso"><strong>Curso:</strong></label>
+                            <select id="NomeCurso" name="NNomeCurso" class="form-select">
+                                <option value="">Selecione o curso</option>
+                                <?php foreach ($cursosAtivos as $cursoItem): ?>
+                                    <option value="<?= htmlspecialchars((string)$cursoItem['IdCurso'], ENT_QUOTES, 'UTF-8') ?>" <?= (string)$NNomeCurso === (string)$cursoItem['IdCurso'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars((string)$cursoItem['NomeCurso'], ENT_QUOTES, 'UTF-8') ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label for="NNomeTurma"><strong>Turma:</strong></label>
+                            <select id="NNomeTurma" name="NNomeTurma" class="form-select" data-selected="<?= htmlspecialchars((string)$NNomeTurma, ENT_QUOTES, 'UTF-8') ?>">
+                                <option value="">Selecione o curso primeiro</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label for="dataSelecionada"><strong>Data da chamada:</strong></label>
+                            <input type="text" id="dataSelecionada" name="dataSelecionada" value="<?= htmlspecialchars($dataSelecionada) ?>" class="datepicker form-control" autocomplete="off">
+                        </div>
+                        <button type="submit" id="turma-nome" class="btn btn-primary">Ir</button>
+
+                    </form>
+                </div>
+
+                <div class="container">
+                    <div class="row">
+                        <label for="search-input" class="form-label">Procurar</label>
+                        <div class="input-group">
+                            <input type="text" id="search-input" class="form-control-lg" placeholder="Digite aqui..." oninput="handleSearchInput()" />
+
+                            <div class="input-group-append">
+                                <button id="clear-search" onclick="clearSearch()" class="btn btn-light ms-1">X</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="container">
+                    <br>
+                    <div class="row">
+                        <!-- Botões de Filtro -->
+                        <div id="filter-buttons" style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <button id="btn-presenca" class="btn btn-light ms-1" style="flex: 1; background-color: rgb(0, 128, 0); color: white; padding: 10px; border: none; cursor: pointer;">Presença</button>
+                            <button id="btn-falta" class="btn btn-light ms-1" style="flex: 1; background-color: rgb(255, 0, 0); color: white; padding: 10px; border: none; cursor: pointer;">Falta</button>
+                            <button id="btn-falta-justificada" class="btn btn-light ms-1" style="flex: 1; background-color: rgb(204, 153, 0); color: white; padding: 10px; border: none; cursor: pointer;">Falta Just.</button>
+                            <button id="btn-nenhum" class="btn btn-light ms-1" style="flex: 1; background-color: lightgray; color: black; padding: 10px; border: none; cursor: pointer;">
+                                <i class="bi bi-lightbulb"></i> Nenhum
+                            </button>
+                            <a id="btn-plano-aula" class="btn btn-light ms-1 plano-aula-anchor" href="#plano-aula-do-dia" style="background-color: #e9f2ff; color: #0d3b66; padding: 10px 14px; border: none; cursor: pointer;" title="Ir para o plano da aula do dia" aria-label="Ir para o plano da aula do dia">
+                                <i class="bi bi-journal-text"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <p style="text-align: center;">Total de alunos na chamada: <?php echo $TotalCards ?></p>
+                </div>
+            </main>
+            <div class="card-container">
+                <?php
+                // Chama a função turma_foto passando a conexão PDO ($pdo) e a data selecionada.
+                echo $resultado['html'];
+                ?>
+                <div class="modal fade" id="obsModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <img id="fotoaluno" src="" class="rounded-circle img-cover" width="40px" height="40px">
+                                <h1 class="modal-title" id="exampleModalLabel">Observações</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="observacaoForm">
+                                    <div class="mb-3">
+                                        <label for="nomealuno" class="form-label">Nome aluno</label>
+                                        <input type="text" class="form-control" id="nomealuno" name="nomealuno" required autocomplete="off" readonly>
+                                        <input type="hidden" name="idaluno" id="idaluno">
+                                        <input type="hidden" name="idmatricula" id="idmatricula">
+                                        <input type="hidden" name="idchamada" id="idchamada">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="observacoes" class="form-label">Observações</label>
+                                        <textarea rows="7" class="form-control" aria-label="observacoes" id="observacoes" name="observacoes" autocomplete="off"></textarea>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="button" class="btn btn-success" id="SalvaObs">Salvar alterações</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container mb-4" id="plano-aula-do-dia">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong>Plano da aula do dia</strong>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btnRecarregarPlanoAula">Atualizar</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="planoAulaStatus" class="small text-muted mb-2">Selecione curso, turma e data para visualizar o plano.</div>
+                        <div id="planoAulaContainer"></div>
+                    </div>
+                </div>
+            </div>
+            <footer class="footer">
+                <?php require_once $BASE_para_PATH . '/app/views/partials/footer.php'; ?>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Modal para confirmar exclusão de presença -->
+    <div class="modal fade" id="modalExcluirPresenca" tabindex="-1" aria-labelledby="modalExcluirPresencaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalExcluirPresencaLabel">Atenção!</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    Deseja retirar o registro desse aluno neste dia?<br>
+                    <strong>Todos os botões ficarão desativados.</strong>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="confirmarExclusao">Retirar registro</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de mensagem de retorno -->
+    <div class="modal fade" id="modalMensagem" tabindex="-1" aria-labelledby="modalMensagemLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalMensagemLabel">Aviso</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body" id="conteudoMensagem">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="<?php echo $BASE_para_URL; ?>/assets/js/app.js"></script>
+</body>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        let dadosParaExcluir = null;
+
+        document.querySelectorAll('.card-container .card[id^="card_"]').forEach(card => {
+            card.addEventListener('dblclick', function(e) {
+                e.preventDefault();
+
+                // Verifica se ? um administrador
+                <?php if ($tipoSessao === 'Administrador') : ?>
+
+                    if (card.querySelector('.btn.btnp.selecionado')) {
+                        // Extrai os dados do ID
+                        const partes = card.id.split('_'); // card_IdMatricula_IdTurma_IdCurso_IdAluno
+                        if (partes.length === 5) {
+                            const [_, IdMatricula, IdTurma, IdCurso, IdAluno] = partes;
+
+                            const dataSelecionada = document.getElementById('dataSelecionada')?.value || '';
+
+                            // Armazena os dados
+                            dadosParaExcluir = {
+                                IdMatricula,
+                                IdTurma,
+                                IdCurso,
+                                dataSelecionada
+                            };
+
+                            // Mostra o modal
+                            const modal = new bootstrap.Modal(document.getElementById('modalExcluirPresenca'));
+                            modal.show();
+                        }
+                    }
+
+                <?php endif; ?>
+            });
+        });
+
+        document.getElementById('confirmarExclusao').addEventListener('click', function() {
+            if (!dadosParaExcluir) return;
+
+            $.ajax({
+                url: '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/salvar/',
+                type: 'POST',
+                data: {
+                    action: 'deleteAula',
+                    ...dadosParaExcluir
+                },
+                success: function(resposta) {
+                    try {
+                        const res = JSON.parse(resposta);
+
+                        const modalExcluir = bootstrap.Modal.getInstance(document.getElementById('modalExcluirPresenca'));
+                        if (modalExcluir) modalExcluir.hide();
+
+                        // Mostra o modal de mensagem
+                        const conteudo = document.getElementById('conteudoMensagem');
+                        conteudo.innerText = res.message;
+
+                        const modalMensagem = new bootstrap.Modal(document.getElementById('modalMensagem'));
+                        modalMensagem.show();
+
+                        if (res.success) {
+                            setTimeout(() => {
+                                location.reload();
+                            }, 2000);
+                        }
+                    } catch (err) {
+                        alert("Erro ao interpretar a resposta do servidor.");
+                    }
+                },
+                error: function() {
+                    alert("Erro ao tentar remover o registro.");
+                }
+            });
+        });
+
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        $.datepicker.setDefaults($.datepicker.regional["pt-BR"] = {
+            closeText: "Fechar",
+            prevText: "Anterior",
+            nextText: "Proximo",
+            currentText: "Hoje",
+            monthNames: ["Janeiro", "Fevereiro", "Marco", "Abril", "Maio", "Junho",
+                "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+            ],
+            monthNamesShort: ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+                "Jul", "Ago", "Set", "Out", "Nov", "Dez"
+            ],
+            dayNames: ["Domingo", "Segunda-feira", "Terca-feira", "Quarta-feira",
+                "Quinta-feira", "Sexta-feira", "Sabado"
+            ],
+            dayNamesShort: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"],
+            dayNamesMin: ["D", "S", "T", "Q", "Q", "S", "S"],
+            weekHeader: "Sm",
+            dateFormat: "dd/mm/yy",
+            firstDay: 0,
+            isRTL: false,
+            showMonthAfterYear: false,
+            yearSuffix: ""
+        });
+
+        // Configurar o datepicker
+        $(".datepicker").datepicker({
+            dateFormat: "dd/mm/yy",
+            changeMonth: true,
+            changeYear: true,
+            yearRange: "-100:+10"
+        });
+
+        const cursoSelect = document.getElementById('NomeCurso');
+        if (cursoSelect) {
+            new TomSelect(cursoSelect, {
+                create: false,
+                maxOptions: 500,
+                placeholder: 'Digite para buscar curso'
+            });
+        }
+        const turmaSelect = document.getElementById('NNomeTurma');
+        const renderTurmas = (turmas) => {
+            if (!turmaSelect) return;
+            const turmaSelecionadaAtual = (turmaSelect.dataset.selected || '').trim();
+            const options = ['<option value="">Selecione a turma</option>'];
+            turmas.forEach((turma) => {
+                const id = String(turma.IdTurma ?? turma.id ?? '').trim();
+                const nome = String(turma.NomeTurma ?? turma.nome ?? '').trim();
+                if (id && nome) {
+                    const selected = turmaSelecionadaAtual !== '' && turmaSelecionadaAtual === id ? ' selected' : '';
+                    options.push(`<option value="${id}"${selected}>${nome}</option>`);
+                }
+            });
+            turmaSelect.innerHTML = options.join('');
+        };
+
+        const carregarTurmas = (idCurso) => {
+            if (!turmaSelect) return;
+            if (!idCurso) {
+                turmaSelect.disabled = true;
+                turmaSelect.innerHTML = '<option value="">Selecione o curso primeiro</option>';
+                return;
+            }
+
+            turmaSelect.disabled = false;
+            turmaSelect.innerHTML = '<option value="">Carregando turmas...</option>';
+
+            $.ajax({
+                url: `<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/api/v1/turmas/por-curso`,
+                type: 'GET',
+                dataType: 'json',
+                xhrFields: { withCredentials: true },
+                data: { IdCurso: idCurso, somenteAtivos: 1 },
+                success: function(response) {
+                    if (!response || response.success !== true || !Array.isArray(response.data)) {
+                        turmaSelect.innerHTML = '<option value="">Nenhuma turma encontrada</option>';
+                        return;
+                    }
+                    renderTurmas(response.data);
+                },
+                error: function() {
+                    $.ajax({
+                        url: '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/get/getTurmasNome.php',
+                        type: 'GET',
+                        data: { IdCurso: idCurso },
+                        success: function(data) {
+                            turmaSelect.disabled = false;
+                            turmaSelect.innerHTML = data;
+                            const turmaSelecionadaAtual = (turmaSelect.dataset.selected || '').trim();
+                            if (turmaSelecionadaAtual !== '') {
+                                turmaSelect.value = turmaSelecionadaAtual;
+                            }
+                        },
+                        error: function() {
+                            turmaSelect.innerHTML = '<option value="">Erro ao buscar turmas</option>';
+                        }
+                    });
+                }
+            });
+        };
+
+        if (cursoSelect) {
+            cursoSelect.addEventListener('change', function() {
+                if (turmaSelect) {
+                    turmaSelect.dataset.selected = '';
+                }
+                carregarTurmas(this.value);
+            });
+
+            if (cursoSelect.value) {
+                carregarTurmas(cursoSelect.value);
+            } else if (turmaSelect) {
+                turmaSelect.disabled = true;
+                turmaSelect.innerHTML = '<option value="">Selecione o curso primeiro</option>';
+            }
+        }
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const buttons = {
+            presenca: document.getElementById('btn-presenca'),
+            falta: document.getElementById('btn-falta'),
+            faltaJustificada: document.getElementById('btn-falta-justificada')
+        };
+
+        const toggleButton = (button, color) => {
+            if (button.style.backgroundColor === 'gray') {
+                button.style.backgroundColor = color;
+            } else {
+                button.style.backgroundColor = 'gray';
+            }
+
+            // Reaplica o filtro para garantir que a visibilidade dos cards seja atualizada
+            filterCardsButton();
+        };
+
+
+        const filterCardsButton = () => {
+            const cards = getStudentCards();
+
+            // Itera sobre todos os cards
+            cards.forEach(card => {
+                const selectedButton = card.querySelector('.selecionado');
+                if (selectedButton) {
+                    const style = selectedButton.style.backgroundColor;
+
+                    card.style.display = (
+                        (style === 'rgb(0, 128, 0)' && buttons.presenca.style.backgroundColor !== 'gray') ||
+                        (style === 'rgb(255, 0, 0)' && buttons.falta.style.backgroundColor !== 'gray') ||
+                        (style === 'rgb(204, 153, 0)' && buttons.faltaJustificada.style.backgroundColor !== 'gray')
+                    ) ? '' : 'none'; // Caso contr?rio, esconde o card
+                }
+            });
+        };
+
+
+        Object.entries(buttons).forEach(([key, button]) => {
+            const color = button.style.backgroundColor;
+            button.addEventListener('click', () => {
+                toggleButton(button, color);
+                filterCardsButton();
+            });
+        });
+
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>
+
+<script>
+    toastr.options = {
+        "closeButton": true,
+        "debug": false,
+        "newestOnTop": true,
+        "progressBar": true,
+        "positionClass": "toast-top-center",
+        "preventDuplicates": false,
+        "onclick": null,
+        "showDuration": "300",
+        "hideDuration": "1000",
+        "timeOut": "3000",
+        "extendedTimeOut": "1000",
+        "showEasing": "swing",
+        "hideEasing": "linear",
+        "showMethod": "fadeIn",
+        "hideMethod": "fadeOut"
+    };
+</script>
+
+<script>
+    $(document).ready(function() {
+        let dataSelecionada = "<?= $dataSelecionada ?>";
+
+        $.ajax({
+            url: '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/salvar/',
+            type: 'POST',
+            data: {
+                action: 'loadData',
+                dataSelecionada: dataSelecionada
+            },
+            success: function(response) {
+                try {
+                    let data = JSON.parse(response); // Tenta analisar a resposta como JSON
+
+                    // Verifica se h? um erro na resposta
+                    if (data.erro) {
+                        console.warn("Erro retornado pelo servidor:", data.erro);
+                        alert(data.erro); // Mostra a mensagem de erro retornada
+                        return; // Interrompe o processamento
+                    }
+
+                    // Processa os itens retornados pelo servidor
+                    data.forEach(item => {
+                        let idMatricula = item.IdMatricula;
+                        if (item.presenca == "1") {
+                            $(`#P-${idMatricula}`).addClass("selecionado").css('background-color', '#008000');
+                        }
+                        if (item.falta == "1") {
+                            $(`#F-${idMatricula}`).addClass("selecionado").css('background-color', '#FF0000');
+                        }
+                        if (item.faltajust == "1") {
+                            $(`#FJ-${idMatricula}`).addClass("selecionado").css('background-color', '#CC9900');
+                        }
+                        if (item.Obs !== null) {
+                            $(`#Obs-${idMatricula}`).addClass("selecionado").css('background-color', 'darkblue');
+                        } else {
+                            $(`#Obs-${idMatricula}`).addClass("selecionado").css('background-color', '#a3a3a3');
+                        }
+                    });
+                } catch (e) {
+                    console.error('Erro ao processar os dados do servidor como JSON:', e);
+                    alert('Erro inesperado ao processar a resposta do servidor.');
+                }
+                updateButtonCount();
+            },
+            error: function(xhr, status, error) {
+                console.error("Erro na requisicao AJAX:", status, error); // Mostra detalhes do erro
+                alert('Ocorreu um erro ao carregar os dados.');
+            }
+        });
+
+        $(document).on('click', '.btnp', function() {
+            const buttonId = $(this).attr('id');
+
+            // Extrai apenas as letras antes do tra?o (-)
+            const action = buttonId.split('-')[0];
+
+            const card = $(this).closest('.card');
+
+            const id = card.attr('id'); // Exemplo: card_123_45_67
+
+            // Divide o ID para obter os valores separados
+            const data = id.split('_'); // [ "card", "123", "45", "67" ]
+            const id__Matricula = data[1];
+            const idTurma = data[2];
+            const idCurso = data[3];
+            const idAluno = data[4];
+            const idChamada = data[5];
+            let IdCod = "<?= $cod ?>";
+
+            const NNomeCurso = "<?= addslashes($_GET['NNomeCurso'] ?? '') ?>";
+            const NNomeTurma = "<?= addslashes($_GET['NNomeTurma'] ?? '') ?>";
+
+            // insertDATA - Envia os dados ao banco
+            $.ajax({
+                url: '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/salvar/',
+                type: 'POST',
+                data: {
+                    action: 'insertData',
+                    id__Matricula: id__Matricula,
+                    idAluno: idAluno,
+                    idTurma: idTurma,
+                    idCurso: idCurso,
+                    idColaborador: IdCod,
+                    dataSelecionada: dataSelecionada,
+                    selectedAction: action
+                },
+                success: function(response) {
+                    console.log('Resposta do servidor:', response);
+                    toastr.success("Salvo!");
+
+                    $.ajax({
+                        url: '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/salvar/',
+                        type: 'POST',
+                        data: {
+                            action: 'getFaltas',
+                            id__Matricula: id__Matricula
+                        },
+                        success: function(faltasResponse) {
+                            try {
+                                let faltasData = JSON.parse(faltasResponse);
+                                if (faltasData.totalFaltas !== undefined) {
+                                    let h4 = card.find('h4');
+                                    let nomeAluno = h4.clone().children().remove().end().text().trim(); // Remove link anterior
+                                    let link = `<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/faltas?idAluno=${idAluno}&dataSelecionada=${encodeURIComponent(dataSelecionada)}&NNomeCurso=${encodeURIComponent(NNomeCurso)}&NNomeTurma=${encodeURIComponent(NNomeTurma)}`;
+                                    h4.html(`${nomeAluno} <a href="${link}" class="text-decoration-none">(${faltasData.totalFaltas} faltas)</a>`);
+                                }
+                            } catch (e) {
+                                console.error('Erro ao processar resposta:', e);
+                                toastr.error("Erro ao atualizar faltas.", "Erro");
+                            }
+                        }
+                    });
+                },
+                error: function() {
+                    console.error('Erro na comunicação com o servidor.');
+                    toastr.error("Erro na comunicação com o servidor.", "Erro");
+                }
+            });
+        });
+
+        const btnNenhum = document.getElementById('btn-nenhum');
+        btnNenhum.addEventListener('click', function() {
+            toggleNenhumButton(true);
+        });
+    });
+</script>
+
+<script>
+    function getStudentCards() {
+        return document.querySelectorAll('.card-container .card[id^="card_"]');
+    }
+
+    function alterarCor(botao, cor) {
+        const card = botao.closest('.card');
+        const botoes = card.querySelectorAll('.btn');
+
+        if (botao.id.includes('Obs')) {
+        } else {
+            botoes.forEach(b => {
+                if (!b.id.includes('Obs')) {
+                    b.style.backgroundColor = '#a3a3a3';
+                    b.classList.remove('selecionado');
+                }
+            });
+            const novaCor = getCorCSS(cor);
+            if (botao.style.backgroundColor === novaCor) {
+                botao.style.backgroundColor = '#a3a3a3';
+                botao.classList.remove('selecionado');
+            } else {
+                botao.style.backgroundColor = novaCor;
+                botao.classList.add('selecionado');
+            }
+        }
+        updateButtonCount();
+    }
+
+    function getCorCSS(nomeCor) {
+        const cores = {
+            'verde': '#008000',
+            'vermelho': '#FF0000',
+            'amarelo': '#CC9900',
+            'azulClaro': 'lightblue'
+        };
+        return cores[nomeCor] || '#d3d3d3';
+    }
+
+    function updateButtonCount() {
+        let countPresenca = 0;
+        let countFalta = 0;
+        let countFaltaJustificada = 0;
+        let totalCards = <?php echo $TotalCards; ?>;
+        let countNenhum = 0;
+
+        const cards = getStudentCards();
+
+        cards.forEach(card => {
+            // Verifica se há botão de "Presença", "Falta" ou "Falta Justificada"
+            const presencaButton = card.querySelector('.btn[id^="P-"]');
+            const faltaButton = card.querySelector('.btn[id^="F-"]');
+            const faltaJustificadaButton = card.querySelector('.btn[id^="FJ-"]');
+
+            // Conta os cards com "Presença" selecionada (cor verde)
+            if (presencaButton && presencaButton.style.backgroundColor === 'rgb(0, 128, 0)') {
+                countPresenca++;
+            }
+
+            // Conta os cards com "Falta" selecionada (Cor vermelha)
+            if (faltaButton && faltaButton.style.backgroundColor === 'rgb(255, 0, 0)') {
+                countFalta++;
+            }
+
+            // Conta os cards com "Falta Justificada" selecionada (Cor amarelo)
+            if (faltaJustificadaButton && faltaJustificadaButton.style.backgroundColor === 'rgb(204, 153, 0)') {
+                countFaltaJustificada++;
+            }
+
+            if (![presencaButton, faltaButton, faltaJustificadaButton].some(button => button && button.style.backgroundColor !== 'rgb(163, 163, 163)')) {
+                countNenhum++;
+            }
+        });
+        // calcula valor de btn.nenhum
+        countNenhum = totalCards - countFalta - countFaltaJustificada - countPresenca;
+        document.getElementById('btn-presenca').textContent = `Presença: ${countPresenca}`;
+        document.getElementById('btn-falta').textContent = `Falta: ${countFalta}`;
+        document.getElementById('btn-falta-justificada').textContent = `Falta Just.: ${countFaltaJustificada}`;
+        //document.getElementById('btn-nenhum').textContent = `Nenhum: ${countNenhum}`;
+        document.getElementById('btn-nenhum').innerHTML = `<i class="${document.getElementById('btn-nenhum').querySelector('i').classList.value}"></i> Nenhum: ${countNenhum}`;
+    }
+
+
+    function toggleNenhumButton(isClickEvent = false) {
+        const btnNenhum = document.getElementById('btn-nenhum');
+        const isActive = btnNenhum.style.backgroundColor === 'lightgray';
+
+        if (!isClickEvent && isActive) {
+            return;
+        }
+
+        if (isClickEvent) {
+            if (isActive) {
+                // Bot?o desativado
+                btnNenhum.style.backgroundColor = '#a3a3a3';
+                btnNenhum.style.color = '#fff';
+                btnNenhum.querySelector('i').classList.replace('bi-lightbulb', 'bi-lightbulb-off'); // Alterar ?cone
+                filterCardsGray('none'); // Esconde os cards
+            } else {
+                // Bot?o ativado
+                btnNenhum.style.backgroundColor = 'lightgray';
+                btnNenhum.style.color = 'black';
+                btnNenhum.querySelector('i').classList.replace('bi-lightbulb-off', 'bi-lightbulb'); // Alterar ?cone
+                filterCardsGray('block'); // Mostra todos os cards
+            }
+        } else {
+            if (!isActive) {
+                btnNenhum.style.backgroundColor = 'lightgray';
+                btnNenhum.style.color = 'black';
+                btnNenhum.querySelector('i').classList.replace('bi-lightbulb-off', 'bi-lightbulb'); // Alterar ?cone para "lampada acesa"
+                filterCardsGray('block'); // Mostrar todos os cards
+            }
+        }
+    }
+</script>
+
+<script>
+    $(function() {
+        $('#obsModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget);
+            var idMatricula = button.data('idmatricula');
+            var fotoaluno = button.data('fotoaluno');
+            var nomealuno = button.data('nomealuno');
+            var idchamada = button.data('idchamada');
+
+            var nomecurso = '<?php echo $Id__Curso; ?>';
+            var nometurma = '<?php echo $Id__Turma; ?>';
+            var dataSelecionada = '<?php echo $dataSelecionada; ?>';
+
+            var modal = $(this);
+            $.ajax({
+                url: '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/salvar/',
+                type: 'POST',
+                data: {
+                    action: 'loadObs',
+                    idCurso: nomecurso,
+                    idTurma: nometurma,
+                    idMatricula: idMatricula,
+                    dataSelecionada: dataSelecionada
+                },
+                success: function(response) {
+                    try {
+                        let data = JSON.parse(response);
+                        // Preenche o modal com os dados retornados
+                        modal.find('#idmatricula').val(idMatricula);
+                        modal.find('#fotoaluno').attr('src', fotoaluno);
+                        modal.find('#nomealuno').val(nomealuno);
+                        modal.find('#observacoes').val(data.Obs || ''); // Preenche com o valor de Obs
+                        modal.find('#idchamada').val(idchamada);
+                        setTimeout(() => {
+                            modal.find('#observacoes').focus();
+                        }, 500);
+                    } catch (e) {
+                        alert('Erro na requisicao');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Erro na requisicao AJAX:', status, error);
+                    alert('Erro ao carregar os dados do banco.');
+                }
+            });
+
+        });
+    });
+</script>
+
+<script>
+    document.getElementById("SalvaObs").addEventListener("click", function() {
+        var idCurso = '<?php echo addslashes((string) $NNomeCurso); ?>';
+        var idTurma = '<?php echo addslashes((string) $NNomeTurma); ?>';
+        var dataSelecionada = '<?php echo $dataSelecionada; ?>';
+        var idMatricula = document.getElementById('idmatricula').value;
+        var observacoes = document.getElementById('observacoes').value;
+
+        if (observacoes === '') {
+            observacoes = null;
+        }
+
+        $.ajax({
+            url: '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/salvar/',
+            type: 'POST',
+            data: {
+                action: 'salvaObs',
+                idCurso: idCurso,
+                idTurma: idTurma,
+                idMatricula: idMatricula,
+                dataSelecionada: dataSelecionada,
+                observacoes: observacoes
+            },
+            success: function(response) {
+                try {
+                    let data = JSON.parse(response);
+                    if (data.success) {
+                        toastr.success("Salvo!");
+                        setTimeout(() => {
+                            location.reload();
+                        }, 300);
+                    } else {
+                        alert(data.message || 'Erro ao salvar observação.');
+                    }
+                } catch (e) {
+                    console.error('Erro ao processar a resposta do servidor:', e);
+                    toastr.error("Primeiro indique P, F ou FJ.", "Erro");
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Erro na requisicao AJAX:', status, error);
+                alert('Erro ao salvar observação.');
+            }
+        });
+    });
+</script>
+
+<script>
+    function SalvaObs() {
+
+
+    };
+</script>
+
+<script>
+    function filterCards() {
+        const normalizeText = (text) => {
+            return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        };
+
+        const input = document.getElementById('search-input');
+        const filter = normalizeText(input.value);
+        const cards2 = getStudentCards();
+
+        cards2.forEach(card => {
+            if (getComputedStyle(card).display !== 'none') {
+                const h4 = card.querySelector('h4');
+                if (h4 && normalizeText(h4.textContent).includes(filter)) {
+                    card.style.display = ''; // Exibe o card se o texto corresponder
+                } else {
+                    card.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    function handleSearchInput() {
+        const input = document.getElementById('search-input');
+        if (input.value.trim() === '') {
+            clearSearch();
+        } else {
+            filterCards();
+        }
+    }
+
+
+    function filterCardsGray(display) {
+        const cards3 = getStudentCards();
+
+        const cardsToFilter = Array.from(cards3).filter(card => {
+            const buttons_card = card.querySelectorAll('.btnp');
+            const allButtonsInactive = Array.from(buttons_card).every(button => !button.classList.contains('selecionado'));
+
+            return allButtonsInactive;
+        });
+
+        //console.log("Cards selecionados para filtro:", cardsToFilter);
+
+        // Aplica display none ou block apenas nos cards que precisam ser filtrados
+        cardsToFilter.forEach(card => {
+            card.style.display = display;
+        });
+    }
+
+    function clearSearch() {
+        const input = document.getElementById('search-input');
+        input.value = ''; // Limpa o valor do input
+
+        // Reativa todos os cards (fazendo display='block' novamente)
+        const cards4 = getStudentCards();
+        cards4.forEach(card => {
+            card.style.display = '';
+        });
+
+        const buttons = document.querySelectorAll('#filter-buttons .btn');
+        buttons.forEach(button => {
+            // Restaura o estilo de fundo para as cores iniciais
+            if (button.id === 'btn-presenca') {
+                button.style.backgroundColor = 'rgb(0, 128, 0)'; // Cor original de presen?a
+            } else if (button.id === 'btn-falta') {
+                button.style.backgroundColor = 'rgb(255, 0, 0)'; // Cor original de falta
+            } else if (button.id === 'btn-falta-justificada') {
+                button.style.backgroundColor = 'rgb(204, 153, 0)'; // Cor original de falta justificada
+            } else if (button.id === 'btn-nenhum') {
+                button.style.backgroundColor = 'lightgray'; // Cor original de "Nenhum"
+                const btnNenhum = document.getElementById('btn-nenhum');
+                btnNenhum.style.color = 'black';
+                btnNenhum.querySelector('i').classList.replace('bi-lightbulb-off', 'bi-lightbulb');
+            }
+        });
+    }
+
+    function filterCardsButton2() {
+        const cards5 = getStudentCards();
+        cards5.forEach(card => {
+            const selectedButton = cards5.querySelector('.selecionado');
+            if (selectedButton) {
+                const style = selectedButton.style.backgroundColor;
+                card.style.display = (
+                    (style === 'rgb(0, 128, 0)' && buttons.presenca.style.backgroundColor !== 'gray') ||
+                    (style === 'rgb(255, 0, 0)' && buttons.falta.style.backgroundColor !== 'gray') ||
+                    (style === 'rgb(204, 153, 0)' && buttons.faltaJustificada.style.backgroundColor !== 'gray')
+                ) ? '' : 'none';
+            }
+        });
+    }
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        document.querySelectorAll('.card-container .card[id^="card_"] button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tooltips = bootstrap.Tooltip.getInstance(button);
+                if (tooltips) {
+                    tooltips.hide();
+                }
+            });
+        });
+
+        // Ou: remove todos os tooltips ativos
+        document.addEventListener('click', function() {
+            const tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            tooltips.forEach(el => {
+                const instance = bootstrap.Tooltip.getInstance(el);
+                if (instance) instance.hide();
+            });
+        });
+    });
+</script>
+
+<script>
+    (function() {
+        const baseUrl = '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>';
+        const idTurmaAtual = Number('<?php echo addslashes((string) ($NNomeTurma ?? '')); ?>' || 0);
+        const dataSelecionadaBr = '<?php echo addslashes((string) ($dataSelecionada ?? '')); ?>';
+
+        function apiBase() {
+            if (/^https?:\/\//i.test(baseUrl)) return `${baseUrl}/api/v1`;
+            return `${window.location.origin}${baseUrl}/api/v1`;
+        }
+
+        function esc(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (m) => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+            }[m]));
+        }
+
+        function brToIso(dateBr) {
+            const parts = String(dateBr || '').split('/');
+            if (parts.length !== 3) return '';
+            const [d, m, y] = parts;
+            if (!d || !m || !y) return '';
+            return `${y.padStart(4, '0')}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+        }
+
+        function statusClass(status) {
+            const s = String(status || '').toLowerCase();
+            if (s === 'realizada') return 'plano-status-realizada';
+            if (s === 'futura') return 'plano-status-futura';
+            if (s === 'atrasada') return 'plano-status-atrasada';
+            if (s === 'adiada') return 'plano-status-adiada';
+            return 'plano-status-pendente';
+        }
+
+        async function apiFetch(path, options = {}) {
+            const resp = await fetch(`${apiBase()}${path}`, { credentials: 'same-origin', ...options });
+            const json = await resp.json().catch(() => ({}));
+            if (!resp.ok || json.success === false) {
+                throw new Error((json.errors && json.errors[0]) || json.message || 'Erro');
+            }
+            return json;
+        }
+
+        async function loadAnexosCronograma(idCronogramaAula) {
+            const data = await apiFetch(`/cronograma-aulas/${idCronogramaAula}/anexos`);
+            return data.data || [];
+        }
+
+        async function loadAnexosPlano(idPlanoCursoAula) {
+            const data = await apiFetch(`/planos-curso/aulas/${idPlanoCursoAula}/anexos`);
+            return data.data || [];
+        }
+
+        async function loadComentarios(idCronogramaAula) {
+            const data = await apiFetch(`/cronograma-aulas/${idCronogramaAula}/comentarios`);
+            return data.data || [];
+        }
+
+        async function addComentario(idCronogramaAula, comentario) {
+            return apiFetch(`/cronograma-aulas/${idCronogramaAula}/comentarios`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Comentario: comentario })
+            });
+        }
+
+        async function updateStatus(idCronogramaAula, payload) {
+            return apiFetch(`/cronograma-aulas/${idCronogramaAula}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        }
+
+        async function remarcaAula(idCronogramaAula, dataAula, horaInicio) {
+            return apiFetch(`/cronograma-aulas/${idCronogramaAula}/agendar`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ DataAula: dataAula, HoraInicio: horaInicio, StatusExecucao: 'futura' })
+            });
+        }
+
+        async function carregarPlanoAulaDia() {
+            const statusEl = document.getElementById('planoAulaStatus');
+            const containerEl = document.getElementById('planoAulaContainer');
+            if (!statusEl || !containerEl) return;
+
+            if (!idTurmaAtual || !dataSelecionadaBr) {
+                statusEl.textContent = 'Selecione curso, turma e data para visualizar o plano.';
+                containerEl.innerHTML = '';
+                return;
+            }
+
+            const dataIso = brToIso(dataSelecionadaBr);
+            if (!dataIso) {
+                statusEl.textContent = 'Data inválida para carregar plano da aula.';
+                containerEl.innerHTML = '';
+                return;
+            }
+
+            try {
+                statusEl.textContent = 'Carregando plano da aula...';
+                const response = await apiFetch(`/turmas/${idTurmaAtual}/plano-curso/cronograma`);
+                const itens = (response.data || []).filter((i) => String(i.DataAula || '') === dataIso);
+
+                if (!itens.length) {
+                    statusEl.textContent = 'Nenhuma aula planejada para esta data.';
+                    containerEl.innerHTML = '';
+                    return;
+                }
+
+                statusEl.textContent = `${itens.length} aula(s) planejada(s) para ${dataSelecionadaBr}.`;
+                containerEl.innerHTML = itens.map((item) => `
+                    <div class="plano-aula-card" data-id-cronograma="${Number(item.IdCronogramaAula)}" data-id-aula="${Number(item.IdPlanoCursoAula)}">
+                        <div class="d-flex justify-content-between align-items-center gap-2 mb-1">
+                            <div><strong>${esc(item.NomeAula)}</strong></div>
+                            <span class="plano-status-badge ${statusClass(item.StatusExecucao)}">${esc(item.StatusExecucao || 'pendente')}</span>
+                        </div>
+                        <div class="meta mb-2">
+                            Ordem ${Number(item.OrdemAula || 0)} | Duração ${Number(item.DuracaoMinutos || 0)} min | Categoria ${esc(item.Categoria || '-')}
+                            | Horário ${esc(String(item.HoraInicio || '').slice(0,5) || '--:--')} - ${esc(String(item.HoraFim || '').slice(0,5) || '--:--')}
+                        </div>
+                        <div class="small mb-1"><strong>Recursos:</strong> ${esc(item.Recursos || '-')}</div>
+                        <div class="small mb-1"><strong>Materiais:</strong> ${esc(item.Materiais || '-')}</div>
+                        <div class="small mb-2"><strong>Observações pedagógicas:</strong> ${esc(item.ObservacoesPlano || '-')}</div>
+
+                        <div class="d-flex flex-wrap gap-1 mb-2">
+                            <button class="btn btn-sm btn-outline-success" data-action="realizada">Marcar realizada</button>
+                            <button class="btn btn-sm btn-outline-warning" data-action="adiada">Marcar adiada</button>
+                            <button class="btn btn-sm btn-outline-primary" data-action="remarcar">Remarcar</button>
+                            <button class="btn btn-sm btn-outline-secondary" data-action="anexos">Ver anexos</button>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label form-label-sm"><strong>Feedback da aula</strong></label>
+                            <textarea class="form-control form-control-sm" rows="2" data-field="feedback">${esc(item.FeedbackProfessor || '')}</textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label form-label-sm"><strong>Observações de execução</strong></label>
+                            <textarea class="form-control form-control-sm" rows="2" data-field="obs">${esc(item.Observacoes || '')}</textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label form-label-sm"><strong>Justificativa de adiamento</strong></label>
+                            <textarea class="form-control form-control-sm" rows="2" data-field="justificativa">${esc(item.JustificativaAdiamento || '')}</textarea>
+                        </div>
+                        <div class="d-flex gap-1 mb-2">
+                            <button class="btn btn-sm btn-outline-dark" data-action="salvar-feedback">Salvar feedback/obs</button>
+                        </div>
+
+                        <div class="p-2 bg-light rounded mb-2" data-box="anexos" style="display:none;"></div>
+                        <div class="p-2 bg-light rounded mb-2" data-box="comentarios"></div>
+                        <div class="d-flex gap-1">
+                            <input type="text" class="form-control form-control-sm" placeholder="Adicionar comentário" data-field="comentario">
+                            <button class="btn btn-sm btn-outline-dark" data-action="comentar">Comentar</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                bindPlanoAulaEvents();
+                await loadComentariosAll();
+            } catch (err) {
+                statusEl.textContent = `Erro ao carregar plano da aula: ${err.message}`;
+                containerEl.innerHTML = '';
+            }
+        }
+
+        async function loadComentariosAll() {
+            const cards = document.querySelectorAll('.plano-aula-card');
+            for (const card of cards) {
+                const idCronograma = Number(card.dataset.idCronograma || 0);
+                const box = card.querySelector('[data-box="comentarios"]');
+                if (!idCronograma || !box) continue;
+                try {
+                    const comentarios = await loadComentarios(idCronograma);
+                    if (!comentarios.length) {
+                        box.innerHTML = '<div class="small text-muted">Sem comentários.</div>';
+                        continue;
+                    }
+                    box.innerHTML = comentarios.map((c) => `
+                        <div class="small mb-1">
+                            <strong>${esc((c.Nome || '') + ' ' + (c.Sobrenome || ''))}</strong>:
+                            ${esc(c.Comentario || '')}
+                            <span class="text-muted">(${esc(c.DataCriacao || '')})</span>
+                        </div>
+                    `).join('');
+                } catch (_e) {
+                    box.innerHTML = '<div class="small text-danger">Erro ao carregar comentários.</div>';
+                }
+            }
+        }
+
+        function bindPlanoAulaEvents() {
+            document.querySelectorAll('.plano-aula-card [data-action]').forEach((btn) => {
+                btn.addEventListener('click', async (e) => {
+                    const action = btn.dataset.action;
+                    const card = e.target.closest('.plano-aula-card');
+                    if (!card) return;
+                    const idCronograma = Number(card.dataset.idCronograma || 0);
+                    const idAula = Number(card.dataset.idAula || 0);
+                    if (!idCronograma) return;
+
+                    const feedback = card.querySelector('[data-field="feedback"]')?.value || '';
+                    const obs = card.querySelector('[data-field="obs"]')?.value || '';
+                    const justificativa = card.querySelector('[data-field="justificativa"]')?.value || '';
+
+                    try {
+                        const statusAtual = String(card.querySelector('.plano-status-badge')?.textContent || 'futura').trim().toLowerCase();
+                        if (action === 'realizada') {
+                            await updateStatus(idCronograma, {
+                                StatusExecucao: 'realizada',
+                                FeedbackProfessor: feedback,
+                                Observacoes: obs
+                            });
+                            await carregarPlanoAulaDia();
+                            return;
+                        }
+                        if (action === 'adiada') {
+                            const just = justificativa || prompt('Informe a justificativa do adiamento:', '');
+                            if (!just) return;
+                            await updateStatus(idCronograma, {
+                                StatusExecucao: 'adiada',
+                                JustificativaAdiamento: just,
+                                FeedbackProfessor: feedback,
+                                Observacoes: obs
+                            });
+                            await carregarPlanoAulaDia();
+                            return;
+                        }
+                        if (action === 'remarcar') {
+                            const novaData = prompt('Nova data (AAAA-MM-DD):', brToIso(dataSelecionadaBr));
+                            if (!novaData) return;
+                            const novaHora = prompt('Novo horário (HH:MM):', '08:00');
+                            if (!novaHora) return;
+                            await remarcaAula(idCronograma, novaData, novaHora);
+                            await carregarPlanoAulaDia();
+                            return;
+                        }
+                        if (action === 'anexos') {
+                            const box = card.querySelector('[data-box="anexos"]');
+                            if (!box) return;
+                            box.style.display = box.style.display === 'none' ? 'block' : 'none';
+                            if (box.dataset.loaded === '1') return;
+                            const [anexosCron, anexosPlano] = await Promise.all([
+                                loadAnexosCronograma(idCronograma),
+                                loadAnexosPlano(idAula)
+                            ]);
+                            const lista = [...anexosCron, ...anexosPlano];
+                            if (!lista.length) {
+                                box.innerHTML = '<div class="small text-muted">Sem anexos.</div>';
+                            } else {
+                                box.innerHTML = lista.map((a) => `
+                                    <div class="small mb-1">
+                                        <a href="${baseUrl}/${esc(a.CaminhoRelativo || '')}" target="_blank" rel="noopener noreferrer">
+                                            ${esc(a.NomeArquivo || a.NomeOriginal || a.NomeFisico || 'Arquivo')}
+                                        </a>
+                                        ${a.Descricao ? `<div class="small text-muted">${esc(a.Descricao)}</div>` : ''}
+                                        <span class="text-muted">(${esc(a.MimeType || '')})</span>
+                                    </div>
+                                `).join('');
+                            }
+                            box.dataset.loaded = '1';
+                            return;
+                        }
+                        if (action === 'salvar-feedback') {
+                            await updateStatus(idCronograma, {
+                                StatusExecucao: statusAtual || 'futura',
+                                FeedbackProfessor: feedback,
+                                Observacoes: obs,
+                                JustificativaAdiamento: justificativa || null
+                            });
+                            await carregarPlanoAulaDia();
+                            return;
+                        }
+                        if (action === 'comentar') {
+                            const campo = card.querySelector('[data-field="comentario"]');
+                            const texto = (campo?.value || '').trim();
+                            if (!texto) return;
+                            await addComentario(idCronograma, texto);
+                            campo.value = '';
+                            await loadComentariosAll();
+                        }
+                    } catch (err) {
+                        alert(`Erro: ${err.message}`);
+                    }
+                });
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('btnRecarregarPlanoAula');
+            if (btn) btn.addEventListener('click', carregarPlanoAulaDia);
+            carregarPlanoAulaDia();
+        });
+    })();
+</script>
+
+</html>
+
+
+
+
+
+
+
+
+
+

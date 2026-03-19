@@ -1,0 +1,972 @@
+<?php
+session_set_cookie_params(['httponly' => true]);
+ini_set('session.gc_maxlifetime', 86400); // 24 horas
+session_start();
+session_regenerate_id(true);
+date_default_timezone_set('America/Sao_Paulo');
+
+// Verifica se as variáveis de sessão BASE_PATH e BASE_URL estão definidas
+if (!isset($_SESSION['BASE_PATH']) || !isset($_SESSION['BASE_URL'])) {
+    // Salva a URL atual para redirecionar o usuário após o login
+    $redirect_url = urlencode($_SERVER['REQUEST_URI']); // Codifica o endereço atual
+    header("Location:" . dirname($_SERVER['SERVER_NAME']) . "/../../login.php?redirect=$redirect_url"); // Redireciona para o login com o endereço de volta via GET
+    exit(); // Garante que o código abaixo não será executado
+}
+
+require_once $_SESSION['BASE_PATH'] . '/checa-token.php';
+require_once $_SESSION['BASE_PATH'] . '/conectabd/conexao.php';
+
+// Buscar os dados da tabela tbAlerta
+$stmt = $pdo->query("SELECT * FROM tbAlerta LIMIT 1");
+$alerta = $stmt->fetch(PDO::FETCH_ASSOC);
+?>
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <?php require_once $_SESSION['BASE_PATH'] . '/template/header.php'; ?>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.css">
+    <script src="https://cdn.tiny.cloud/1/maa7p6ervwrty9h84gphxrsrfking1awabjrp7tak98iuwjh/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
+    <link rel="stylesheet" href="<?php echo $_SESSION['BASE_URL']; ?>/assets/css/overlayNotifica.css">
+
+    <style>
+        .card-hover {
+            transition: transform 0.2s ease;
+            cursor: pointer;
+        }
+
+        .card-hover:hover {
+            transform: scale(1.02);
+        }
+    </style>
+
+
+
+    <script>
+        tinymce.init({
+            selector: '#textoNota',
+            height: 250,
+            menubar: false,
+            plugins: 'image link lists code autoresize',
+            toolbar: 'undo redo | styles | bold italic underline | bullist numlist | link image | code',
+            language: 'pt_BR',
+            branding: false,
+            images_upload_handler: (blobInfo, progress) => new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', 'crmController.php');
+
+                xhr.onload = () => {
+                    if (xhr.status < 200 || xhr.status >= 300) {
+                        reject('HTTP Error: ' + xhr.status);
+                        return;
+                    }
+
+                    let json;
+                    try {
+                        json = JSON.parse(xhr.responseText);
+                    } catch (e) {
+                        reject('Erro ao processar JSON: ' + xhr.responseText);
+                        return;
+                    }
+
+                    if (!json || typeof json.location !== 'string') {
+                        reject('Resposta inválida: ' + xhr.responseText);
+                        return;
+                    }
+
+                    resolve(json.location);
+                };
+
+                xhr.onerror = () => {
+                    reject('Erro de conexão. Código: ' + xhr.status);
+                };
+
+                const formData = new FormData();
+                formData.append('action', 'uploadImagemNota');
+                formData.append('file', blobInfo.blob(), blobInfo.filename());
+
+                xhr.send(formData);
+            })
+        });
+    </script>
+
+
+
+    <script>
+        function mostrarDiv(area) {
+            // Lista das divs que queremos alternar visibilidade
+            const divs = ['divTarefas', 'divBusca', 'divTimeline', 'divNotificacoes'];
+
+            // Esconde todas
+            divs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.setProperty('display', 'none', 'important');
+            });
+
+            // Mostra a div específica
+            const id = 'div' + area.charAt(0).toUpperCase() + area.slice(1);
+            const target = document.getElementById(id);
+            if (target) {
+                target.style.setProperty('display', 'block', 'important');
+                if (area === 'tarefas') {
+                    carregarTarefas();
+                }
+                if (area === 'notificacoes') carregarPreferencias();
+            } else {
+                console.warn('Div não encontrada:', id);
+            }
+        }
+
+        function carregarTurmas() {
+            const idCurso = document.getElementById('curso').value;
+            const turmaSelect = document.getElementById('turma');
+            turmaSelect.innerHTML = '';
+
+            if (idCurso === '') {
+                turmaSelect.innerHTML = '<option value="">Selecione um curso primeiro...</option>';
+                turmaSelect.disabled = true;
+                return;
+            }
+
+            if (idCurso == 0) {
+                turmaSelect.disabled = false;
+                turmaSelect.innerHTML = '<option value="">TODAS as turmas</option>';
+
+                fetch('<?php echo $_SESSION['BASE_URL']; ?>/get/getTurmasNome.php?IdCurso=all')
+                    .then(res => res.text())
+                    .then(html => {
+                        turmaSelect.innerHTML += html;
+                    });
+
+                return;
+            }
+
+
+            // Curso específico
+            // Para curso específico
+            fetch('<?php echo $_SESSION['BASE_URL']; ?>/get/getTurmasNome.php?IdCurso=' + idCurso)
+                .then(res => res.text())
+                .then(html => {
+                    turmaSelect.disabled = false;
+                    turmaSelect.innerHTML = '<option value="">TODAS as turmas</option>' + html;
+                });
+        }
+    </script>
+</head>
+
+<body>
+    <div class="wrapper">
+        <?php require_once $_SESSION['BASE_PATH'] . '/template/menu.php'; ?>
+
+        <div class="main">
+            <?php require_once $_SESSION['BASE_PATH'] . '/template/topo.php'; ?>
+
+            <main class="content">
+                <div class="container-fluid mt-4">
+
+                    <!-- Botões de Ação -->
+                    <div class="mb-3 d-flex gap-2">
+                        <button class="btn btn-primary btn-sm" onclick="mostrarDiv('tarefas')">
+                            <i class="fa-solid fa-list"></i> Ver Tarefas
+                        </button>
+                        <button class="btn btn-success btn-sm" onclick="mostrarDiv('busca')">
+                            <i class="fa-solid fa-search"></i> Fazer Busca
+                        </button>
+                        <button class="btn btn-secondary btn-sm" onclick="mostrarDiv('timeline')">
+                            <i class="fa-solid fa-clock-rotate-left"></i> Ver Histórico
+                        </button>
+                        <button class="btn btn-warning btn-sm" onclick="mostrarDiv('notificacoes')">
+                            <i class="fa-solid fa-bell"></i> Notificações
+                        </button>
+                    </div>
+
+                    <!-- Área de Tarefas -->
+                    <div id="divTarefas" class="mb-4">
+                        <div class="card shadow-lg">
+                            <div class="card-header bg-primary text-white">
+                                Tarefas Registradas
+                            </div>
+                            <div class="card-body table-responsive">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <label for="filtroNotificado" class="form-label me-2">Mostrar:</label>
+                                        <select id="filtroNotificado" class="form-select form-select-sm d-inline-block w-auto">
+                                            <option value="0" selected>Não notificadas</option>
+                                            <option value="1">Notificadas</option>
+                                            <option value="todas">Todas</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="filtroTipo" class="form-label me-2">Tipo:</label>
+                                        <select id="filtroTipo" class="form-select form-select-sm d-inline-block w-auto">
+                                            <option value="todas" selected>Todas</option>
+                                            <option value="importantes">Importantes</option>
+                                            <option value="futuras">Futuras</option>
+                                            <option value="feitas">Feitas</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <input type="checkbox" id="filtroMinhasTarefas" class="form-check-input me-1">
+                                        <label for="filtroMinhasTarefas" class="form-check-label">Filtrar as minhas</label>
+                                    </div>
+                                </div>
+
+                                <table class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Aluno</th>
+                                            <th>Descrição</th>
+                                            <th>Responsável</th>
+                                            <th>Data/Hora</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabelaTarefasBody">
+                                        <!-- Linhas de tarefas serão inseridas aqui via PHP ou JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Área de Busca -->
+                    <div id="divBusca" style="display: none;">
+                        <div class="card shadow-lg">
+                            <div class="card-header bg-success text-white">
+                                Buscar Alunos
+                            </div>
+                            <div class="card-body">
+                                <!-- Formulário de busca e exibição dos cards aqui -->
+                                <form id="formBusca" class="row mb-4">
+                                    <div class="col-md-3">
+                                        <label class="form-label" for="curso">Curso</label>
+                                        <select name="curso" id="curso" class="form-select" onchange="carregarTurmas()">
+                                            <option value="">Selecione aqui...</option>
+                                            <option value="0">TODOS os cursos</option>
+                                            <?php
+                                            $sql = $pdo->query("SELECT IdCurso, NomeCurso FROM tbCurso ORDER BY NomeCurso");
+                                            while ($curso = $sql->fetch(PDO::FETCH_ASSOC)) {
+                                                echo "<option value='{$curso['IdCurso']}'>{$curso['NomeCurso']}</option>";
+                                            }
+                                            ?>
+                                        </select>
+
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label" for="turma">Turma</label>
+                                        <select name="turma" id="turma" class="form-select" disabled>
+                                            <option value="">Selecione um curso primeiro...</option>
+                                        </select>
+
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label" for="faltas">Faltou</label>
+                                        <input type="number" min="0" name="faltas" id="faltas" class="form-control" placeholder="Ex: 3">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label" for="dias">Nos últimos (dias)</label>
+                                        <input type="number" min="0" name="dias" id="dias" class="form-control" placeholder="Ex: 7">
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button type="button" class="btn btn-success w-100" onclick="buscarAlunos()">
+                                            <i class='fa-solid fa-magnifying-glass'></i> Fazer busca
+                                        </button>
+                                    </div>
+                                    <div id="resultadoBuscaCount" class="text-muted small mt-4 mb-3"></div>
+                                </form>
+
+
+                                <!-- Aqui serão carregados os cards -->
+                                <div class="row" id="cardsAlunos">
+                                    <!-- Cards serão inseridos via JS -->
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Área de Timeline (Notas e Histórico de Interação) -->
+                    <div id="divTimeline" style="display: none;">
+                        <div class="card shadow-lg">
+                            <div class="card-header bg-secondary text-white">
+                                Histórico de Interações
+                            </div>
+                            <div class="card-body" id="conteudoTimeline">
+                                <div id="fichaAluno" class="mb-4"></div>
+                                <div class="d-flex gap-2 mb-3">
+                                    <button class="btn btn-success btn-sm" onclick="mostrarFormNota()">
+                                        <i class="fa-solid fa-pen"></i> Adicionar Nota
+                                    </button>
+                                    <button class="btn btn-primary btn-sm" onclick="mostrarFormTarefa()">
+                                        <i class="fa-solid fa-calendar-plus"></i> Adicionar Tarefa
+                                    </button>
+                                </div>
+
+                                <?php require_once 'formNota.php'; ?>
+                                <div id="historicoNotas"></div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <!-- Área de Notificações -->
+                    <div id="divNotificacoes" style="display: none;">
+                        <div class="card shadow-lg">
+                            <div class="card-header bg-warning text-dark">
+                                Notificações
+                            </div>
+                            <div class="card-body">
+                                <form id="formNotificacoes">
+                                    <div class="mb-3">
+                                        <h6>Nota</h6>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="nota_email">
+                                            <label class="form-check-label" for="nota_email">
+                                                E-mail: <span id="emailUsuario"></span> <a href="<?php echo $_SESSION['BASE_URL']; ?>/app/perfil/perfil.php?m=mail">(mudar)</a>
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="nota_whatsapp">
+                                            <label class="form-check-label" for="nota_whatsapp">
+                                                WhatsApp: <span id="zapUsuario"></span> <a href="<?php echo $_SESSION['BASE_URL']; ?>/app/perfil/perfil.php?m=ws">(mudar)</a>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <h6>Tarefa</h6>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="tarefa_email">
+                                            <label class="form-check-label" for="tarefa_email">
+                                                E-mail: <span id="emailUsuario2"></span> <a href="<?php echo $_SESSION['BASE_URL']; ?>/app/perfil/perfil.php?m=mail">(mudar)</a>
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="tarefa_whatsapp">
+                                            <label class="form-check-label" for="tarefa_whatsapp">
+                                                WhatsApp: <span id="zapUsuario2"></span> <a href="<?php echo $_SESSION['BASE_URL']; ?>/app/perfil/perfil.php?m=ws">(mudar)</a>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <button type="button" class="btn btn-warning btn-sm" onclick="salvarPreferencias()">
+                                        <i class="fa-solid fa-save"></i> Salvar Preferências
+                                    </button>
+
+                                    <div id="msgPreferencias" class="mt-2 small text-muted"></div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+
+            </main>
+
+
+            <footer class="footer">
+                <?php require_once $_SESSION['BASE_PATH'] . '/template/footer.php'; ?>
+            </footer>
+        </div>
+    </div>
+    <script src="<?php echo $_SESSION['BASE_URL']; ?>/assets/js/app.js"></script>
+    <script src="<?php echo $_SESSION['BASE_URL']; ?>/assets/js/overlayNotifica.js"></script>
+
+    <script>
+        function mostrarHistorico(idUsuario) {
+            document.getElementById('historicoNotas').innerHTML = '';
+            mostrarDiv('timeline');
+
+            fetch('crmController.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'dadosAluno',
+                        idUsuario: idUsuario
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        const a = data.aluno;
+                        const fichaDiv = document.getElementById('fichaAluno');
+                        document.getElementById('notaIdUsuario').value = idUsuario;
+                        document.getElementById('tarefaIdUsuario').value = idUsuario;
+
+                        fichaDiv.innerHTML = `
+                                                <div class="d-flex align-items-center mb-3">
+                                                    <img src="${a.Foto ? '<?php echo $_SESSION['BASE_URL']; ?>/assets/img/fotos/' + a.Foto : '<?php echo $_SESSION['BASE_URL']; ?>/assets/img/fotos/padrao.jpg'}" class="rounded-circle me-3" width="80" height="80">
+                                                    <div>
+                                                        <h5 class="mb-0">${a.Apelido ? `(${a.Apelido}) ` : ''}${a.Nome}</h5>
+                                                        <small><strong>Curso: </strong>${a.NomeCurso} - <strong>Turma: </strong>${a.NomeTurma}</small><br>
+                                                        <small><strong>Contatos: </strong>
+                                                            ${a.Telefone ? `${a.Telefone} (só telefone)` : ''}
+                                                            ${a.Telefone && a.WhatsApp ? ' | ' : ''}
+                                                            ${a.WhatsApp ? `${a.WhatsApp} (telefone e WhatsApp)` : ''}
+                                                        </small><br>
+
+                                                        <small><strong>Endereço: </strong>${a.Endereco}, ${a.Bairro}, ${a.Cidade}-${a.UF}</small><br>
+                                                        <small><strong>Faltas:</strong> ${a.TotalFaltas}</small>
+                                                    </div>
+                                                </div>
+                                            `;
+                    }
+                });
+            fetch('crmController.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'listarNotasAluno',
+                        idUsuario
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        const container = document.getElementById('historicoNotas');
+                        let html = '<h6 class="mt-4">Histórico de Notas</h6>';
+
+                        if (data.notas.length > 0) {
+                            data.notas.forEach(nota => {
+                                html += `
+                                        <div class="card mb-2">
+                                            <div class="card-body">
+                                                <small class="text-muted">${nota.DataHoraCriacao} - ${nota.NomeColaborador}</small>
+                                                <p class="mb-0">${nota.TextoNota}</p>
+                                            </div>
+                                        </div>
+                                    `;
+                            });
+                        } else {
+                            html += '<div class="alert alert-secondary">Nenhuma nota registrada ainda.</div>';
+                        }
+
+                        container.innerHTML = html;
+
+                    }
+                });
+
+        }
+
+        function atualizarHistoricoNotas(idUsuario) {
+            document.getElementById('historicoNotas').innerHTML = '';
+            fetch('crmController.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'listarNotasAluno',
+                        idUsuario
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        document.getElementById('historicoNotas').innerHTML = '';
+
+                        const container = document.createElement('div');
+                        container.innerHTML = `<h6 class="mt-4">Histórico de Notas</h6>`;
+
+                        if (data.notas.length > 0) {
+                            data.notas.forEach(nota => {
+                                const card = document.createElement('div');
+                                card.className = 'card mb-2';
+                                card.innerHTML = `
+                        <div class="card-body">
+                            <small class="text-muted">${nota.DataHoraCriacao} - ${nota.NomeColaborador}</small>
+                            <p class="mb-0">${nota.TextoNota}</p>
+                        </div>
+                    `;
+                                container.appendChild(card);
+                            });
+                        } else {
+                            container.innerHTML += '<div class="alert alert-secondary">Nenhuma nota registrada ainda.</div>';
+                        }
+
+                        document.getElementById('historicoNotas').appendChild(container);
+                    }
+                });
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const hoje = new Date().toISOString().split('T')[0];
+            document.getElementById('dataExecucao').setAttribute('min', hoje);
+        });
+
+        function mostrarFormNota() {
+            document.getElementById('formNovaNota').style.display = 'block';
+            document.getElementById('formNovaTarefa').style.display = 'none';
+        }
+
+        function mostrarFormTarefa() {
+            document.getElementById('formNovaNota').style.display = 'none';
+            document.getElementById('formNovaTarefa').style.display = 'block';
+        }
+
+        document.getElementById('novaTarefaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const form = e.target;
+            const formData = new FormData(form);
+
+            const dataEscolhida = new Date(formData.get('dataExecucao'));
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+
+            if (dataEscolhida <= hoje) {
+                mostrarOverlay({
+                    mensagem: 'Escolha uma data futura para a tarefa.',
+                    carregando: false,
+                    onClose: () => esconderOverlay()
+                });
+                return;
+            }
+
+            mostrarOverlay({
+                mensagem: 'Salvando dados...',
+                carregando: true
+            });
+
+            fetch('crmController.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        form.reset();
+                        carregarTarefas();
+                        mostrarOverlay({
+                            mensagem: 'Tarefa salva com sucesso!',
+                            carregando: false,
+                            onClose: () => esconderOverlay()
+                        });
+                    } else {
+                        mostrarOverlay({
+                            mensagem: 'Erro ao salvar a tarefa.',
+                            carregando: false,
+                            onClose: () => esconderOverlay()
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao enviar tarefa:', error);
+                    mostrarOverlay({
+                        mensagem: 'Erro ao enviar tarefa. Verifique o console.',
+                        carregando: false,
+                        onClose: () => esconderOverlay()
+                    });
+                });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarTarefas();
+
+            // Verifica se veio idUsuario na URL
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('idUsuario')) {
+                mostrarDiv('timeline');
+                const dadosSalvos = sessionStorage.getItem('dadosBuscaCRM');
+                if (dadosSalvos) {
+                    const dados = JSON.parse(dadosSalvos);
+                    for (const key in dados) {
+                        const el = document.querySelector(`[name="${key}"]`);
+                        if (el) el.value = dados[key];
+                    }
+                }
+                const idUsuario = urlParams.get('idUsuario');
+                fetch('crmController.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: new URLSearchParams({
+                            action: 'dadosAluno',
+                            idUsuario
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        console.log('Resposta do servidor:', data);
+                        if (data.status === 'ok') {
+                            const a = data.aluno;
+                            const fichaDiv = document.getElementById('fichaAluno');
+                            fichaDiv.innerHTML = `
+                                                    <div class="d-flex align-items-center mb-3">
+                                                        <img src="${a.Foto ? '<?php echo $_SESSION['BASE_URL']; ?>/assets/img/fotos/' + a.Foto : '<?php echo $_SESSION['BASE_URL']; ?>/assets/img/fotos/padrao.jpg'}" class="rounded-circle me-3" width="80" height="80">
+                                                        <div>
+                                                            <h5 class="mb-0">${a.Apelido ? `(${a.Apelido}) ` : ''}${a.Nome}</h5>
+                                                            <small>${a.NomeCurso} - ${a.NomeTurma}</small><br>
+                                                            <small>${a.Telefone} | ${a.WhatsApp}</small><br>
+                                                            <small>${a.Endereco}, ${a.Bairro}, ${a.Cidade}-${a.UF}</small><br>
+                                                            <small><strong>Faltas:</strong> ${a.TotalFaltas}</small>
+                                                        </div>
+                                                    </div>`;
+                        } else {
+                            console.error('Erro ao obter dados do aluno:', data.message);
+                        }
+                    }).catch(error => {
+                        console.error('Erro na requisição:', error);
+                    });
+
+            } else {
+                mostrarDiv('tarefas'); // padrão
+            }
+            // Preenche o email e WhatsApp do colaborador logado
+            fetch('crmController.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'dadosColaborador'
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        // document.getElementById('email').value = data.colaborador.Email || '';
+                        // document.getElementById('whatsapp').value = data.colaborador.WhatsApp || '';
+                    }
+                });
+
+        });
+
+
+        let tarefasGlobal = []; // todas as tarefas carregadas
+
+        function carregarTarefas() {
+            fetch('crmController.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'listarTarefas'
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        tarefasGlobal = data.tarefas;
+                        renderizarTabelaTarefas();
+                    }
+                });
+        }
+
+        function renderizarTabelaTarefas() {
+            const tbody = document.getElementById('tabelaTarefasBody');
+            tbody.innerHTML = '';
+
+            const filtroNotificado = document.getElementById('filtroNotificado').value;
+            const filtrarMinhas = document.getElementById('filtroMinhasTarefas').checked;
+            const filtroTipo = document.getElementById('filtroTipo').value;
+            const meuCodigo = "<?php echo $_SESSION['Cod']; ?>";
+
+            let tarefasFiltradas = tarefasGlobal;
+
+            if (filtroNotificado !== 'todas') {
+                tarefasFiltradas = tarefasFiltradas.filter(t => String(t.Notificado) === filtroNotificado);
+            }
+
+            if (filtrarMinhas) {
+                tarefasFiltradas = tarefasFiltradas.filter(t => String(t.IdColaborador) === meuCodigo);
+            }
+
+            if (filtroTipo !== 'todas') {
+                tarefasFiltradas = tarefasFiltradas.filter(t => {
+                    if (filtroTipo === 'importantes') return t.cor === 'amarelo' && t.Status !== 'feito';
+                    if (filtroTipo === 'futuras') return t.cor === 'branco';
+                    if (filtroTipo === 'feitas') return t.Status === 'feito';
+                    return true;
+                });
+            }
+
+            tarefasFiltradas.forEach(tarefa => {
+                const tr = document.createElement('tr');
+
+                let badge = '';
+                if (tarefa.Status === 'feito') {
+                    badge = '<span class="badge bg-success">Feita</span>';
+                } else if (tarefa.cor === 'vermelho') {
+                    badge = '<span class="badge bg-danger">Atrasada</span>';
+                } else if (tarefa.cor === 'amarelo') {
+                    badge = '<span class="badge bg-warning text-dark">Importante</span>';
+                } else {
+                    badge = '<span class="badge bg-primary">Futura</span>';
+                }
+
+                let botoes = '';
+                if (tarefa.Status !== 'feito') {
+                    botoes = `
+                <button class="btn btn-success btn-sm rounded me-1" onclick="marcarFeito(${tarefa.IdTarefa})">
+                    <i class="fa-solid fa-check"></i> Feito
+                </button>
+                <button class="btn btn-primary btn-sm me-1 rounded" onclick="mostrarHistorico(${tarefa.IdUsuario})">
+                    <i class="fa-solid fa-pen-to-square"></i> Fazer
+                </button>
+            `;
+                }
+
+                botoes += `
+            <button class="btn btn-danger btn-sm rounded" onclick="excluirTarefa(${tarefa.IdTarefa})">
+                <i class="fa-solid fa-trash"></i> Excluir
+            </button>
+        `;
+
+                tr.innerHTML = `
+            <td>${tarefa.NomeAluno}</td>
+            <td>${tarefa.DescricaoTarefa}</td>
+            <td>${tarefa.NomeColaborador}</td>
+            <td>${formatarDataHora(tarefa.DataHoraExecucao)}</td>
+            <td>${badge}</td>
+            <td>${botoes}</td>
+        `;
+                tbody.appendChild(tr);
+            });
+        }
+
+
+        document.getElementById('filtroNotificado').addEventListener('change', renderizarTabelaTarefas);
+        document.getElementById('filtroMinhasTarefas').addEventListener('change', renderizarTabelaTarefas);
+        document.getElementById('filtroTipo').addEventListener('change', renderizarTabelaTarefas);
+
+
+        function formatarDataHora(dataHoraStr) {
+            const data = new Date(dataHoraStr);
+            return data.toLocaleString('pt-BR', {
+                dateStyle: 'short',
+                timeStyle: 'short'
+            });
+        }
+
+        function marcarFeito(id) {
+            fetch('crmController.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'marcarFeito',
+                        id
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        carregarTarefas(); // atualiza a tabela
+                    }
+                });
+        }
+
+        function excluirTarefa(id) {
+            if (confirm('Tem certeza que deseja excluir esta tarefa?')) {
+                fetch('crmController.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: new URLSearchParams({
+                            action: 'excluirTarefa',
+                            id
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === 'ok') {
+                            carregarTarefas(); // atualiza a tabela
+                        }
+                    });
+            }
+        }
+
+        function buscarAlunos() {
+            const form = document.getElementById('formBusca');
+            const formData = new FormData(form);
+            formData.append('action', 'buscarAlunosFaltosos');
+
+            fetch('crmController.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const container = document.getElementById('cardsAlunos');
+                    container.innerHTML = '';
+                    if (data.status === 'ok' && data.alunos.length > 0) {
+                        data.alunos.forEach(aluno => {
+                            let infoExtras = '';
+                            if (aluno.TotalTarefas > 0) {
+                                infoExtras += `<span class="badge bg-primary rounded-circle me-1" style="font-size: 0.7rem; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;">${aluno.TotalTarefas}</span>`;
+                            }
+                            if (aluno.TotalNotas > 0) {
+                                infoExtras += `<span class="badge bg-success rounded-circle" style="font-size: 0.7rem; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;">${aluno.TotalNotas}</span>`;
+                            }
+
+                            const card = document.createElement('div');
+                            card.className = 'col-md-4';
+
+                            card.innerHTML = `
+                                            <div class="d-flex shadow-lg rounded mb-3 p-2 bg-light align-items-start justify-content-between card-hover">
+                                                <img src="<?php echo $_SESSION['BASE_URL']; ?>/assets/img/fotos/${aluno.Foto || 'padrao.jpg'}" class="rounded-circle me-3" width="50" height="50" alt="Foto">
+                                                <div class="flex-grow-1">
+                                                    <strong>${aluno.Apelido ? `(${aluno.Apelido}) ` : ''}${aluno.Nome} (${aluno.TotalFaltas} faltas)</strong><br>
+                                                    <small>${aluno.NomeCurso}</small><br>
+                                                    <small>${aluno.NomeTurma}</small>
+                                                </div>
+                                                <div class="ms-2 text-end">${infoExtras}</div>
+                                            </div>
+                                            `;
+
+                            card.onclick = () => {
+                                mostrarHistorico(aluno.IdUsuario);
+                            };
+
+
+                            container.appendChild(card);
+                        });
+                        document.getElementById('resultadoBuscaCount').textContent = `Foram encontrados ${data.alunos.length} registro(s)`;
+                    } else {
+                        container.innerHTML = '<div class="alert alert-warning">Nenhum aluno encontrado com os critérios informados.</div>';
+                        document.getElementById('resultadoBuscaCount').textContent = 'Nenhum aluno encontrado com os critérios informados.';
+                    }
+                });
+        }
+
+        function carregarPreferencias() {
+            fetch('crmController.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: new URLSearchParams({
+                        action: 'getPreferenciasNotificacao'
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        const p = data.preferencias;
+                        document.getElementById('nota_email').checked = p.Nota_Email == 1;
+                        document.getElementById('nota_whatsapp').checked = p.Nota_WhatsApp == 1;
+                        document.getElementById('tarefa_email').checked = p.Tarefa_Email == 1;
+                        document.getElementById('tarefa_whatsapp').checked = p.Tarefa_WhatsApp == 1;
+
+                        document.getElementById('emailUsuario').textContent = p.Email;
+                        document.getElementById('emailUsuario2').textContent = p.Email;
+                        document.getElementById('zapUsuario').textContent = p.WhatsApp;
+                        document.getElementById('zapUsuario2').textContent = p.WhatsApp;
+                    }
+                });
+        }
+
+        function salvarPreferencias() {
+            const dados = new URLSearchParams({
+                action: 'salvarPreferenciasNotificacao',
+                nota_email: document.getElementById('nota_email').checked ? 1 : 0,
+                nota_whatsapp: document.getElementById('nota_whatsapp').checked ? 1 : 0,
+                tarefa_email: document.getElementById('tarefa_email').checked ? 1 : 0,
+                tarefa_whatsapp: document.getElementById('tarefa_whatsapp').checked ? 1 : 0
+            });
+
+            fetch('crmController.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: dados
+                })
+                .then(res => res.json())
+                .then(data => {
+                    const msgEl = document.getElementById('msgPreferencias');
+                    if (data.status === 'ok') {
+                        let contador = 5;
+                        const intervalo = setInterval(() => {
+                            msgEl.textContent = `Preferências salvas com sucesso! ${contador}`;
+                            contador--;
+                            if (contador < 0) {
+                                clearInterval(intervalo);
+                                msgEl.textContent = ''; // Limpa a mensagem após 5 segundos
+                            }
+                        }, 1000); // Atualiza a cada 1 segundo (1000 milissegundos)
+                    } else {
+                        msgEl.textContent = 'Erro ao salvar.';
+                    }
+                });
+
+        }
+    </script>
+    <script>
+        document.getElementById('novaNotaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            tinymce.triggerSave();
+
+            const form = e.target;
+            const formData = new FormData(form);
+
+            mostrarOverlay({
+                mensagem: 'Salvando dados...',
+                carregando: true
+            });
+
+            fetch('crmController.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'ok') {
+                        form.reset();
+                        tinymce.get('textoNota').setContent('');
+                        const idUsuario = formData.get('idUsuario');
+                        atualizarHistoricoNotas(idUsuario);
+
+                        mostrarOverlay({
+                            mensagem: 'Nota salva com sucesso!<br>' + (data.mensagem || ''),
+                            carregando: false,
+                            onClose: () => esconderOverlay()
+                        });
+                    } else {
+                        mostrarOverlay({
+                            mensagem: 'Erro ao salvar a nota: ' + data.mensagem,
+                            carregando: false,
+                            onClose: () => esconderOverlay()
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao enviar nota:', error);
+                    mostrarOverlay({
+                        mensagem: 'Erro ao enviar nota. Verifique o console.',
+                        carregando: false,
+                        onClose: () => esconderOverlay()
+                    });
+                });
+        });
+    </script>
+
+    <div id="overlayLoading" style="display: none;">
+        <div class="overlay-bg"></div>
+        <div class="overlay-content" id="overlayContent">
+            <div class="spinner-border text-primary" role="status" id="overlaySpinner">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+            <p class="mt-2" id="overlayText">Salvando dados...</p>
+            <button id="overlayBtnOk" class="btn btn-primary mt-3" style="display: none;">OK</button>
+        </div>
+    </div>
+
+
+</body>
+
+
+</html>

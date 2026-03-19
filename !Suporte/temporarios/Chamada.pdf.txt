@@ -1,0 +1,29 @@
+[00:00]
+Como funciona a chamada? Você clica no menu chamada, seleciona qual curso você está buscando, inclusive a lista de cursos é grande. Se você quiser, você pode começar a digitar o nome do curso para ele te achar ajudar a achar mais rápido. Ah, encontrei dois cursos iguais. O nome indica que um é no município de Beberibe e o outro é de Eusébio. Então você vai sim vai conseguir facilitar e encontrar mais rápido. Selecionou, aí ele vai buscar quais são as turmas cadastradas nesse curso.
+
+[00:29]
+Você vai encontrar encontrar a turma que você quer fazer a presença e vai selecionar a data. Lembrando que o o nome da turma já indica, curso de segunda, quarta e sexta. Então, se eu colocar aqui na turma de segunda, quarta e sexta, curso às 9 horas e agora nós estamos ao meio-dia, então eu já encontro as presenças dessa turma. Se eu colocasse na terça, automaticamente não teria presença nenhuma. Então, isso ajuda. Selecionei ir.
+
+[00:52]
+E ele vai me indicar todas as pessoas que fazem parte da turma, mostrando, inclusive, quem ainda está sem foto ou quem está com a sua foto e inadequada, cortando parte do rosto e vai precisar ser retirada uma nova fotografia. Aqui nós temos presença, falta, falta justificada. Lembrando que toda falta justificada precisa da observação, ou seja, indicar qual é a justificativa que foi dada pelo aluno.
+
+[01:17]
+Se você clicar a na presença, uma vez que você clique na presença falta ou falta ou justificada, o sistema não vai mais tirar essa essa presença. Ele vai permitir que você troque. Por exemplo, digamos que esse aluno o senhor Ailton, esteve presente, mas eu errei. É uma falta que ele precisa. Eu posso clicar em falta, não preciso salvar porque ele vai salvar automaticamente vai indicar aqui em cima que foi salvo e ele já está com a falta já. Agora, como é que eu tiro a falta e deixo ele sem nada? Isso não é possível.
+
+[01:47]
+Apenas os administradores conseguem excluir uma falta dada. De mesma forma, funciona para falta justificada, aonde eu preciso abrir o item de observação e preciso dar uma justificativa.
+
+[02:01]
+e preciso salvar essa justificativa. Agora, se eu dei uma falta justificada errada, era para ser dado em outra pessoa, eu e era para ser dado a presença, você pode voltar ao presença, ele vai salvar e depois você precisa apagar observação. Se você apagar tudo o que tem lá dentro, deixar sem nada e salvar, ele automaticamente vai tirar observação.
+
+[02:25]
+Se você está no modo celular, não aparece informações detalhadas sobre o aluno, mas no modo, é, computador, ele mostra se você passar o mouse por cima, qual a matrícula do aluno, o código, data que ele foi matriculado, tem outras informações que você consegue ver no sistema. Aqui sempre fica indicando como se fosse uma espécie de filtro.
+
+[02:47]
+Se você quiser ver todo mundo que teve falta, você tira e apaga quem teve presença ou falta justificada ou nenhum e vai deixar só o filtro. Se você tirar todos os filtros, fica sem ninguém. Quer ver só quem teve de presença, deixa o filtro presença. Ele só vai mostrar as pessoas que tiveram presentes e assim por diante. Se deixar tudo ativado, ele mostra todo mundo. Você também pode localizar o nome da pessoa digitando aqui e ele vai encontrando. Quando você quiser voltar, você apaga tudo e volta a todo mundo.
+
+[03:18]
+Se você quiser dar presenças ou faltas e ou ou monitorar a turma, você não precisa iniciar tudo de novo. O sistema permite que você troque o curso, turma e a data e altere de diretamente aqui, por exemplo, estou na 9 horas da manhã, deixa eu ver a turma da tarde. Cliquei, cliquei em ir, ele automaticamente mantém o curso e data e vai para a turma da tarde mostrando os novos alunos. Não preciso voltar e fazer isso lá atrás.
+
+[03:43]
+Também posso inclusive mudar o curso e colocar em outro curso em outra turma e assim ele vai indicando sempre. Lembrando que não é possível ver turmas que já foram concluídas. Então, se você por acaso selecionar um curso que ainda está ativo, mas as turmas já foram concluídas, não vão aparecer turmas ativas, não é possível ver. Tem que ser tirado o relatório de presença pelo menu relatórios.

@@ -1,0 +1,420 @@
+[28-Apr-2025 15:30:30 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[28-Apr-2025 15:30:30 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[28-Apr-2025 15:30:30 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[07-May-2025 15:55:34 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[07-May-2025 15:55:34 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[07-May-2025 15:55:34 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-May-2025 15:48:24 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-May-2025 15:48:24 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-May-2025 15:48:24 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-May-2025 15:59:41 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-May-2025 15:59:41 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-May-2025 15:59:41 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[13-May-2025 08:43:44 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[13-May-2025 08:43:44 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[13-May-2025 08:43:44 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[13-May-2025 14:40:23 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[13-May-2025 14:40:23 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[13-May-2025 14:40:23 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-May-2025 15:44:27 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-May-2025 15:44:27 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-May-2025 15:44:27 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-May-2025 16:06:43 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-May-2025 16:06:43 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-May-2025 16:06:43 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-May-2025 15:37:05 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-May-2025 15:37:05 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-May-2025 15:37:05 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[26-May-2025 15:59:07 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[26-May-2025 15:59:07 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[26-May-2025 15:59:07 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[29-May-2025 09:43:50 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[29-May-2025 09:43:50 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[29-May-2025 09:43:50 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[29-May-2025 12:42:00 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[29-May-2025 12:42:00 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[29-May-2025 12:42:00 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[02-Jun-2025 09:31:18 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[02-Jun-2025 09:31:18 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[02-Jun-2025 09:31:18 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[05-Jun-2025 08:00:00 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[05-Jun-2025 08:00:00 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[05-Jun-2025 08:00:00 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Jun-2025 13:42:33 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Jun-2025 13:42:33 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Jun-2025 13:42:33 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Jun-2025 14:18:31 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Jun-2025 14:18:31 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Jun-2025 14:18:31 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[11-Jun-2025 08:52:27 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[11-Jun-2025 08:52:27 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[11-Jun-2025 08:52:27 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[11-Jun-2025 11:54:07 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[11-Jun-2025 11:54:07 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[11-Jun-2025 11:54:07 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-Jun-2025 14:38:06 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-Jun-2025 14:38:06 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-Jun-2025 14:38:06 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[16-Jun-2025 15:50:09 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[16-Jun-2025 15:50:09 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[16-Jun-2025 15:50:09 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Jun-2025 10:27:28 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Jun-2025 10:27:28 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Jun-2025 10:27:28 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Jun-2025 15:53:22 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Jun-2025 15:53:22 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Jun-2025 15:53:22 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[18-Jun-2025 16:17:46 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[18-Jun-2025 16:17:46 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[18-Jun-2025 16:17:46 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[26-Jun-2025 16:17:51 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[26-Jun-2025 16:17:51 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[26-Jun-2025 16:17:51 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Jun-2025 14:22:13 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Jun-2025 14:22:13 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Jun-2025 14:22:13 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[01-Jul-2025 16:37:30 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[01-Jul-2025 16:37:30 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[01-Jul-2025 16:37:30 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[04-Jul-2025 09:09:57 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[04-Jul-2025 09:09:57 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[04-Jul-2025 09:09:57 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Jul-2025 14:04:31 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Jul-2025 14:04:31 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Jul-2025 14:04:31 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[14-Jul-2025 08:40:17 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[14-Jul-2025 08:40:17 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[14-Jul-2025 08:40:17 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-Jul-2025 07:06:31 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-Jul-2025 07:06:31 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-Jul-2025 07:06:31 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-Jul-2025 07:33:58 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-Jul-2025 07:33:58 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[15-Jul-2025 07:33:58 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[16-Jul-2025 15:42:19 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[16-Jul-2025 15:42:19 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[16-Jul-2025 15:42:19 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Jul-2025 15:33:54 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Jul-2025 15:33:54 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Jul-2025 15:33:54 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[28-Jul-2025 15:32:42 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[28-Jul-2025 15:32:42 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[28-Jul-2025 15:32:42 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php82/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[30-Jul-2025 15:32:14 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[30-Jul-2025 15:32:14 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[30-Jul-2025 15:32:14 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[07-Aug-2025 15:30:16 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[07-Aug-2025 15:30:16 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[07-Aug-2025 15:30:16 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-Aug-2025 16:35:19 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-Aug-2025 16:35:19 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-Aug-2025 16:35:19 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[18-Aug-2025 16:17:57 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[18-Aug-2025 16:17:57 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[18-Aug-2025 16:17:57 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[19-Aug-2025 07:34:41 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[19-Aug-2025 07:34:41 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[19-Aug-2025 07:34:41 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 07:49:03 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 07:49:03 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 07:49:03 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 07:49:10 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 07:49:10 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 07:49:10 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 09:55:08 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 09:55:08 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 09:55:08 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 15:47:50 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 15:47:50 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 15:47:50 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 15:49:56 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 15:49:56 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[20-Aug-2025 15:49:56 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[08-Sep-2025 10:04:31 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[08-Sep-2025 10:04:31 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[08-Sep-2025 10:04:31 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 09:55:45 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 09:55:45 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 09:55:45 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:08:48 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:08:48 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:08:48 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:09:34 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:09:34 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:09:34 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:09:34 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:09:34 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:09:34 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:09:47 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:09:47 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 11:09:47 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 13:27:30 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 13:27:30 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 13:27:30 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 13:28:06 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 13:28:06 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[22-Sep-2025 13:28:06 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[06-Nov-2025 16:52:28 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[06-Nov-2025 16:52:28 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[06-Nov-2025 16:52:28 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Nov-2025 07:48:02 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Nov-2025 07:48:02 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Nov-2025 07:48:02 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Nov-2025 07:50:51 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Nov-2025 07:50:51 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Nov-2025 07:50:51 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Nov-2025 07:55:53 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Nov-2025 07:55:53 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Nov-2025 07:55:53 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:12:20 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:12:20 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:12:20 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:14:02 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:14:02 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:14:02 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:16:26 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:16:26 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:16:26 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:18:39 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:18:39 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[27-Nov-2025 09:18:39 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[08-Dec-2025 17:14:11 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[08-Dec-2025 17:14:11 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[08-Dec-2025 17:14:11 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Dec-2025 09:51:43 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Dec-2025 09:51:43 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Dec-2025 09:51:43 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Dec-2025 11:59:48 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Dec-2025 11:59:49 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Dec-2025 11:59:49 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Dec-2025 11:59:49 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Dec-2025 11:59:49 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[09-Dec-2025 11:59:49 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Dec-2025 14:00:29 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Dec-2025 14:00:29 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Dec-2025 14:00:29 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Dec-2025 14:05:30 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Dec-2025 14:05:30 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[10-Dec-2025 14:05:30 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[11-Dec-2025 12:00:49 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[11-Dec-2025 12:00:49 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[11-Dec-2025 12:00:49 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-Dec-2025 14:39:00 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-Dec-2025 14:39:00 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[12-Dec-2025 14:39:00 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Dec-2025 14:31:00 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Dec-2025 14:31:00 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[17-Dec-2025 14:31:00 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[07-Jan-2026 07:47:35 America/Fortaleza] PHP Warning:  Undefined array key "BASE_PATH" in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[07-Jan-2026 07:47:35 America/Fortaleza] PHP Warning:  require_once(/conectabd/conexao.php): Failed to open stream: No such file or directory in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3
+[07-Jan-2026 07:47:35 America/Fortaleza] PHP Fatal error:  Uncaught Error: Failed opening required '/conectabd/conexao.php' (include_path='.:/opt/cpanel/ea-php83/root/usr/share/pear') in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php:3
+Stack trace:
+#0 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/assets/css/override.php on line 3

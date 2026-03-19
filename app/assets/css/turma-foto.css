@@ -1,0 +1,146 @@
+/* Estilos para o container de informações */
+.info-container {
+    font-family: Arial, sans-serif;
+    max-width: 400px;
+    margin: 20px auto;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.info-container h2 {
+    text-align: center;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.info-container p {
+    font-size: 1rem;
+    line-height: 1.5;
+    margin: 10px 0;
+    color: #555;
+}
+
+.info-container p strong {
+    color: #000;
+}
+
+/* Estilos para o container dos cards */
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: left;
+    align-items: flex-start;
+    align-content: flex-start;
+    padding: 10px;
+    min-height: 100vh;
+}
+
+.card-container .card {
+    background-color: white;
+    border: 1px solid #d3d3d3;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    flex: 0 0 calc(50% - 10px);
+    max-width: 200px;
+    padding: 10px;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.card-container .card img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.card-container .card h4 {
+    font-size: 0.7rem;
+    color: #333;
+    margin-bottom: 10px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2; /* Adicione esta linha */
+    -webkit-box-orient: vertical;
+    height: 2.4em;
+    line-height: 1.2em;
+}
+
+/* Estilo inicial para os botões */
+.button-container button {
+    background-color: #a7a7a7;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    color: white;
+    font-size: 0.7rem;
+    padding: 4px 7px;
+    cursor: pointer;
+}
+
+.button-container button.selecionado {
+    color: white;
+}
+
+/* Efeito ao passar o mouse */
+.button-container button:hover {
+    background-color: #a9a9a9;
+}
+
+.button-container button.obs-darkblue {
+    background-color: darkblue;
+    color: white;
+}
+
+/* Estilos para telas com largura entre 376px e 499px */
+@media (min-width: 376px) and (max-width: 499px) {
+    .button-container button {
+        font-size: 0.8rem;
+        padding: 5px 9px;
+    }
+}
+
+/* Estilos para telas com largura maior que 499px */
+@media (min-width: 499px) {
+    .card-container .card {
+        max-width: 250px;
+    }
+
+    .button-container button {
+        font-size: 0.9rem;
+        padding: 5px 10px;
+    }
+}
+
+/* Estilos para telas com largura maior que 749px */
+@media (min-width: 749px) {
+    .card-container .card {
+        flex: 1 0 calc(25% - 10px);
+        min-width: 190px;
+    }
+
+    .button-container button {
+        font-size: 0.9rem;
+        padding: 5px 10px;
+    }
+    
+    .card-container .card h4 {
+        font-size: 0.9rem;
+        color: #333;
+        margin-bottom: 10px;
+        white-space: normal;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2; /* Adicione esta linha */
+        -webkit-box-orient: vertical;
+        height: 2.4em;
+        line-height: 1.2em;
+    }
+}

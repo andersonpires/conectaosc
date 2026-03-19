@@ -1,0 +1,20 @@
+[2026-02-25 15:05:40] Cron de contratos iniciado.
+[2026-02-25 15:05:40] Job 1: iniciando processamento para curso 15.
+[2026-02-25 15:06:14] Job 1: envio de e-mail para anderson@iteva.org.br => FALHA
+[2026-02-25 15:06:14] Job 1: concluído com sucesso (24/24).
+[2026-02-25 15:06:14] Cron de contratos finalizado.
+[2026-02-25 15:06:14] Cron de contratos iniciado.
+[2026-02-25 15:06:14] Nenhum job pendente encontrado.
+[2026-02-25 15:20:38] Cron de contratos iniciado.
+[2026-02-25 15:20:38] Nenhum job pendente encontrado.
+[2026-02-25 15:40:57] Cron de contratos iniciado.
+[2026-02-25 15:40:57] Job 2: processando CURSO.
+[2026-02-25 15:41:30] Job 2: envio de e-mail para anderson@iteva.org.br => FALHA
+[2026-02-25 15:41:30] Job 2: concluído com sucesso (24/24).
+[2026-02-25 15:41:30] Job 3: processando CURSO.
+[2026-02-25 15:42:01] Job 3: envio de e-mail para anderson@iteva.org.br => FALHA
+[2026-02-25 15:42:01] Job 3: concluído com sucesso (24/24).
+[2026-02-25 15:42:01] Job 4: processando CURSO.
+[2026-02-25 15:42:34] Job 4: envio de e-mail para anderson@iteva.org.br => FALHA
+[2026-02-25 15:42:34] Job 4: concluído com sucesso (24/24).
+[2026-02-25 15:42:34] Cron de contratos finalizado.

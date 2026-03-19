@@ -1,0 +1,11 @@
+# Garantir que index.php rode primeiro (valida sessão antes do SPA)
+<IfModule mod_dir.c>
+    DirectoryIndex index.php index.html
+</IfModule>
+
+# Impedir acesso direto a index.html (bypass da verificação de profissional_saude)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /conectaosc/clinica/
+    RewriteRule ^index\.html$ index.php [L]
+</IfModule>

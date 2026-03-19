@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Agenda Diária de Consultas</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#54A5A0",
+                        "background-light": "#F8FAFB",
+                        "background-dark": "#0F172A",
+                    },
+                    fontFamily: {
+                        display: ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                font-family: 'Inter', sans-serif;
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+        .ios-shadow {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-slate-100 dark:bg-slate-900 flex justify-center items-center min-h-screen">
+<div class="relative w-full max-w-[390px] h-[844px] bg-background-light dark:bg-background-dark overflow-hidden shadow-2xl rounded-[3rem] border-[8px] border-white dark:border-slate-800 flex flex-col">
+<div class="flex justify-between items-center px-8 pt-4 pb-2 text-slate-900 dark:text-white">
+<span class="text-sm font-semibold">9:41</span>
+<div class="flex gap-1.5 items-center">
+<span class="material-symbols-outlined text-[18px]">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[18px]">wifi</span>
+<span class="material-symbols-outlined text-[18px]">battery_full</span>
+</div>
+</div>
+<header class="px-6 pt-4 pb-2">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2 cursor-pointer group">
+<h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">Fevereiro 2021</h1>
+<span class="material-symbols-outlined text-slate-400 group-hover:text-primary transition-colors">expand_more</span>
+</div>
+<button class="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-all">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</header>
+<div class="px-6 py-4 flex justify-between items-center">
+<div class="flex flex-col items-center gap-2">
+<span class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Hoje</span>
+<div class="w-10 h-10 flex items-center justify-center rounded-full bg-primary text-white font-bold text-sm ios-shadow">18</div>
+</div>
+<div class="flex flex-col items-center gap-2">
+<span class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Ter</span>
+<div class="w-10 h-10 flex items-center justify-center text-slate-800 dark:text-slate-100 font-bold text-sm">19</div>
+</div>
+<div class="flex flex-col items-center gap-2">
+<span class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Qua</span>
+<div class="w-10 h-10 flex items-center justify-center text-slate-800 dark:text-slate-100 font-bold text-sm">20</div>
+</div>
+<div class="flex flex-col items-center gap-2">
+<span class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Qui</span>
+<div class="w-10 h-10 flex items-center justify-center text-slate-800 dark:text-slate-100 font-bold text-sm">21</div>
+</div>
+<div class="flex flex-col items-center gap-2">
+<span class="text-xs font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">Sex</span>
+<div class="w-10 h-10 flex items-center justify-center text-slate-800 dark:text-slate-100 font-bold text-sm">22</div>
+</div>
+</div>
+<div class="h-[1px] w-full bg-slate-100 dark:bg-slate-800"></div>
+<div class="flex-1 overflow-y-auto hide-scrollbar relative pt-4">
+<div class="absolute inset-0 flex flex-col pointer-events-none">
+<div class="h-24 border-b border-slate-50 dark:border-slate-800/50"></div>
+<div class="h-24 border-b border-slate-50 dark:border-slate-800/50"></div>
+<div class="h-24 border-b border-slate-50 dark:border-slate-800/50"></div>
+<div class="h-24 border-b border-slate-50 dark:border-slate-800/50"></div>
+<div class="h-24 border-b border-slate-50 dark:border-slate-800/50"></div>
+</div>
+<div class="relative px-6">
+<div class="flex gap-4 mb-4">
+<span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 w-14 mt-1">07:30</span>
+<div class="flex-1 bg-orange-50 dark:bg-orange-900/20 p-4 rounded-2xl flex items-center gap-4 ios-shadow">
+<div class="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-800/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-orange-500">assignment_ind</span>
+</div>
+<div>
+<h3 class="text-sm font-bold text-orange-700 dark:text-orange-300">Avaliação Inicial</h3>
+<p class="text-[11px] text-orange-600/70 dark:text-orange-400/70 font-medium">07:30 - 08:00 • Carla Middler</p>
+</div>
+</div>
+</div>
+<div class="flex gap-4 mb-8">
+<span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 w-14 mt-1">08:00</span>
+<div class="flex-1 bg-teal-50 dark:bg-teal-900/20 p-4 rounded-2xl flex items-center gap-4 ios-shadow">
+<div class="w-10 h-10 rounded-xl bg-teal-100 dark:bg-teal-800/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-teal-500">physical_therapy</span>
+</div>
+<div>
+<h3 class="text-sm font-bold text-teal-700 dark:text-teal-300">Sessão de Fisioterapia</h3>
+<p class="text-[11px] text-teal-600/70 dark:text-teal-400/70 font-medium">08:00 - 08:30 • Carla Middler</p>
+</div>
+</div>
+</div>
+<div class="flex gap-4 mb-10">
+<span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 w-14 mt-1">08:30</span>
+<div class="flex-1"></div>
+</div>
+<div class="flex gap-4 mb-8">
+<span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 w-14 mt-1">09:00</span>
+<div class="flex-1 bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl flex items-center gap-4 ios-shadow">
+<div class="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-800/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-indigo-500">psychology</span>
+</div>
+<div>
+<h3 class="text-sm font-bold text-indigo-700 dark:text-indigo-300">Consulta Psicológica</h3>
+<p class="text-[11px] text-indigo-600/70 dark:text-indigo-400/70 font-medium">09:00 - 09:30 • Ellie Rogers</p>
+</div>
+</div>
+</div>
+<div class="relative flex items-center gap-4 my-6">
+<div class="bg-primary text-white text-[10px] px-2 py-0.5 rounded-full font-bold z-10">10:10</div>
+<div class="flex-1 h-[2px] bg-primary/30 relative">
+<div class="absolute -left-1 -top-[3px] w-2 h-2 rounded-full bg-primary"></div>
+</div>
+</div>
+<div class="flex gap-4 mb-4">
+<span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 w-14 mt-1">10:00</span>
+<div class="flex-1 bg-cyan-50 dark:bg-cyan-900/20 p-4 rounded-2xl flex items-center gap-4 ios-shadow border border-dashed border-cyan-200 dark:border-cyan-800">
+<div class="w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-800/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-cyan-500">medical_services</span>
+</div>
+<div>
+<h3 class="text-sm font-bold text-cyan-700 dark:text-cyan-300">Retorno</h3>
+<p class="text-[11px] text-cyan-600/70 dark:text-cyan-400/70 font-medium">10:00 - 10:30 • Kamila Kozlowska</p>
+</div>
+</div>
+</div>
+<div class="flex gap-4 pb-20">
+<span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 w-14 mt-1">10:30</span>
+<div class="flex-1"></div>
+</div>
+</div>
+</div>
+<button class="absolute bottom-[92px] right-6 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-transform z-20">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+<nav class="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-t border-slate-100 dark:border-slate-700 px-2 py-2 flex justify-between items-center z-10">
+<button class="flex flex-col items-center flex-1 py-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[26px]">home</span>
+<span class="text-[10px] font-medium mt-1">Início</span>
+</button>
+<button class="flex flex-col items-center flex-1 py-1 text-primary">
+<span class="material-symbols-outlined text-[26px] font-variation-fill">calendar_today</span>
+<span class="text-[10px] font-bold mt-1">Agenda</span>
+</button>
+<button class="flex flex-col items-center flex-1 py-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[26px]">group</span>
+<span class="text-[10px] font-medium mt-1">Pacientes</span>
+</button>
+<button class="flex flex-col items-center flex-1 py-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[26px]">assignment</span>
+<span class="text-[10px] font-medium mt-1">Prontuário</span>
+</button>
+<button class="flex flex-col items-center flex-1 py-1 text-slate-400 dark:text-slate-500 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[26px]">settings</span>
+<span class="text-[10px] font-medium mt-1">Ajustes</span>
+</button>
+</nav>
+<div class="bg-white/95 dark:bg-slate-800/95 flex justify-center pb-2">
+<div class="w-32 h-1 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+</div>
+</div>
+<button class="fixed top-4 right-4 p-3 bg-white dark:bg-slate-800 rounded-full shadow-lg text-slate-600 dark:text-slate-300" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-symbols-outlined block dark:hidden">dark_mode</span>
+<span class="material-symbols-outlined hidden dark:block">light_mode</span>
+</button>
+<style>.font-variation-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+
+</body></html>
