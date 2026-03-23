@@ -1,4 +1,0 @@
-[2026-02-06 13:13:02] HTTP 400 | CPF 22222222222 | Resposta: {"code":400,"message":"CPF inv\u00e1lido"}
-[2026-02-06 13:25:24] HTTP 400 | CPF 22222222222 | Resposta: {"code":400,"message":"CPF inv\u00e1lido"}
-[2026-02-06 13:57:58] HTTP 400 | CPF 22222222222 | Resposta: {"code":400,"message":"CPF inv\u00e1lido"}
-[2026-02-06 14:00:45] HTTP 400 | CPF 22222222222 | Resposta: {"code":400,"message":"CPF inv\u00e1lido"}

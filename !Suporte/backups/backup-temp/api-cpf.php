@@ -1,2 +1,0 @@
-<?php
-$apiKeyCPF = "4aab96615bd18b598d5da7677788a5b06144e9c28deb499861df26caad122df4";
