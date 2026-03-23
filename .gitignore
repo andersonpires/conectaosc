@@ -1,4 +1,6 @@
-temp/
+temp/*
+!temp/*.php
+!temp/.env.example
 !Suporte/
 .vscode/
 backup-versao-1.93/
@@ -10,4 +12,3 @@ tools/
 vendor/
 .codex_root_page.html
 .editorconfig
-.
