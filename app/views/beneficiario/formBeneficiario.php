@@ -2,6 +2,7 @@
 $runtime = require __DIR__ . '/../../../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
+$invertextoApiToken = bootstrap_invertexto_api_token($BASE_para_PATH);
 require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
 require_once $BASE_para_PATH . '/app/models/BeneficiarioModel.php';
 
@@ -230,7 +231,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
         const cpfInput = $('#cpfInput');
         const submitButton = cpfInput.closest('.card').find('button[type="submit"]');
         const statusDiv = $('#cpfStatus');
-        const token = '23083|xIkXyKYtUHwxOrhuZK6ej7ZuxkHbAOPK';
+        const token = <?= json_encode($invertextoApiToken, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
 
         // Inicialização da Máscara
         cpfInput.mask('000.000.000-00', {
@@ -269,7 +270,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                     type: 'GET',
                     dataType: 'json',
                     data: {
-                        token: '23083|xIkXyKYtUHwxOrhuZK6ej7ZuxkHbAOPK', // O jQuery vai codificar o pipe '|' corretamente
+                        token: token, // O jQuery vai codificar o pipe '|' corretamente
                         value: rawCpf, // Voltamos a usar a variavel digitada, em vez do fixo
                         type: 'cpf'
                     },

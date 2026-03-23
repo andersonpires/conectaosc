@@ -5,9 +5,7 @@ $BASE_para_URL = $runtime['base_para_url'];
 
 require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+bootstrap_apply_php_runtime();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($_POST['email']) && !empty($_POST['password'])) {

@@ -1,0 +1,30 @@
+<div class="app-bg">
+  <div class="app-frame">
+    <main class="page-content">
+      <router-outlet></router-outlet>
+    </main>
+
+    <nav class="global-bottom-nav">
+      <a routerLink="/dashboard" routerLinkActive="active">
+        <span class="material-symbols-outlined">home</span>
+        <small>Inicio</small>
+      </a>
+      <a routerLink="/agenda" routerLinkActive="active">
+        <span class="material-symbols-outlined">calendar_month</span>
+        <small>Agenda</small>
+      </a>
+      <a routerLink="/pacientes" routerLinkActive="active">
+        <span class="material-symbols-outlined">group</span>
+        <small>Pacientes</small>
+      </a>
+      <a routerLink="/prontuario" routerLinkActive="active">
+        <span class="material-symbols-outlined">description</span>
+        <small>Prontuario</small>
+      </a>
+      <a routerLink="/atendimento" routerLinkActive="active">
+        <span class="material-symbols-outlined">medical_services</span>
+        <small>Atendimento</small>
+      </a>
+    </nav>
+  </div>
+</div>

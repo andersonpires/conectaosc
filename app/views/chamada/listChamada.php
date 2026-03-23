@@ -5,8 +5,7 @@ $BASE_para_URL = $runtime['base_para_url'];
 if (session_status() !== PHP_SESSION_ACTIVE) {
     ini_set('session.gc_maxlifetime', '86400');
 } // 24 horas
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
+bootstrap_apply_php_runtime();
 
 // Verifica se as variáveis de sessão BASE_para_PATH e BASE_para_URL estão definidas
 if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {

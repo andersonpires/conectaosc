@@ -1,0 +1,2 @@
+<?php
+$apiKey = "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";

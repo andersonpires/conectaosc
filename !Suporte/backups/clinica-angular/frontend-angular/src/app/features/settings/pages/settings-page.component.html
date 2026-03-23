@@ -1,0 +1,61 @@
+@if (loading) {
+  <section class="state-card skeleton-shell">
+    <div class="skeleton-line w-40"></div>
+    <div class="skeleton-line w-85"></div>
+    <div class="skeleton-line w-70"></div>
+  </section>
+} @else if (error) {
+  <section class="state-card error">{{ error }}</section>
+} @else {
+  <div class="page">
+    <header class="top-head">
+      <div class="spacer"></div>
+      <h1>Configuracoes</h1>
+      <button type="button"><span class="material-symbols-outlined">more_horiz</span></button>
+    </header>
+
+    <main>
+      <section class="profile-card">
+        <div class="avatar-wrap">
+          <div class="avatar"></div>
+          <span class="verified material-symbols-outlined">verified</span>
+        </div>
+        <div>
+          <h2>Equipe Clinica</h2>
+          <p>Gestao de preferencias e perfil</p>
+          <button type="button">Editar Perfil</button>
+        </div>
+      </section>
+
+      <section class="group">
+        <a><span class="material-symbols-outlined">medical_services</span><b>Dados da Clinica</b><i class="material-symbols-outlined">chevron_right</i></a>
+        <a><span class="material-symbols-outlined">credit_card</span><b>Gestao de Convenios</b><i class="material-symbols-outlined">chevron_right</i></a>
+        <a><span class="material-symbols-outlined">schedule</span><b>Horarios de Atendimento</b><i class="material-symbols-outlined">chevron_right</i></a>
+      </section>
+
+      <section class="group">
+        <a><span class="material-symbols-outlined">notifications_active</span><b>Notificacoes</b><i class="material-symbols-outlined">chevron_right</i></a>
+        <a><span class="material-symbols-outlined">lock</span><b>Seguranca e Senha</b><i class="material-symbols-outlined">chevron_right</i></a>
+      </section>
+
+      <section class="group danger">
+        <a><span class="material-symbols-outlined">logout</span><b>Sair da Conta</b></a>
+      </section>
+
+      <section class="team">
+        <h3>Profissionais de saude</h3>
+        @if (!professionals.length) {
+          <p class="empty">Nenhum profissional encontrado.</p>
+        } @else {
+          <ul>
+            @for (professional of professionals; track professional.id) {
+              <li><span>{{ professional.nome }}</span><small>#{{ professional.id }}</small></li>
+            }
+          </ul>
+        }
+      </section>
+
+      <footer>Versao 2.4.0 (Build 82)</footer>
+    </main>
+  </div>
+}

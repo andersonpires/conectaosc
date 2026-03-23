@@ -3,10 +3,15 @@ $runtime = require __DIR__ . '/../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
 require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
-$apikeyTwilio = null;
-$twilioApiKeyPath = $BASE_para_PATH . '/temp/apikeyTwilio.php';
-if (is_file($twilioApiKeyPath)) {
-    require_once $twilioApiKeyPath;
+$apikeyTwilio = bootstrap_env('TWILIO_API_CREDENTIALS', '');
+$twilioAccountSid = bootstrap_env('TWILIO_ACCOUNT_SID', '');
+$twilioAuthToken = bootstrap_env('TWILIO_AUTH_TOKEN', '');
+$twilioFromNumber = bootstrap_env('TWILIO_FROM_NUMBER', '+14632596685');
+if ($apikeyTwilio === '' && $twilioAccountSid !== '' && $twilioAuthToken !== '') {
+    $apikeyTwilio = $twilioAccountSid . ':' . $twilioAuthToken;
+}
+if ($twilioAccountSid === '' && str_contains($apikeyTwilio, ':')) {
+    [$twilioAccountSid] = explode(':', $apikeyTwilio, 2);
 }
 require_once $BASE_para_PATH . '/app/views/beneficiario/versatilis.php';
 
@@ -15,7 +20,7 @@ class BeneficiarioModel
 
     public static function getRead($cpf = null, $id = null)
     {
-        global $pdo;
+        global $pdo, $apikeyTwilio, $twilioAccountSid, $twilioFromNumber;
 
         if (!empty($cpf)) {
             $stmt = $pdo->prepare("
@@ -109,8 +114,13 @@ class BeneficiarioModel
             }
 
             // Dados do SMS
-            $url = "https://api.twilio.com/2010-04-01/Accounts/AC584386c1952d54096108ff40a255c933/Messages.json";
-            $from = "+14632596685";
+            if ($twilioAccountSid === '') {
+                error_log('TWILIO_ACCOUNT_SID não configurado.');
+                return $idInserido;
+            }
+
+            $url = "https://api.twilio.com/2010-04-01/Accounts/{$twilioAccountSid}/Messages.json";
+            $from = $twilioFromNumber;
             $body = "Olá, " . $dadosFiltrados['Nome'] . ", temos uma ótima notícia: seu cadastro no Iteva foi um sucesso!";
 
             // Prepara os dados para envio

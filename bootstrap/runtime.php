@@ -14,49 +14,127 @@ if (!function_exists('bootstrap_runtime')) {
         $envCandidates = [
             $basePath . DIRECTORY_SEPARATOR . '.env',
             $basePath . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . '.env',
+            $basePath . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR . 'invertexto.env',
         ];
 
-        $lines = null;
         foreach ($envCandidates as $envPath) {
             if (!is_file($envPath) || !is_readable($envPath)) {
                 continue;
             }
 
-            $parsed = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-            if (is_array($parsed)) {
-                $lines = $parsed;
-                break;
-            }
-        }
-
-        if (!is_array($lines)) {
-            return;
-        }
-
-        foreach ($lines as $line) {
-            $line = trim((string)$line);
-            if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
+            $lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if (!is_array($lines)) {
                 continue;
             }
 
-            [$name, $value] = explode('=', $line, 2);
-            $name = trim((string)$name);
-            $value = trim((string)$value);
-            if ($name === '') {
-                continue;
-            }
+            foreach ($lines as $line) {
+                $line = trim((string)$line);
+                if ($line === '' || str_starts_with($line, '#') || !str_contains($line, '=')) {
+                    continue;
+                }
 
-            $len = strlen($value);
-            if ($len >= 2 && (($value[0] === '"' && $value[$len - 1] === '"') || ($value[0] === "'" && $value[$len - 1] === "'"))) {
-                $value = substr($value, 1, -1);
-            }
+                [$name, $value] = explode('=', $line, 2);
+                $name = trim((string)$name);
+                $value = trim((string)$value);
+                if ($name === '') {
+                    continue;
+                }
 
-            if (getenv($name) === false) {
-                putenv($name . '=' . $value);
-                $_ENV[$name] = $value;
-                $_SERVER[$name] = $value;
+                $len = strlen($value);
+                if ($len >= 2 && (($value[0] === '"' && $value[$len - 1] === '"') || ($value[0] === "'" && $value[$len - 1] === "'"))) {
+                    $value = substr($value, 1, -1);
+                }
+
+                if (getenv($name) === false) {
+                    putenv($name . '=' . $value);
+                    $_ENV[$name] = $value;
+                    $_SERVER[$name] = $value;
+                }
             }
         }
+    }
+
+    function bootstrap_env(string $name, string $default = ''): string
+    {
+        $value = getenv($name);
+        if ($value !== false) {
+            return trim((string)$value);
+        }
+
+        if (array_key_exists($name, $_ENV)) {
+            return trim((string)$_ENV[$name]);
+        }
+
+        if (array_key_exists($name, $_SERVER)) {
+            return trim((string)$_SERVER[$name]);
+        }
+
+        return $default;
+    }
+
+    function bootstrap_env_bool(string $name, bool $default = false): bool
+    {
+        $value = bootstrap_env($name, '');
+        if ($value === '') {
+            return $default;
+        }
+
+        $parsed = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        return $parsed ?? $default;
+    }
+
+    function bootstrap_is_production(): bool
+    {
+        $appEnv = strtolower(bootstrap_env('APP_ENV', ''));
+        if ($appEnv !== '') {
+            return in_array($appEnv, ['prod', 'production'], true);
+        }
+
+        $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+        if ($host === '') {
+            return false;
+        }
+
+        return !str_contains($host, 'localhost') && !str_starts_with($host, '127.0.0.1');
+    }
+
+    function bootstrap_is_debug(): bool
+    {
+        $appDebug = bootstrap_env('APP_DEBUG', '');
+        if ($appDebug !== '') {
+            return bootstrap_env_bool('APP_DEBUG', false);
+        }
+
+        return !bootstrap_is_production();
+    }
+
+    function bootstrap_apply_php_runtime(): void
+    {
+        $displayErrors = bootstrap_is_debug() ? '1' : '0';
+
+        error_reporting(E_ALL);
+        ini_set('display_errors', $displayErrors);
+        ini_set('display_startup_errors', $displayErrors);
+        ini_set('log_errors', '1');
+
+        if (!bootstrap_is_debug()) {
+            ini_set('html_errors', '0');
+        }
+    }
+
+    function bootstrap_database_config(?string $basePath = null): array
+    {
+        if ($basePath !== null && $basePath !== '') {
+            bootstrap_load_env_file($basePath);
+        }
+
+        return [
+            'host' => bootstrap_env('DB_HOST', '127.0.0.1'),
+            'port' => bootstrap_env('DB_PORT', '3306'),
+            'name' => bootstrap_env('DB_NAME', ''),
+            'user' => bootstrap_env('DB_USER', ''),
+            'pass' => bootstrap_env('DB_PASS', ''),
+        ];
     }
 
     function bootstrap_session_name(): string
@@ -68,6 +146,7 @@ if (!function_exists('bootstrap_runtime')) {
     {
         $basePath = realpath(__DIR__ . '/..') ?: dirname(__DIR__);
         bootstrap_load_env_file($basePath);
+        bootstrap_apply_php_runtime();
         $projectSlug = '/' . basename($basePath);
         $sessionCookiePath = $projectSlug !== '' ? $projectSlug : '/';
 
@@ -128,7 +207,7 @@ if (!function_exists('bootstrap_runtime')) {
 
         $baseUrl = rtrim($baseUrl, '/');
 
-        $publicBaseUrl = trim((string)(getenv('APP_PUBLIC_BASE_URL') ?: ''));
+        $publicBaseUrl = bootstrap_env('APP_PUBLIC_BASE_URL', '');
         if ($publicBaseUrl === '') {
             $host = (string)($_SERVER['HTTP_HOST'] ?? '');
             if ($host !== '') {
@@ -140,20 +219,38 @@ if (!function_exists('bootstrap_runtime')) {
         }
         $publicBaseUrl = rtrim($publicBaseUrl, '/');
 
-        $sharedAssetsSlug = (string)(getenv('ASSETS_APP_SLUG') ?: '/conectaosc');
+        $sharedAssetsSlug = bootstrap_env('ASSETS_APP_SLUG', '/conectaosc');
         $sharedAssetsSlug = '/' . trim(str_replace('\\', '/', $sharedAssetsSlug), '/');
         if ($sharedAssetsSlug === '//') {
             $sharedAssetsSlug = '/conectaosc';
         }
 
         $currentHost = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
-        $remoteAssetsBaseUrl = (string)(getenv('ASSETS_BASE_URL') ?: '');
+        $publicOrigin = bootstrap_env('APP_PUBLIC_ORIGIN', '');
+        if ($publicOrigin === '') {
+            $publicOriginFromBase = bootstrap_env('APP_PUBLIC_BASE_URL', '');
+            if ($publicOriginFromBase !== '') {
+                $baseParts = parse_url($publicOriginFromBase);
+                $baseScheme = (string)($baseParts['scheme'] ?? '');
+                $baseHost = (string)($baseParts['host'] ?? '');
+                $basePort = isset($baseParts['port']) ? (int)$baseParts['port'] : 0;
+                if ($baseScheme !== '' && $baseHost !== '') {
+                    $publicOrigin = $baseScheme . '://' . $baseHost . ($basePort > 0 ? ':' . $basePort : '');
+                }
+            }
+        }
+        if ($publicOrigin !== '' && !preg_match('#^https?://#i', $publicOrigin)) {
+            $publicOrigin = 'https://' . ltrim($publicOrigin, '/');
+        }
+        $publicOrigin = rtrim($publicOrigin, '/');
+
+        $remoteAssetsBaseUrl = bootstrap_env('ASSETS_BASE_URL', '');
         if ($remoteAssetsBaseUrl === '') {
             $isLocalHost = $currentHost === ''
                 || str_starts_with($currentHost, 'localhost')
                 || str_starts_with($currentHost, '127.0.0.1');
-            if ($isLocalHost) {
-                $remoteAssetsBaseUrl = 'https://iteva.com.br' . $sharedAssetsSlug;
+            if ($isLocalHost && $publicOrigin !== '') {
+                $remoteAssetsBaseUrl = $publicOrigin . $sharedAssetsSlug;
             }
         }
         $remoteAssetsBaseUrl = rtrim($remoteAssetsBaseUrl, '/');
@@ -319,10 +416,29 @@ if (!function_exists('bootstrap_runtime')) {
         }
 
         $candidates = [
-            getenv('OPENAI_API_KEY') ?: '',
-            getenv('API_OPENAI_KEY') ?: '',
-            $_SERVER['OPENAI_API_KEY'] ?? '',
-            $_ENV['OPENAI_API_KEY'] ?? '',
+            bootstrap_env('OPENAI_API_KEY', ''),
+            bootstrap_env('API_OPENAI_KEY', ''),
+        ];
+
+        foreach ($candidates as $candidate) {
+            $candidate = trim((string)$candidate);
+            if (strlen($candidate) >= 20) {
+                return $candidate;
+            }
+        }
+
+        return '';
+    }
+
+    function bootstrap_invertexto_api_token(?string $basePath = null): string
+    {
+        if ($basePath !== null && $basePath !== '') {
+            bootstrap_load_env_file($basePath);
+        }
+
+        $candidates = [
+            bootstrap_env('INVERTEXTO_API_TOKEN', ''),
+            bootstrap_env('INVERTEXTO_TOKEN', ''),
         ];
 
         foreach ($candidates as $candidate) {

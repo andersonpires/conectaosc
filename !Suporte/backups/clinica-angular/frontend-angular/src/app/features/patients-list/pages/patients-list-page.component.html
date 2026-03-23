@@ -1,0 +1,55 @@
+@if (loading) {
+  <section class="state-card skeleton-shell">
+    <div class="skeleton-line w-40"></div>
+    <div class="skeleton-line w-85"></div>
+    <div class="skeleton-line w-70"></div>
+  </section>
+} @else if (error) {
+  <section class="state-card error">{{ error }}</section>
+} @else {
+  <div class="page">
+    <header>
+      <div class="head-line">
+        <div>
+          <p>Clinica Medica</p>
+          <h1>Lista de Pacientes</h1>
+        </div>
+        <div class="avatar"></div>
+      </div>
+
+      <div class="search">
+        <span class="material-symbols-outlined">search</span>
+        <input [(ngModel)]="search" (keyup.enter)="onSearch()" placeholder="Buscar por nome ou ID..." type="text" />
+      </div>
+    </header>
+
+    <section class="filters">
+      <button [ngClass]="{ active: filter === 'todos' }" (click)="setFilter('todos')" type="button">Todos</button>
+      <button [ngClass]="{ active: filter === 'recentes' }" (click)="setFilter('recentes')" type="button">Recentes</button>
+      <button [ngClass]="{ active: filter === 'retornos' }" (click)="setFilter('retornos')" type="button">Retornos</button>
+      <button [ngClass]="{ active: filter === 'criticos' }" (click)="setFilter('criticos')" type="button">Criticos</button>
+    </section>
+
+    <main>
+      @if (!patients.length) {
+        <article class="empty">Nenhum paciente encontrado.</article>
+      } @else {
+        @for (patient of patients; track patient.IdUsuario) {
+          <article (click)="openPatient(patient.IdUsuario)">
+            <div class="photo" [attr.data-letter]="patient.Nome.slice(0, 1) || 'P'"></div>
+            <div class="info">
+              <h3>{{ patient.Nome }}</h3>
+              <p>
+                <span class="material-symbols-outlined">call</span>
+                {{ patient.WhatsApp || patient.Telefone || 'Contato nao informado' }}
+              </p>
+            </div>
+            <button type="button"><span class="material-symbols-outlined">chevron_right</span></button>
+          </article>
+        }
+      }
+    </main>
+
+    <button class="fab" type="button"><span class="material-symbols-outlined">add</span></button>
+  </div>
+}

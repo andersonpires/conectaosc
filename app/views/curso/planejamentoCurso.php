@@ -653,7 +653,7 @@ if ($idCurso > 0) {
             const idPlanoAtual = Number(planoSelecionado?.IdPlanoCurso || 0);
 
             const turmasDisponiveis = turmasCursoComPlano.filter((t) => !Number(t.IdPlanoCurso || 0));
-            const turmasVinculadasAoPlano = turmasCursoComPlano.filter((t) => Number(t.IdPlanoCurso || 0) === idPlanoAtual);
+            const turmasVinculadas = turmasCursoComPlano.filter((t) => Number(t.IdPlanoCurso || 0) > 0);
 
             selectVinculo.innerHTML = turmasDisponiveis.map((t) => {
                 const ativa = Number(t.Habilitado || 0) === 1;
@@ -661,10 +661,11 @@ if ($idCurso > 0) {
                 return `<option value="${Number(t.IdTurma)}">${esc(t.NomeTurma)}${sufixo}</option>`;
             }).join('');
 
-            selectDesvinculo.innerHTML = turmasVinculadasAoPlano.map((t) => {
+            selectDesvinculo.innerHTML = turmasVinculadas.map((t) => {
                 const ativa = Number(t.Habilitado || 0) === 1;
                 const sufixo = ativa ? '' : ' (Concluída/Inativa)';
-                return `<option value="${Number(t.IdTurma)}">${esc(t.NomeTurma)}${sufixo}</option>`;
+                const planoInfo = t.NomePlano ? ` - ${esc(t.NomePlano)}${t.Versao ? ` (v${esc(t.Versao)})` : ''}` : '';
+                return `<option value="${Number(t.IdTurma)}">${esc(t.NomeTurma)}${planoInfo}${sufixo}</option>`;
             }).join('');
 
             if (turmaVinculoTomSelect) turmaVinculoTomSelect.destroy();
@@ -677,7 +678,7 @@ if ($idCurso > 0) {
                 maxOptions: 500
             });
             turmaDesvinculoTomSelect = new TomSelect('#selectTurmaDesvinculo', {
-                placeholder: idPlanoAtual > 0 ? 'Selecione turma(s) para desvincular deste plano' : 'Selecione um plano',
+                placeholder: idPlanoAtual > 0 ? 'Selecione turma(s) com plano para desvincular' : 'Selecione turma(s) com plano',
                 plugins: ['remove_button'],
                 create: false,
                 maxOptions: 500
@@ -692,6 +693,16 @@ if ($idCurso > 0) {
             const result = await apiFetch(`/cursos/${ID_CURSO}/turmas-com-plano`);
             turmasCursoComPlano = result.data || [];
             atualizarSelectsTurmaVinculo();
+        }
+
+        async function recarregarSelectsTurma() {
+            try {
+                await carregarTurmasCurso();
+                if (turmaVinculoTomSelect) turmaVinculoTomSelect.clear(true);
+                if (turmaDesvinculoTomSelect) turmaDesvinculoTomSelect.clear(true);
+            } catch (err) {
+                console.warn('Falha ao recarregar selects de turma.', err);
+            }
         }
 
         async function persistirOrdemAulas({ silencioso = false } = {}) {
@@ -891,8 +902,6 @@ if ($idCurso > 0) {
                 const ok = results.filter((r) => r.status === 'fulfilled').length;
                 const falhas = results.length - ok;
                 await carregarPlanos();
-                await carregarTurmasCurso();
-                if (turmaVinculoTomSelect) turmaVinculoTomSelect.clear(true);
                 if (falhas === 0) {
                     toastOk(`Plano vinculado com sucesso em ${ok} turma(s).`);
                     showStatus(`Plano vinculado com sucesso em ${ok} turma(s).`, 'success');
@@ -903,6 +912,8 @@ if ($idCurso > 0) {
             } catch (err) {
                 toastErr(err.message);
                 showStatus(err.message, 'danger');
+            } finally {
+                await recarregarSelectsTurma();
             }
         });
 
@@ -936,9 +947,7 @@ if ($idCurso > 0) {
                 })));
                 const sucesso = results.filter((r) => r.status === 'fulfilled').length;
                 const falhas = results.length - sucesso;
-                await carregarTurmasCurso();
                 await carregarPlanos();
-                if (turmaDesvinculoTomSelect) turmaDesvinculoTomSelect.clear(true);
                 if (falhas === 0) {
                     toastOk(`Desvínculo concluído em ${sucesso} turma(s).`);
                     showStatus(`Desvínculo concluído em ${sucesso} turma(s).`, 'success');
@@ -949,6 +958,8 @@ if ($idCurso > 0) {
             } catch (err) {
                 toastErr(err.message);
                 showStatus(err.message, 'danger');
+            } finally {
+                await recarregarSelectsTurma();
             }
         });
 

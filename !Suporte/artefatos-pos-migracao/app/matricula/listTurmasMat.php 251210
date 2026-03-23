@@ -1,0 +1,631 @@
+<?php
+// Inicialização da sessão e configuração de timezone
+session_set_cookie_params(['httponly' => true]);
+session_start();
+session_regenerate_id(true);
+date_default_timezone_set('America/Sao_Paulo');
+
+// Verifica se as variáveis de sessão BASE_PATH e BASE_URL estão definidas
+if (!isset($_SESSION['BASE_PATH']) || !isset($_SESSION['BASE_URL'])) {
+    // Salva a URL atual para redirecionar o usuário após o login
+    $redirect_url = urlencode($_SERVER['REQUEST_URI']); // Codifica o endereço atual
+    header("Location:" . dirname($_SERVER['SERVER_NAME']) . "/../../login.php?redirect=$redirect_url"); // Redireciona para o login com o endereço de volta via GET
+    exit(); // Garante que o código abaixo não será executado
+}
+require_once $_SESSION['BASE_PATH'] . '/conectabd/conexao.php';
+?>
+<?php
+if (isset($_GET['turma'])) {
+    $IdTurma = $_GET['turma'];
+    if (isset($_GET['ativo'])) {
+        $Habilitado = $_GET['ativo'];
+    } else {
+        $Habilitado = 1;
+    }
+    if (isset($_GET['IdMatricula'])) {
+        $dataAtual = date('Y-m-d'); // ou 'Y-m-d H:i:s' se o campo for datetime
+        $Matricula = $_GET['IdMatricula'];
+        $sql2 = "UPDATE tbMatricula 
+         SET Habilitado = 1, DtMudaHabilitado = ?, UserMudaHabilitado = ? 
+         WHERE IdMatricula = ?";
+        $stmt = $pdo->prepare($sql2);
+        $stmt->execute([$dataAtual, $_SESSION['Cod'], $Matricula]);
+    }
+} else {
+    die();
+}
+
+?>
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <?php require_once $_SESSION['BASE_PATH'] . '/template/header.php'; ?>
+    <style>
+        .avatar-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .avatar-group .avatar {
+            margin: 0 -0.3rem;
+            border: 2px solid #fff;
+        }
+
+        .avatar-group .avatar-xs {
+            width: 30px;
+            height: 30px;
+            font-size: 20px;
+        }
+
+        .avatar-group .rounded-circle {
+            border-radius: 50%;
+        }
+
+        .avatar {
+            z-index: 0;
+            transform: scale(1);
+            transition: transform 0.2s ease-in-out, z-index 0.2s ease-in-out;
+            position: relative;
+            /* Ensure z-index works properly */
+        }
+
+        .avatar:hover {
+            z-index: 10;
+            /* Bring to front */
+            transform: scale(5);
+        }
+
+        .avatar-group .avatar {
+            z-index: 0;
+            transform: scale(1);
+            transition: transform 0.2s ease-in-out, z-index 0.2s ease-in-out;
+            position: relative;
+            /* Ensure z-index works properly */
+        }
+
+        .avatar-group .avatar:hover {
+            z-index: 10;
+            /* Bring to front */
+            transform: scale(5);
+        }
+
+
+        .img-cover {
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            z-index: 9999;
+            display: block;
+        }
+
+        .loader img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .table {
+            display: none;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        #search-input {
+            flex: 1;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        #clear-search {
+            padding: 8px 12px;
+            font-size: 14px;
+            background-color: #f44336;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        #clear-search:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+<script src="//code.jquery.com/jquery-3.2.1.min.js"></script>
+<script src="<?php echo $_SESSION['BASE_URL']; ?>/assets/js/jquery.dataTables.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#minhaTabela').DataTable({
+            "order": [], // Desativa a ordenação inicial
+            "pageLength": 50,
+            language: {
+                url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json"
+            }
+        });
+    });
+</script>
+
+<body>
+    <div class="wrapper">
+        <?php require_once $_SESSION['BASE_PATH'] . '/template/menu.php'; ?>
+
+        <div class="main">
+            <?php require_once $_SESSION['BASE_PATH'] . '/template/topo.php'; ?>
+
+            <main class="content">
+                <h4 class="h3 mb-3" id="titulo">Lista de Alunos da turma </h4>
+                <?php
+
+                // Lista com nome cursos
+                $listaCursos = [];
+                $sqlcurso = "SELECT IdCurso, NomeCurso FROM tbCurso";
+                $stmt = $pdo->prepare($sqlcurso);
+                $stmt->execute();
+                $listaCursos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                // Lista com nome cursos
+                $listaTurmas = [];
+                $sqlturma = "SELECT IdTurma, NomeTurma FROM tbTurma";
+                $stmt = $pdo->prepare($sqlturma);
+                $stmt->execute();
+                $listaTurmas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                // Obter a URL atual
+                $msg = "";
+                $url = $_SERVER['REQUEST_URI'];
+                $urlDecoded = urldecode($url);
+                if (strpos($urlDecoded, '=') !== false) {
+                    $params = explode('&', $urlDecoded);
+                    $tipomsg = explode('?', $params[0])[1]; // Pega o valor após o '?'
+                    $tipomsg = explode('=', $tipomsg)[0]; // Pega o valor antes do '='
+
+                    $msg = explode('=', $params[0])[1]; // Pega o valor após o '='
+                    // Extrair o valor do parâmetro "msg" (assumindo que ele seja o primeiro)
+                    $msg = explode('=', $params[0])[1]; // Pega o valor após o '='
+                }
+
+                // Exibir a mensagem como variável
+                if ($msg != "") {
+                    if ($tipomsg == "msg") {
+                ?>
+                        <div class="alert alert-success" role="alert">
+                            <?php echo $msg ?>
+                        </div>
+                    <?php
+                    } elseif ($tipomsg == "erro") {
+                    ?>
+                        <div class="alert alert-danger" role="alert">
+                            <?php echo $msg ?>
+                        </div>
+                <?php
+                    }
+                }
+                ?>
+                <div id="loader" class="loader">
+                    <img src="https://www.blogson.com.br/wp-content/uploads/2017/10/loading-gif-transparent-10.gif" width="150" alt="Carregando...">
+                </div>
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <a href="listTurmasMat.php?turma=<?php echo $IdTurma ?>&ativo=<?php echo ($Habilitado == 0) ? 1 : 0; ?>" class="btn btn-primary mb-3" id="novoAluno"><?php echo ($Habilitado == 0) ? 'Mostrar somente matrículas ativas' : 'Mostrar matrículas ativas e inativas'; ?></a>
+                            <div class="table-responsive">
+                                <table id="minhaTabela" class="table table-striped table-hover">
+                                    <thead>
+                                        <tr>
+                                            <!-- <th scope="col" style="width: 5%;">*</th> -->
+                                            <th scope="col">Nº</th>
+                                            <th scope="col">Foto</th>
+                                            <th scope="col">Aluno</th>
+                                            <th class="text-center" scope="col">Situação</th>
+                                            <th scope="col">Nascimento</th>
+                                            <th scope="col">WhatsApp</th>
+                                            <th scope="col">Telefone</th>
+                                            <th scope="col">Data Matrícula</th>
+                                            <th scope="col">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php
+                                        $sql = "SELECT a.IdUsuario, a.Nome AS NomeAluno, a.Foto, a.Nascimento, a.WhatsApp, a.Telefone, c.NomeCurso, t.NomeTurma, t.IdTurma, t.Local, t.Municipio, t.Habilitado, m.IdMatricula, m.vData, c.IdCurso, m.Habilitado
+                                        FROM tbMatricula m 
+                                        JOIN tbAluno a ON m.IdUsuario = a.IdUsuario 
+                                        JOIN tbCurso c ON m.IdCurso = c.IdCurso 
+                                        JOIN tbTurma t ON m.IdTurma = t.IdTurma 
+                                        WHERE t.IdTurma = ? ";
+                                        if ($Habilitado == 1) {
+                                            $sql .= "AND m.Habilitado = 1 ";
+                                        }
+                                        $sql .= "ORDER BY NomeAluno";
+
+                                        $stmt = $pdo->prepare($sql);
+                                        $stmt->execute([$IdTurma]); // Vincular o parâmetro com o valor IdTurma
+                                        $busca = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                                        $index = 1;
+                                        foreach ($busca as $dados) {
+                                            //Dados Listagem Simples
+                                            $Foto = $dados['Foto'];
+                                            $IdMatricula = $dados['IdMatricula'];
+                                            $IdUsuario = $dados['IdUsuario'];
+                                            $Nome = $dados['NomeAluno'];
+                                            $Ativo = $dados['Habilitado'];
+                                            $Nascimento = $dados['Nascimento'];
+                                            $WhatsApp = $dados['WhatsApp'];
+                                            $Telefone = $dados['Telefone'];
+                                            $Municipio = $dados['Municipio'];
+                                            $nomeCurso = $dados['NomeCurso'];
+                                            $nomeTurma = $dados['NomeTurma'];
+                                            $IdTurma = $dados['IdTurma'];
+                                            $IdCurso = $dados['IdCurso'];
+                                            $Local = $dados['Local'];
+                                            $Habilitado = $dados['Habilitado'];
+
+                                            $Data = $dados['vData'];
+
+                                        ?>
+                                            <tr>
+                                                <td><?php echo $index; ?></td>
+                                                <td>
+                                                    <image src="<?php echo $_SESSION['BASE_URL']; ?>/assets/img/fotos/<?php echo $Foto ?>" class="rounded-circle img-cover" width='40px' height='40px'>
+                                                </td>
+                                                <td><?php echo $Nome ?> (Mat. <?php echo $IdMatricula ?>)</td>
+                                                <td><?php echo ($Habilitado == 1) ? '<span class="badge bg-success text-center d-flex justify-content-center">Ativo</span>' : '<span class="badge bg-secondary text-center d-flex justify-content-center">Inativo</span>'; ?></td>
+                                                <td><?php echo $Nascimento ?></td>
+                                                <td><?php echo $WhatsApp ?></td>
+                                                <td><?php echo $Telefone ?></td>
+                                                <td><?php echo $Data ?></td>
+                                                <td>
+                                                    <?php
+                                                    if ($_SESSION['Tipo'] == "Educador" && $Habilitado == 1) {
+                                                        // O usuário é Educador, desativar botões
+                                                        echo '<button type="button" class="btn btn-primary btn-disabled" disabled>Desabilitado</button>';
+                                                    } elseif ($_SESSION['Tipo'] != "Educador" && $Habilitado == 1) {
+                                                        // O usuário não é Educador, exibir botões
+                                                    ?>
+                                                        <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editarModal" data-fotoaluno='<?php echo $_SESSION['BASE_URL'] ?>/assets/img/fotos/<?php echo $Foto ?>' data-nomealuno='<?php echo $Nome ?>' data-idaluno='<?php echo $IdUsuario ?>' data-idmatricula="<?php echo $IdMatricula ?>" data-curso="<?php echo $IdCurso ?>" data-idturma="<?php echo $IdTurma ?>" data-municipio="<?php echo $Municipio ?>" data-datamatricula="<?php echo $Data ?>">
+                                                            <i class="fa-solid fa-pen-to-square" data-feather="edit-3"></i>
+                                                        </button>
+
+                                                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#excluirModal" data-fotoaluno='<?php echo $_SESSION['BASE_URL'] ?>/assets/img/fotos/<?php echo $Foto ?>' data-nomealuno='<?php echo $Nome ?>' data-idaluno='<?php echo $IdUsuario ?>' data-idmatricula="<?php echo $IdMatricula ?>" data-curso="<?php echo $IdCurso ?>" data-nomecurso="<?php echo $nomeCurso ?>" data-idturma="<?php echo $IdTurma ?>" data-nometurma="<?php echo $nomeTurma ?>" data-municipio="<?php echo $Municipio ?>" data-datamatricula="<?php echo $Data ?>">
+                                                            <i class="fa-solid fa-trash" data-feather="trash-2"></i>
+                                                        </button>
+                                                    <?php
+                                                    } elseif ($_SESSION['Tipo'] != "Educador" && $Habilitado == 0) {
+                                                        echo '<a href="listTurmasMat.php?turma=' . $IdTurma . '&ativo=' . $Habilitado . '&IdMatricula=' . $IdMatricula . '" class="btn btn-primary btn-sm" id="novoAluno"><i class="fa-solid fa-pen-to-square" data-feather="edit-3"></i> ativar</a>';
+                                                    }
+                                                    ?>
+
+                                                </td>
+                                            </tr>
+                                        <?php $index++;
+                                        }; ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade" id="editarModal" tabindex="-1" aria-labelledby="exampleModalLabel" style="display: none;">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <image id="fotoaluno" src="" class="rounded-circle img-cover" width='40px' height='40px'>
+                                    <h1 class="modal-title" id="exampleModalLabel">Editar matrícula</h1>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form action="alteraMatricula.php?turma=<?php echo $IdTurma; ?>&ativo=<?php echo $Habilitado; ?>" method="post" enctype="multipart/form-data">
+                                    <div class="mb-3">
+                                        <label for="exampleFormControlInput1" class="form-label">Nome aluno</label>
+                                        <input type="text" class="form-control" id="nomealuno" name='nomealuno' required autocomplete="off" readonly>
+                                        <input type="hidden" name="idaluno" id="idaluno">
+                                        <input type="hidden" name="idmatricula" id="idmatricula">
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-5">
+                                            <label for="exampleFormControlInput1" class="form-label">Curso</label>
+                                            <select class="form-select" aria-label="Selecione" name='curso' id='curso'>
+                                                <?php
+                                                foreach ($listaCursos as $curso) {
+                                                    echo '<option value="' . $curso['IdCurso'] . '"' . $IdCurso . ' >' . $curso['NomeCurso'] . '</option>';
+                                                }
+                                                ?>
+                                            </select>
+                                        </div>
+                                        <div class="col-7">
+                                            <label for="exampleFormControlInput1" class="form-label">Turma</label>
+                                            <select class="form-select" aria-label="Selecione" name='idturma' id='idturma'>
+                                                <?php
+                                                foreach ($listaTurmas as $turma) {
+                                                    echo '<option value="' . $turma['IdTurma'] . '"' . $IdCurso . ' >' . $turma['NomeTurma'] . '</option>';
+                                                }
+                                                ?>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-7">
+                                            <label for="exampleFormControlInput1" class="form-label">Municipio</label>
+                                            <input type="text" class="form-control" id="municipio" name='municipio' autocomplete="off" readonly>
+                                        </div>
+                                        <div class="col-5">
+                                            <label for="exampleFormControlInput1" class="form-label">Data matrícula</label>
+                                            <input type="text" class="form-control" id="datamatricula" name='datamatricula' autocomplete="off">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-success">Salvar alterações</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal fade" id="excluirModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <image id="fotoaluno" src="" class="rounded-circle img-cover" width='40px' height='40px'>
+                                    <h1 class="modal-title" id="exampleModalLabel">Excluir matrícula</h1>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form action="excluirMatricula.php?turma=<?php echo $IdTurma; ?>" method="post" enctype="multipart/form-data">
+                                    <div class="mb-3">
+                                        <label for="exampleFormControlInput1" class="form-label">Nome aluno</label>
+                                        <input type="text" class="form-control" id="nomealuno" name='nomealuno' required autocomplete="off" readonly>
+                                        <input type="hidden" name="idmatricula" id="idmatricula">
+                                    </div>
+
+                                    <div class="row mb-3">
+                                        <div class="col-7">
+                                            <label for="exampleFormControlInput1" class="form-label">Curso</label>
+                                            <input type="text" class="form-control" id="nomecurso" name='nomecurso' required autocomplete="off" readonly>
+                                            <input type="hidden" name="curso" id="curso">
+                                        </div>
+                                        <div class="col-5">
+                                            <label for="exampleFormControlInput1" class="form-label">Turma</label>
+                                            <input type="text" class="form-control" id="nometurma" name='nometurma' required autocomplete="off" readonly>
+                                            <input type="hidden" name="idturma" id="idturma">
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-7">
+                                            <label for="exampleFormControlInput1" class="form-label">Municipio</label>
+                                            <input type="text" class="form-control" id="municipio" name='municipio' autocomplete="off" readonly>
+                                        </div>
+                                        <div class="col-5">
+                                            <label for="exampleFormControlInput1" class="form-label">Data matrícula</label>
+                                            <input type="text" class="form-control" id="datamatricula" name='datamatricula' autocomplete="off" readonly>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-danger">Excluir registro</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+
+            <footer class="footer">
+                <?php require_once $_SESSION['BASE_PATH'] . '/template/footer.php'; ?>
+            </footer>
+        </div>
+    </div>
+    <script src="<?php echo $_SESSION['BASE_URL']; ?>/assets/js/app.js"></script>
+</body>
+
+</html>
+
+<script>
+    function viaCEP() {
+
+        var numCep = $("#cep").val();
+
+        var url = "https://viacep.com.br/ws/" + numCep + "/json";
+
+        $.ajax({
+            url: url,
+            type: "get",
+            dataType: "json",
+
+            success: function(dados) {
+                console.log(dados);
+                $("#uf").val(dados.uf);
+                $("#cidade").val(dados.localidade);
+                $("#logradouro").val(dados.logradouro);
+                $("#bairro").val(dados.bairro);
+            }
+        })
+
+
+    }
+</script>
+<!-- Importação do Jquery Mask -->
+<!-- include da importação da mascara dos inputs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.12/jquery.mask.min.js"></script>
+<script type="text/javascript">
+    $("#telefone, #celular").mask("(00) 00000-0000"); //000 000 0000 eua
+    $('.date').mask('00/00/0000');
+    $('.time').mask('00:00:00');
+    $('.date_time').mask('00/00/0000 00:00:00');
+    $('.cep').mask('00000-000');
+    $('.phone').mask('0000-0000');
+    $('.phone_with_ddd').mask('(00) 0000-0000');
+    $('.phone_us').mask('(000) 000-0000');
+    $('.mixed').mask('AAA 000-S0S');
+    $('.cpf').mask('000.000.000-00', {
+        reverse: true
+    });
+    $('.cnpj').mask('00.000.000/0000-00', {
+        reverse: true
+    });
+    $('.money').mask('000.000.000.000.000,00', {
+        reverse: true
+    });
+    $('.money2').mask("#.##0,00", {
+        reverse: true
+    });
+    $('.ip_address').mask('0ZZ.0ZZ.0ZZ.0ZZ', {
+        translation: {
+            'Z': {
+                pattern: /[0-9]/,
+                optional: true
+            }
+        }
+    });
+    $('.ip_address').mask('099.099.099.099');
+    $('.percent').mask('##0,00%', {
+        reverse: true
+    });
+    $('.clear-if-not-match').mask("00/00/0000", {
+        clearIfNotMatch: true
+    });
+    $('.placeholder').mask("00/00/0000", {
+        placeholder: "__/__/____"
+    });
+    $('.fallback').mask("00r00r0000", {
+        translation: {
+            'r': {
+                pattern: /[\/]/,
+                fallback: '/'
+            },
+            placeholder: "__/__/____"
+        }
+    });
+    $('.selectonfocus').mask("00/00/0000", {
+        selectOnFocus: true
+    });
+</script>
+
+
+<script type="text/javascript">
+    $("#CPF").keydown(function() {
+        try {
+            $("#CPF").unmask();
+        } catch (e) {}
+
+        var tamanho = $("#CPF").val().length;
+
+        if (tamanho < 11) {
+            $("#CPF").mask("999.999.999-99");
+        } else {
+            $("#CPF").mask("99.999.999/9999-99");
+        }
+
+        // ajustando foco
+        var elem = this;
+        setTimeout(function() {
+            // mudo a posição do seletor
+            elem.selectionStart = elem.selectionEnd = 10000;
+        }, 0);
+        // reaplico o valor para mudar o foco
+        var currentValue = $(this).val();
+        $(this).val('');
+        $(this).val(currentValue);
+    });
+</script>
+
+<script>
+    $(function() {
+        $('#editarModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget)
+            var fotoaluno = button.data('fotoaluno')
+            var nomealuno = button.data('nomealuno')
+            var idaluno = button.data('idaluno')
+            var idmatricula = button.data('idmatricula') // data-id
+            var curso = button.data('curso')
+            var nomecurso = button.data('nomecurso')
+            var idturma = button.data('idturma')
+            var nometurma = button.data('nometurma')
+            var municipio = button.data('municipio')
+            var datamatricula = button.data('datamatricula')
+
+            var modal = $(this)
+            //aplica valor ao id
+            modal.find('#fotoaluno').attr('src', fotoaluno);
+            modal.find('#nomealuno').val(nomealuno)
+            modal.find('#idaluno').val(idaluno)
+            modal.find('#idmatricula').val(idmatricula)
+            modal.find('#curso').val(curso)
+            modal.find('#nomecurso').val(nomecurso)
+            modal.find('#idturma').val(idturma)
+            modal.find('#nometurma').val(nometurma)
+            modal.find('#municipio').val(municipio)
+            modal.find('#datamatricula').val(datamatricula)
+        });
+    });
+</script>
+
+<script>
+    $(function() {
+        $('#excluirModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget)
+            var fotoaluno = button.data('fotoaluno')
+            var nomealuno = button.data('nomealuno')
+            var idaluno = button.data('idaluno')
+            var idmatricula = button.data('idmatricula') // data-id
+            var curso = button.data('curso')
+            var nomecurso = button.data('nomecurso')
+            var idturma = button.data('idturma')
+            var nometurma = button.data('nometurma')
+            var municipio = button.data('municipio')
+            var datamatricula = button.data('datamatricula')
+
+            var modal = $(this)
+            //aplica valor ao id
+            modal.find('#fotoaluno').attr('src', fotoaluno);
+            modal.find('#nomealuno').val(nomealuno)
+            modal.find('#idaluno').val(idaluno)
+            modal.find('#idmatricula').val(idmatricula)
+            modal.find('#curso').val(curso)
+            modal.find('#nomecurso').val(nomecurso)
+            modal.find('#idturma').val(idturma)
+            modal.find('#nometurma').val(nometurma)
+            modal.find('#municipio').val(municipio)
+            modal.find('#datamatricula').val(datamatricula)
+        });
+    });
+</script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Ocultar o loader e mostrar a tabela
+        const loader = document.getElementById("loader");
+        const tabela = document.getElementById("minhaTabela");
+
+        if (loader) loader.style.display = "none";
+        if (tabela) tabela.style.display = "table";
+
+        setTimeout(() => {
+            const alertElement = document.querySelector(".alert");
+            if (alertElement) alertElement.style.display = "none";
+        }, 2000);
+
+        const titulo = document.getElementById("titulo");
+        if (titulo) {
+            titulo.innerHTML += ' <span style="color: blue;"><?php echo addslashes($nomeTurma); ?></span>';
+        }
+    });
+</script>

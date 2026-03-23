@@ -4,11 +4,6 @@ $BASE_para_URL = $runtime['base_para_url'];
 $basePath = $BASE_para_PATH;
 require_once $basePath . '/api/conectabd/conexao.php';
 
-$apikeyPath = $basePath . '/temp/apikey-versatilis.php';
-if (file_exists($apikeyPath)) {
-    require_once $apikeyPath;
-}
-
 class VersatilisService
 {
     private static function getConfig()
@@ -16,16 +11,12 @@ class VersatilisService
         global $basePath;
 
         $config = [
-            'base_url' => 'https://sistema.versatilis.com.br/Iteva',
-            'username' => $GLOBALS['versatilisUsername'] ?? '',
-            'password' => $GLOBALS['versatilisPassword'] ?? '',
-            'default_password' => $GLOBALS['versatilisDefaultPassword'] ?? '123456',
-            'log_path' => $GLOBALS['versatilisLogPath'] ?? ($basePath . '/temp/versatilis.log'),
+            'base_url' => bootstrap_env('VERSATILIS_BASE_URL', 'https://sistema.versatilis.com.br/Iteva'),
+            'username' => bootstrap_env('VERSATILIS_USERNAME', ''),
+            'password' => bootstrap_env('VERSATILIS_PASSWORD', ''),
+            'default_password' => bootstrap_env('VERSATILIS_DEFAULT_PASSWORD', '123456'),
+            'log_path' => bootstrap_env('VERSATILIS_LOG_PATH', $basePath . '/temp/versatilis.log'),
         ];
-
-        if (!empty($GLOBALS['versatilisBaseUrl'])) {
-            $config['base_url'] = $GLOBALS['versatilisBaseUrl'];
-        }
 
         return $config;
     }

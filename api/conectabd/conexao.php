@@ -1,26 +1,20 @@
 <?php
-// Definir variaveis de ambiente padrao se nao existirem
-if (!isset($_ENV['DB_HOST'])) {
-    $_ENV['DB_HOST'] = '162.241.2.214';
-}
-if (!isset($_ENV['DB_NAME'])) {
-    $_ENV['DB_NAME'] = 'mwtech63_matricula';
-}
-if (!isset($_ENV['DB_USER'])) {
-    $_ENV['DB_USER'] = 'mwtech63_admin_matricula';
-}
-if (!isset($_ENV['DB_PASS'])) {
-    $_ENV['DB_PASS'] = 'Iteva@100';
-}
-if (!isset($_ENV['DB_PORT'])) {
-    $_ENV['DB_PORT'] = '3306';
-}
+require_once dirname(__DIR__, 2) . '/bootstrap/runtime.php';
 
-$servername1 = $_ENV['DB_HOST'];
-$username1 = $_ENV['DB_USER'];
-$password1 = $_ENV['DB_PASS'];
-$dbname1 = $_ENV['DB_NAME'];
-$port1 = (int) $_ENV['DB_PORT'];
+$dbConfig = bootstrap_database_config(dirname(__DIR__, 2));
+$servername1 = $dbConfig['host'];
+$username1 = $dbConfig['user'];
+$password1 = $dbConfig['pass'];
+$dbname1 = $dbConfig['name'];
+$port1 = (int) $dbConfig['port'];
+
+if ($dbname1 === '' || $username1 === '') {
+    error_log('[conexao] Variáveis de ambiente do banco não configuradas corretamente.');
+    if (!headers_sent()) {
+        http_response_code(500);
+    }
+    die('Erro interno ao conectar ao banco de dados.');
+}
 
 try {
     $dsn = "mysql:host={$servername1};port={$port1};dbname={$dbname1};charset=utf8mb4";
@@ -33,5 +27,9 @@ try {
     // Garante disponibilidade da conexao no escopo global para includes carregados dentro de metodos.
     $GLOBALS['pdo'] = $pdo;
 } catch (PDOException $e) {
-    die('Conexao falhou: ' . $e->getMessage());
+    error_log('[conexao] Falha ao conectar ao banco: ' . $e->getMessage());
+    if (!headers_sent()) {
+        http_response_code(500);
+    }
+    die('Erro interno ao conectar ao banco de dados.');
 }

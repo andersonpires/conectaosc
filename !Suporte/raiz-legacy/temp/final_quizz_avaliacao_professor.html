@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+<meta name="description" content="ITEVA&amp;amp; Gestão de Alunos">
+<meta name="author" content="Instituto Tecnológico e Vocacional Avançado - ITEVA">
+<meta name="keywords" content="iteva">
+
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link rel="shortcut icon" href="/conectaosc3/assets/img/icons/icon-48x48.png" />
+
+<link rel="canonical" href="https://www.iteva.com.br/conectaOSC" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous" />
+<link href="//cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css" rel="stylesheet">
+
+<title>ITEVA - Gestão Geral</title>
+
+<link href="/conectaosc3/assets/css/app.css" rel="stylesheet">
+<link href="/conectaosc3/assets/css/override.php?versao=1771448950" rel="stylesheet">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+
+    <style>
+        .tooltip .tooltip-inner {
+            background-color: #007bff;
+            color: #ffffff;
+        }
+
+        .img-cover {
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .checkbox-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            /* Espa?amento entre checkboxes */
+            justify-content: center;
+            /* Centraliza horizontalmente */
+            align-items: center;
+            /* Centraliza verticalmente */
+            margin: 20px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            /* Espa?o entre o checkbox e o texto */
+        }
+
+        .checkbox-item input {
+            transform: scale(1.2);
+            /* Aumenta o tamanho do checkbox */
+        }
+    </style>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+</head>
+
+<script src="//code.jquery.com/jquery-3.2.1.min.js"></script>
+
+<body>
+    <div class="wrapper">
+        ﻿<nav id="sidebar" class="sidebar js-sidebar">
+    <div class="sidebar-content js-simplebar">
+        <a class="sidebar-brand" href="#">
+            <center>
+                <image src="imagens/logo.png" class="align-middle" style="width: 90%;">
+            </center>
+        </a>
+        <ul class="sidebar-nav">
+            <li class="sidebar-header">
+                Eventos
+            </li>
+
+            <li class="sidebar-item" id="quizz_avaliacao">
+                <a class="sidebar-link" href="/conectaosc3/quizz/avaliacao-professor/">
+                    <i class="align-middle" data-feather="user-plus"></i> <span class="align-middle">Questionario</span>
+                </a>
+            </li>
+            <li class="sidebar-item" id="graficoProfessor.php?v=1771448950">
+                <a class="sidebar-link" href="graficoProfessor.php?v=1771448950">
+                    <i class="align-middle" data-feather="align-left"></i> <span class="align-middle">Resultados</span>
+                </a>
+            </li>
+
+            <li class="sidebar-item" id="quizz_sucesso">
+                <a class="sidebar-link" href="/conectaosc3/quizz/avaliacao-professor/sucesso/">
+                    <i class="align-middle" data-feather="user-plus"></i> <span class="align-middle">Questionario salvo</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+</nav>
+<script>
+    var elemento = document.getElementById("quizz_avaliacao");
+    if (elemento) {
+        elemento.classList.add("active");
+    }
+</script>
+        <div class="main">
+            <nav class="navbar navbar-expand navbar-light navbar-bg">
+    <a class="sidebar-toggle js-sidebar-toggle">
+        <i class="hamburger align-self-center"></i>
+    </a>
+    <div class="navbar-collapse collapse">
+        <ul class="navbar-nav navbar-align">
+            <li class="nav-item dropdown">
+                <a class="nav-icon dropdown-toggle d-inline-block d-sm-none" href="#" data-bs-toggle="dropdown">
+                    <i class="align-middle" data-feather="settings"></i>
+                </a>
+
+                <a class="nav-link dropdown-toggle d-none d-sm-inline-block" href="#" data-bs-toggle="dropdown">
+                    <span class="text-dark">Inscrição</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end">
+                    <a class="dropdown-item" href="#"><i class="align-middle me-1" data-feather="user"></i> Formulário de inscrição</a>
+                    <a class="dropdown-item" href="#"><i class="align-middle me-1" data-feather="pie-chart"></i> Resultado</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="#"><i class="align-middle me-1" data-feather="settings"></i> Configurações</a>
+                    <a class="dropdown-item" href="#"><i class="align-middle me-1" data-feather="help-circle"></i> Central de ajuda</a>
+                </div>
+            </li>
+        </ul>
+    </div>
+</nav>            <script src="/conectaosc3/assets/js/app.js?v=1767814583"></script>
+
+            <main class="content">
+                <div class="container-fluid p-0">
+
+                                        <div class="container mt-5">
+                        <h1 class="mb-4">Pesquisa Professores Digitais 2025.1 Beberibe</h1>
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="mb-4">Abaixo estáo as principais dificuldades pesquisadas junto ? professores. Analise cada questáo e indique qual seu n?vel de dificuldade em cada uma.</h3>
+                                <form id="formulario" action="/conectaosc3/quizz/avaliacao-professor/" method="POST">
+
+                                    <!-- Gestão de Tempo -->
+                                    <h4>1. Gestão de Tempo</h4>
+                                    <div class="mb-4">
+                                        <label class="form-label">a. Dividir o tempo entre preparar aulas, corrigir atividades, planejar avaliações e desenvolver materiais.</label>
+                                        <div>
+                                            <input type="radio" name="gestao_tempo_a" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="gestao_tempo_a" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="gestao_tempo_a" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="gestao_tempo_a" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="gestao_tempo_a" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="gestao_tempo_a" value="6"> Não consigo
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label">b. Lidar com demandas de última hora ou com prazos apertados.</label>
+                                        <div>
+                                            <input type="radio" name="gestao_tempo_b" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="gestao_tempo_b" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="gestao_tempo_b" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="gestao_tempo_b" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="gestao_tempo_b" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="gestao_tempo_b" value="6"> Não consigo
+                                        </div>
+                                    </div>
+
+                                    <!-- Individualização do Ensino -->
+                                    <h4>2. Individualização do Ensino</h4>
+                                    <div class="mb-4">
+                                        <label class="form-label">a. Lidar com alunos com diferentes dificuldades (como autismo, TDAH, discalculia) e aplicar metodologias personalizadas.</label>
+                                        <div>
+                                            <input type="radio" name="individualizacao_ensino_a" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="individualizacao_ensino_a" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="individualizacao_ensino_a" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="individualizacao_ensino_a" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="individualizacao_ensino_a" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="individualizacao_ensino_a" value="6"> Não consigo
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label">b. Não ter acesso ? treinamentos especializados ou capacitações espec?ficas, de acordo com a necessidade.</label>
+                                        <div>
+                                            <input type="radio" name="individualizacao_ensino_b" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="individualizacao_ensino_b" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="individualizacao_ensino_b" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="individualizacao_ensino_b" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="individualizacao_ensino_b" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="individualizacao_ensino_b" value="6"> Não consigo
+                                        </div>
+                                    </div>
+
+                                    <!-- Criação de Material Did?tico -->
+                                    <h4>3. Criação de Material Did?tico</h4>
+                                    <div class="mb-4">
+                                        <label class="form-label">a. Criar slides, atividades, mapas mentais, charadas, exemplos contextualizados e outros materiais pedag?gicos.</label>
+                                        <div>
+                                            <input type="radio" name="material_didatico_a" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="material_didatico_a" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="material_didatico_a" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="material_didatico_a" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="material_didatico_a" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="material_didatico_a" value="6"> Não consigo
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label">b. Falta de recursos ou materiais prontos, ou mesmo adapt?-los ? necessidade.</label>
+                                        <div>
+                                            <input type="radio" name="material_didatico_b" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="material_didatico_b" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="material_didatico_b" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="material_didatico_b" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="material_didatico_b" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="material_didatico_b" value="6"> Não consigo
+                                        </div>
+                                    </div>
+
+                                    <!-- Inclusóo e Acessibilidade -->
+                                    <h4>4. Inclusóo e Acessibilidade</h4>
+                                    <div class="mb-4">
+                                        <label class="form-label">a. Adaptar aulas e materiais para alunos com defici?ncia (visual, auditiva, motora, intelectual).</label>
+                                        <div>
+                                            <input type="radio" name="inclusao_acessibilidade_a" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="inclusao_acessibilidade_a" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="inclusao_acessibilidade_a" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="inclusao_acessibilidade_a" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="inclusao_acessibilidade_a" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="inclusao_acessibilidade_a" value="6"> Não consigo
+                                        </div>
+                                    </div>
+
+                                    <!-- Engajamento e Criatividade -->
+                                    <h4>5. Engajamento e Criatividade</h4>
+                                    <div class="mb-4">
+                                        <label class="form-label">a. Desenvolver aulas criativas e cativantes, especialmente em disciplinas consideradas dif?ceis ou menos atraentes.</label>
+                                        <div>
+                                            <input type="radio" name="engajamento_criatividade_a" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="engajamento_criatividade_a" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="engajamento_criatividade_a" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="engajamento_criatividade_a" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="engajamento_criatividade_a" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="engajamento_criatividade_a" value="6"> Não consigo
+                                        </div>
+                                    </div>
+
+                                    <!-- Corre??o e Avaliação -->
+                                    <h4>6. Corre??o e Avaliação</h4>
+                                    <div class="mb-4">
+                                        <label class="form-label">a. Corrigir provas e atividades, planejar recuperação e dar feedback personalizado.</label>
+                                        <div>
+                                            <input type="radio" name="correcao_avaliacao_a" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="correcao_avaliacao_a" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="correcao_avaliacao_a" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="correcao_avaliacao_a" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="correcao_avaliacao_a" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="correcao_avaliacao_a" value="6"> Não consigo
+                                        </div>
+                                    </div>
+
+                                    <!-- Infraestrutura e Recursos -->
+                                    <h4>7. Infraestrutura e Recursos</h4>
+                                    <div class="mb-4">
+                                        <label class="form-label">a. Sugestáes de solu??es criativas para superar limitações de recursos tecnol?gicos ou f?sicos.</label>
+                                        <div>
+                                            <input type="radio" name="infraestrutura_recursos_a" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="infraestrutura_recursos_a" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="infraestrutura_recursos_a" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="infraestrutura_recursos_a" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="infraestrutura_recursos_a" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="infraestrutura_recursos_a" value="6"> Não consigo
+                                        </div>
+                                    </div>
+
+                                    <!-- Pressóo e Expectativas -->
+                                    <h4>8. Pressóo e Expectativas</h4>
+                                    <div class="mb-4">
+                                        <label class="form-label">a. Organizar tarefas para aliviar a carga de trabalho e equilibrar demandas administrativas e pedag?gicas.</label>
+                                        <div>
+                                            <input type="radio" name="pressao_expectativas_a" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="pressao_expectativas_a" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="pressao_expectativas_a" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="pressao_expectativas_a" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="pressao_expectativas_a" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="pressao_expectativas_a" value="6"> Não consigo
+                                        </div>
+                                    </div>
+
+                                    <!-- Equil?brio pessoal e profissional -->
+                                    <h4>9. Equil?brio pessoal e profissional</h4>
+                                    <div class="mb-4">
+                                        <label class="form-label">a. Cumprir e ficar contente com o resultado das demandas da vida pessoal e profissional, sem comprometer a sa?de f?sica ou emocional, conseguindo separar uma de outra.</label>
+                                        <div>
+                                            <input type="radio" name="equilibrio_pessoal_profissional_a" value="1" required> Não se aplica ? mim<br>
+                                            <input type="radio" name="equilibrio_pessoal_profissional_a" value="2"> Não tenho dificuldade<br>
+                                            <input type="radio" name="equilibrio_pessoal_profissional_a" value="3"> Pouca dificuldade<br>
+                                            <input type="radio" name="equilibrio_pessoal_profissional_a" value="4"> M?dia dificuldade<br>
+                                            <input type="radio" name="equilibrio_pessoal_profissional_a" value="5"> Grande dificuldade<br>
+                                            <input type="radio" name="equilibrio_pessoal_profissional_a" value="6"> Não consigo
+                                        </div>
+                                    </div>
+                                    <!-- Bot?o de Envio -->
+                                    <div class="mt-4">
+                                        <button type="submit" id="submitButton" class="btn btn-primary disabled" disabled>Enviar Avaliação</button>
+
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+            </main>
+
+            <footer class="footer">
+                <div class="container-fluid">
+    <div class="row text-muted">
+        <div class="col-6 text-start">
+            <p class="mb-0">
+                
+                <a class="text-muted" href="#" target="_blank"><strong>ITEVA</strong> - <strong>Gestão geral</strong></a> &copy;
+            </p>
+        </div>
+        <div class="col-6 text-end">
+            <ul class="list-inline">
+                <!-- <li class="list-inline-item">
+                    <a class="text-muted" href="#" target="_blank">Suporte</a>
+                </li>
+                <li class="list-inline-item">
+                    <a class="text-muted" href="#" target="_blank">Celtral de ajuda</a>
+                </li>
+                <li class="list-inline-item">
+                    <a class="text-muted" href="#" target="_blank">Privacidade</a>
+                </li> -->
+                <li class="list-inline-item">
+                    <a class="text-muted" href="/conectaosc3/template/paginasFooter.php?page=termos-de-uso" target="_self">Termos de uso</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+<!-- Adicioanar Máscara nos inputs e função viaCEP -->
+
+
+            </footer>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('formulario'); // Certifique-se de que o ID está correto
+            const submitButton = document.getElementById('submitButton');
+
+            // Fun??o para validar os campos required
+            function validateForm() {
+                // Verifica se todos os campos obrigat?rios estáo preenchidos e v?lidos
+                const allValid = [...form.elements].every(input => {
+                    if (input.required) {
+                        if (input.type === 'checkbox') {
+                            return input.checked; // Para checkboxes
+                        }
+                        return input.value.trim() !== ''; // Para inputs e textareas
+                    }
+                    return true;
+                });
+
+                // Alterna o estado do bot?o
+                if (allValid) {
+                    submitButton.disabled = false;
+                    submitButton.classList.remove('disabled', 'btn-secondary'); // Remove estilo desabilitado
+                    submitButton.classList.add('btn-primary'); // Estilo habilitado
+                } else {
+                    submitButton.disabled = true;
+                    submitButton.classList.add('disabled', 'btn-secondary'); // Adiciona estilo desabilitado
+                    submitButton.classList.remove('btn-primary'); // Remove estilo habilitado
+                }
+            }
+
+            // Adiciona evento de validação em todos os campos do formul?rio
+            form.addEventListener('input', validateForm);
+
+            // Desabilita o bot?o no carregamento inicial
+            validateForm();
+        });
+    </script>
+</body>
+
+</html>
+
+<!-- Importação do Jquery Mask -->
+<!-- include da importação da mascara dos inputs -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.12/jquery.mask.min.js"></script>
+<script type="text/javascript">
+    $("#telefone, #TelefoneResp1, #WhatsApp, #WhatsAppResp1").mask("(00) 0.0000-0000"); //000 000 0000 eua
+    $("#Nascimento").mask('00/00/0000');
+    $('.time').mask('00:00:00');
+    $('.date_time').mask('00/00/0000 00:00:00');
+    $('.cep').mask('00000-000');
+    $('.phone').mask('0000-0000');
+    $('.phone_with_ddd').mask('(00) 0000-0000');
+    $('.phone_us').mask('(000) 000-0000');
+    $('.mixed').mask('AAA 000-S0S');
+    $('#CPF').mask('000.000.000-00', {
+        reverse: true
+    });
+    $('.cnpj').mask('00.000.000/0000-00', {
+        reverse: true
+    });
+    $('.money').mask('000.000.000.000.000,00', {
+        reverse: true
+    });
+    $('.money2').mask("#.##0,00", {
+        reverse: true
+    });
+    $('.ip_address').mask('0ZZ.0ZZ.0ZZ.0ZZ', {
+        translation: {
+            'Z': {
+                pattern: /[0-9]/,
+                optional: true
+            }
+        }
+    });
+    $('.ip_address').mask('099.099.099.099');
+    $('.percent').mask('##0,00%', {
+        reverse: true
+    });
+    $('.clear-if-not-match').mask("00/00/0000", {
+        clearIfNotMatch: true
+    });
+    $('.placeholder').mask("00/00/0000", {
+        placeholder: "__/__/____"
+    });
+    $('.fallback').mask("00r00r0000", {
+        translation: {
+            'r': {
+                pattern: /[\/]/,
+                fallback: '/'
+            },
+            placeholder: "__/__/____"
+        }
+    });
+    $('.selectonfocus').mask("00/00/0000", {
+        selectOnFocus: true
+    });
+</script>
+
+<!-- Desativa submit para evitar cadastros duplicados -->
+<script>
+    document.getElementById('submitButton').addEventListener('click', function() {
+        const submitButton = document.getElementById('submitButton');
+        const form = document.getElementById('formulario');
+
+        // Adiciona o spinner ao bot?o
+        submitButton.innerHTML = `
+<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+Aguarde...
+`;
+
+        // Desabilita o bot?o
+        submitButton.disabled = true;
+
+        // Submete o formul?rio
+        form.submit();
+    });
+</script>

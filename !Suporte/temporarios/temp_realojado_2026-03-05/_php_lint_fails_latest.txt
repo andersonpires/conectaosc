@@ -1,0 +1,5 @@
+=== !Suporte\Dados relatorio antigo\db_connect.php ===
+
+Parse error: syntax error, unexpected token "<", expecting end of file in !Suporte\Dados relatorio antigo\db_connect.php on line 5
+Errors parsing !Suporte\Dados relatorio antigo\db_connect.php
+

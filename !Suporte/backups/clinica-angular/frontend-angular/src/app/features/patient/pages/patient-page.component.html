@@ -1,0 +1,77 @@
+@if (loading) {
+  <section class="state-card skeleton-shell">
+    <div class="skeleton-line w-40"></div>
+    <div class="skeleton-line w-85"></div>
+    <div class="skeleton-line w-70"></div>
+  </section>
+} @else if (error) {
+  <section class="state-card error">{{ error }}</section>
+} @else {
+  <div class="page">
+    <header class="top-head">
+      <button type="button"><span class="material-icons-round">arrow_back_ios_new</span></button>
+      <h1>Prontuario do Paciente</h1>
+      <button type="button"><span class="material-icons-round">more_vert</span></button>
+    </header>
+
+    @if (currentPatient; as patient) {
+      <section class="profile-card">
+        <div class="avatar"></div>
+        <div>
+          <h2>{{ patient.Nome }}</h2>
+          <p>
+            ID: #{{ patient.IdUsuario }}
+            @if (ageFromBirth(patient.Nascimento); as age) {
+              • {{ age }} anos
+            }
+          </p>
+          <span class="chip">Contato: {{ patient.WhatsApp || patient.Telefone || 'Nao informado' }}</span>
+        </div>
+      </section>
+
+      <section class="tabs">
+        <button type="button" class="active">Historico</button>
+        <button type="button">Sinais Vitais</button>
+        <button type="button">Documentos</button>
+      </section>
+
+      <section class="timeline">
+        <div class="header">
+          <h3>Consultas Recentes</h3>
+          <button type="button">Ver Tudo</button>
+        </div>
+
+        @if (!records.length) {
+          <article class="entry muted">Nenhum prontuario encontrado para este paciente.</article>
+        } @else {
+          @for (record of records; track record.id) {
+            <article class="entry">
+              <div class="dot"></div>
+              <div class="card">
+                <div class="row">
+                  <div>
+                    <small>{{ record.data_consulta || record.created_at }}</small>
+                    <h4>Registro Clinico</h4>
+                  </div>
+                  <span class="material-icons-round">medical_services</span>
+                </div>
+
+                <div class="block">
+                  <h5>Anotacoes</h5>
+                  <p>{{ (record.conteudo_editado || record.conteudo_ia || 'Sem conteudo clinico.') | slice:0:200 }}...</p>
+                </div>
+
+                <div class="prescription">
+                  <strong>Status</strong>
+                  <span [ngClass]="record.status">{{ record.status }}</span>
+                </div>
+              </div>
+            </article>
+          }
+        }
+      </section>
+    }
+
+    <button class="fab" type="button"><span class="material-icons-round">add</span></button>
+  </div>
+}

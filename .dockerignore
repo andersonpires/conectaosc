@@ -1,0 +1,10 @@
+.git
+.gitignore
+.vscode
+backup-versao-1.93
+banco
+storage
+temp
+tools
+README.md
+*.log

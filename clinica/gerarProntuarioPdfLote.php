@@ -1,4 +1,7 @@
 <?php
+require_once dirname(__DIR__) . '/bootstrap/runtime.php';
+
+$invertextoApiToken = bootstrap_invertexto_api_token(dirname(__DIR__));
 /**
  * Gera um único PDF com vários prontuários.
  * Mantém cabeçalho e rodapé (sem paginação) e ignora prontuários sem conteúdo.
@@ -367,11 +370,14 @@ if ($assinar) {
         $fontName = TCPDF_FONTS::addTTFfont($fontFile, 'TrueTypeUnicode', '', 32) ?: 'helvetica';
     }
 
-    $tokenQR = '23083|xIkXyKYtUHwxOrhuZK6ej7ZuxkHbAOPK';
+    if ($invertextoApiToken === '') {
+        header('Content-Type: text/html; charset=utf-8');
+        die('<div class="alert alert-danger">Token da Invertexto não configurado.</div>');
+    }
     $timestampAssinatura = time();
     $codigoBase = prontuarioGerarCodigoValidacaoCurtoLote($pdo, $timestampAssinatura);
     $linkValidacao = rtrim((string)$publicBaseWithScheme, '/') . '/clinica/verProntuarioPdf.php?code=' . urlencode($codigoBase);
-    $qrURL = 'https://api.invertexto.com/v1/qrcode?token=' . $tokenQR . '&text=' . urlencode($linkValidacao);
+    $qrURL = 'https://api.invertexto.com/v1/qrcode?token=' . rawurlencode($invertextoApiToken) . '&text=' . urlencode($linkValidacao);
     $qrData = @file_get_contents($qrURL);
     if (!$qrData) {
         header('Content-Type: text/html; charset=utf-8');

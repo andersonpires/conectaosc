@@ -1,5 +1,7 @@
 <?php
 
+require_once dirname(__DIR__, 3) . '/bootstrap/runtime.php';
+
 use setasign\Fpdi\Tcpdf\Fpdi;
 
 if (!function_exists('contratoMkdirIfMissing')) {
@@ -87,8 +89,12 @@ if (!function_exists('contratoResolveAssinaturaDigitalPublicUrl')) {
 if (!function_exists('contratoGerarQrPng')) {
     function contratoGerarQrPng(string $url, string $pathDestino): bool
     {
-        $tokenQR = "23083|xIkXyKYtUHwxOrhuZK6ej7ZuxkHbAOPK";
-        $qrURL = "https://api.invertexto.com/v1/qrcode?token={$tokenQR}&text=" . urlencode($url);
+        $basePath = dirname(__DIR__, 3);
+        $invertextoApiToken = bootstrap_invertexto_api_token($basePath);
+        if ($invertextoApiToken === '') {
+            return false;
+        }
+        $qrURL = 'https://api.invertexto.com/v1/qrcode?token=' . rawurlencode($invertextoApiToken) . '&text=' . urlencode($url);
         $qrData = @file_get_contents($qrURL);
         if (!$qrData) {
             return false;

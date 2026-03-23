@@ -67,7 +67,26 @@ function cronContratoDomain(): string
         return 'http://localhost';
     }
 
-    return 'https://iteva.com.br';
+    $publicOrigin = bootstrap_env('APP_PUBLIC_ORIGIN', '');
+    if ($publicOrigin === '') {
+        $publicBaseUrl = bootstrap_env('APP_PUBLIC_BASE_URL', '');
+        if ($publicBaseUrl !== '') {
+            $baseParts = parse_url($publicBaseUrl);
+            $baseScheme = (string)($baseParts['scheme'] ?? '');
+            $baseHost = (string)($baseParts['host'] ?? '');
+            $basePort = isset($baseParts['port']) ? (int)$baseParts['port'] : 0;
+            if ($baseScheme !== '' && $baseHost !== '') {
+                $publicOrigin = $baseScheme . '://' . $baseHost . ($basePort > 0 ? ':' . $basePort : '');
+            }
+        }
+    }
+
+    if ($publicOrigin !== '' && !preg_match('#^https?://#i', $publicOrigin)) {
+        $publicOrigin = 'https://' . ltrim($publicOrigin, '/');
+    }
+    $publicOrigin = rtrim($publicOrigin, '/');
+
+    return $publicOrigin !== '' ? $publicOrigin : 'http://localhost';
 }
 
 function cronContratoPublicBase(string $baseUrl, string $basePath): string

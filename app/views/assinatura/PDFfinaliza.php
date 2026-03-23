@@ -2,6 +2,7 @@
 $runtime = require __DIR__ . '/../../../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
+$invertextoApiToken = bootstrap_invertexto_api_token($BASE_para_PATH);
 $appJsVersion = @filemtime($BASE_para_PATH . '/app/assets/js/app.js') ?: time();
 if (session_status() !== PHP_SESSION_ACTIVE) {
     ini_set('session.gc_maxlifetime', '86400');
@@ -155,7 +156,9 @@ if ($canvasW <= 0 || $canvasH <= 0) {
     die('Erro: Dimensões inválidas.');
 }
 
-$tokenQR = '23083|xIkXyKYtUHwxOrhuZK6ej7ZuxkHbAOPK';
+if ($invertextoApiToken === '') {
+    die("<div class='alert alert-danger'>Token da Invertexto não configurado.</div>");
+}
 $timestampAssinatura = time();
 $codigoBase = assinaturaGerarCodigoValidacaoCurto($pdo, $timestampAssinatura);
 $linkValidacao = rtrim((string)$publicBaseWithScheme, '/') . '/assinatura/pdf/validar/?code=' . $codigoBase;
@@ -165,7 +168,7 @@ $pathFinalPDF = $pathFinais . $nomeArquivoFinal;
 $urlPDF = $BASE_para_URL . '/app/storage/assinatura/assinados/' . $nomeArquivoFinal;
 $urlPDFInt = $BASE_para_URL . '/app/storage/assinatura/assinados/' . $nomeArquivoFinal;
 
-$qrURL = 'https://api.invertexto.com/v1/qrcode?token=' . $tokenQR . '&text=' . urlencode($linkValidacao);
+$qrURL = 'https://api.invertexto.com/v1/qrcode?token=' . rawurlencode($invertextoApiToken) . '&text=' . urlencode($linkValidacao);
 $qrData = @file_get_contents($qrURL);
 if (!$qrData) {
     die("<div class='alert alert-danger'>Erro ao gerar QR Code!</div>");

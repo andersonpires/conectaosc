@@ -133,9 +133,7 @@ if (!is_file($iconFullPath)) {
 if (!is_file($iconFullPath)) {
     $shortcutIcon = 'icon-48x48.png';
 }
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+bootstrap_apply_php_runtime();
 
 if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['confirma'])) {
 

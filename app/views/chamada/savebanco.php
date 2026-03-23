@@ -5,8 +5,7 @@ $BASE_para_URL = $runtime['base_para_url'];
 require_once __DIR__ . '/../../../api/conectabd/conexao.php';
 
 // Habilitar relatórios de erros para depuração
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+bootstrap_apply_php_runtime();
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $action = $_POST['action'] ?? null;

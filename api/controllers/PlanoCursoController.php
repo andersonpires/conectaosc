@@ -165,7 +165,11 @@ final class PlanoCursoController
     {
         try {
             $id = $this->service->createAula((int) $idPlanoCurso, $this->requestPayload());
-            $this->audit->action('plano_curso_aula', 'store', ['id_plano' => (int) $idPlanoCurso, 'id_aula' => $id]);
+            try {
+                $this->audit->action('plano_curso_aula', 'store', ['id_plano' => (int) $idPlanoCurso, 'id_aula' => $id]);
+            } catch (Throwable) {
+                // Falha de auditoria não deve invalidar o cadastro da aula.
+            }
             Response::json([
                 'success' => true,
                 'message' => 'Aula cadastrada com sucesso',

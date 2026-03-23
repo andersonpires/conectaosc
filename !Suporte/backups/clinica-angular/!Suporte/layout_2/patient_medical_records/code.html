@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html class="light" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Prontuário do Paciente</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,typography,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#319795",
+                        secondary: "#2B6CB0",
+                        "background-light": "#F7FAFC",
+                        "background-dark": "#1A202C",
+                        "card-light": "#FFFFFF",
+                        "card-dark": "#2D3748",
+                    },
+                    fontFamily: {
+                        display: ["Plus Jakarta Sans", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "16px",
+                    },
+                },
+            },
+        };
+    </script>
+<style type="text/tailwindcss">
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .ios-shadow {
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .active-tab .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex justify-center">
+<div class="w-full max-w-[430px] bg-background-light dark:bg-background-dark min-h-screen relative flex flex-col pb-32">
+<div class="flex justify-between items-center px-8 pt-12 pb-4">
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-card-dark ios-shadow">
+<span class="material-icons-round text-primary">arrow_back_ios_new</span>
+</button>
+<h1 class="text-lg font-bold">Prontuário do Paciente</h1>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-white dark:bg-card-dark ios-shadow text-slate-400">
+<span class="material-icons-round">more_vert</span>
+</button>
+</div>
+<div class="px-6 mb-8">
+<div class="flex items-center gap-4 bg-white dark:bg-card-dark p-4 rounded-3xl ios-shadow">
+<img alt="Perfil do Paciente" class="w-16 h-16 rounded-2xl object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZa_7V46v6Vid5LpynignSX9ZVpSXLZJruqS6GnYQflfhWa8oT6uuVdOZnNpgpq1XGhvLbnB7n4MIrhzyliNGBm_RIpX_VWZp7R9rHlOLipiq9arZs6yydWf2I0XscWF7Eu4qDOTsITx1TVd80xHaNmMzJ05f97PTDGEI9rBDikETomoMeF8qXcEbjU7S3SjflfguFJ4rkKcJ3TUmMrvV5GyG514vdmi7rnZtOGwQWAbqUgoR1Xt_IlBNdL40eX-q4d8mARHypMRI"/>
+<div>
+<h2 class="text-xl font-bold">Sarah Jenkins</h2>
+<p class="text-sm text-slate-500 dark:text-slate-400">ID: #MP-2930 • 28 anos</p>
+<div class="flex gap-2 mt-1">
+<span class="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-bold rounded-full uppercase">ALERGIA: Penicilina</span>
+</div>
+</div>
+</div>
+</div>
+<div class="flex gap-4 px-6 mb-6 overflow-x-auto custom-scrollbar">
+<button class="px-6 py-3 bg-primary text-white rounded-2xl font-semibold shadow-lg shadow-teal-500/20 whitespace-nowrap">Histórico</button>
+<button class="px-6 py-3 bg-white dark:bg-card-dark text-slate-500 dark:text-slate-400 rounded-2xl font-semibold ios-shadow whitespace-nowrap">Sinais Vitais</button>
+<button class="px-6 py-3 bg-white dark:bg-card-dark text-slate-500 dark:text-slate-400 rounded-2xl font-semibold ios-shadow whitespace-nowrap">Documentos</button>
+</div>
+<div class="px-6 flex-1">
+<div class="flex justify-between items-center mb-4">
+<h3 class="text-lg font-bold">Consultas Recentes</h3>
+<button class="text-primary text-sm font-semibold">Ver Tudo</button>
+</div>
+<div class="relative pl-8 pb-8">
+<div class="absolute left-[11px] top-2 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700"></div>
+<div class="absolute left-0 top-1.5 w-6 h-6 rounded-full border-4 border-background-light dark:border-background-dark bg-primary"></div>
+<div class="bg-white dark:bg-card-dark p-5 rounded-3xl ios-shadow">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="text-xs font-bold text-primary uppercase tracking-wider">HOJE, 14 Out</span>
+<h4 class="text-md font-bold mt-1">Consulta Geral</h4>
+</div>
+<span class="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-xl">
+<span class="material-icons-round text-primary text-sm">medical_services</span>
+</span>
+</div>
+<div class="mb-4">
+<div class="flex items-center gap-2 mb-2">
+<div class="w-1 h-4 bg-teal-500 rounded-full"></div>
+<h5 class="text-sm font-bold text-slate-700 dark:text-slate-300">Anamnese</h5>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Paciente relata tosse persistente há 3 dias, acompanhada por febre leve (38.2°C). Sem histórico de desconforto respiratório.
+                        </p>
+</div>
+<div class="mb-4">
+<div class="flex items-center gap-2 mb-2">
+<div class="w-1 h-4 bg-blue-500 rounded-full"></div>
+<h5 class="text-sm font-bold text-slate-700 dark:text-slate-300">Exame Físico</h5>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
+<p class="text-[10px] text-slate-400 uppercase font-bold">PA</p>
+<p class="text-sm font-bold">120/80 mmHg</p>
+</div>
+<div class="bg-slate-50 dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700">
+<p class="text-[10px] text-slate-400 uppercase font-bold">Temp</p>
+<p class="text-sm font-bold">38.2 °C</p>
+</div>
+</div>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-2">
+<div class="w-1 h-4 bg-orange-500 rounded-full"></div>
+<h5 class="text-sm font-bold text-slate-700 dark:text-slate-300">Prescrições</h5>
+</div>
+<div class="flex items-center gap-3 p-3 bg-orange-50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-2xl">
+<span class="material-icons-round text-orange-500">pill</span>
+<div>
+<p class="text-sm font-bold text-orange-900 dark:text-orange-200">Paracetamol 500mg</p>
+<p class="text-xs text-orange-700 dark:text-orange-400">1 comprimido a cada 8 horas por 3 dias</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="relative pl-8 pb-8">
+<div class="absolute left-[11px] top-2 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700"></div>
+<div class="absolute left-0 top-1.5 w-6 h-6 rounded-full border-4 border-background-light dark:border-background-dark bg-slate-300 dark:bg-slate-600"></div>
+<div class="bg-white dark:bg-card-dark p-5 rounded-3xl ios-shadow opacity-80">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="text-xs font-bold text-slate-400 uppercase tracking-wider">12 Set 2023</span>
+<h4 class="text-md font-bold mt-1 text-slate-600 dark:text-slate-400">Check-up de Rotina</h4>
+</div>
+<span class="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl">
+<span class="material-icons-round text-slate-400 text-sm">history_edu</span>
+</span>
+</div>
+<p class="text-sm text-slate-500 dark:text-slate-400 italic">Sem achados significativos. Sinais vitais dentro da normalidade.</p>
+</div>
+</div>
+</div>
+<button class="fixed bottom-28 right-6 w-14 h-14 bg-primary text-white rounded-full flex items-center justify-center shadow-2xl shadow-teal-500/40 transform active:scale-95 transition-transform z-10">
+<span class="material-icons-round text-3xl">add</span>
+</button>
+<div class="fixed bottom-0 left-0 right-0 flex justify-center pb-8 px-6 z-20 pointer-events-none">
+<div class="w-full max-w-[390px] bg-white/90 dark:bg-card-dark/90 backdrop-blur-lg h-18 rounded-[32px] ios-shadow flex items-center justify-around px-2 border border-slate-100 dark:border-slate-700/50 pointer-events-auto">
+<button class="flex flex-col items-center justify-center w-16 h-14 text-slate-400">
+<span class="material-symbols-outlined text-2xl">home</span>
+<span class="text-[10px] font-semibold mt-0.5">Início</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-14 text-slate-400">
+<span class="material-symbols-outlined text-2xl">calendar_today</span>
+<span class="text-[10px] font-semibold mt-0.5">Agenda</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-14 text-slate-400">
+<span class="material-symbols-outlined text-2xl">groups</span>
+<span class="text-[10px] font-semibold mt-0.5">Pacientes</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-14 text-primary active-tab">
+<span class="material-symbols-outlined text-2xl">assignment</span>
+<span class="text-[10px] font-semibold mt-0.5">Prontuário</span>
+</button>
+<button class="flex flex-col items-center justify-center w-16 h-14 text-slate-400">
+<span class="material-symbols-outlined text-2xl">settings</span>
+<span class="text-[10px] font-semibold mt-0.5">Ajustes</span>
+</button>
+</div>
+</div>
+<button class="fixed top-12 right-6 z-50 p-2 bg-white dark:bg-card-dark rounded-full ios-shadow" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons-round dark:hidden">dark_mode</span>
+<span class="material-icons-round hidden dark:block">light_mode</span>
+</button>
+</div>
+
+</body></html>

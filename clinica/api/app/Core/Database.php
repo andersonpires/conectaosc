@@ -3,6 +3,7 @@ namespace App\Core;
 
 use PDO;
 use PDOException;
+use RuntimeException;
 
 class Database
 {
@@ -28,23 +29,29 @@ class Database
             }
         }
 
-        if (!isset($_ENV['DB_HOST'])) $_ENV['DB_HOST'] = '162.241.2.214';
-        if (!isset($_ENV['DB_NAME'])) $_ENV['DB_NAME'] = 'mwtech63_matricula';
-        if (!isset($_ENV['DB_USER'])) $_ENV['DB_USER'] = 'mwtech63_admin_matricula';
-        if (!isset($_ENV['DB_PASS'])) $_ENV['DB_PASS'] = 'Iteva@100';
-        if (!isset($_ENV['DB_PORT'])) $_ENV['DB_PORT'] = '3306';
+        require_once $basePath . '/bootstrap/runtime.php';
+        $dbConfig = bootstrap_database_config($basePath);
+
+        if ($dbConfig['name'] === '' || $dbConfig['user'] === '') {
+            throw new RuntimeException('Configuração do banco de dados ausente.');
+        }
 
         $dsn = sprintf(
             'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
-            $_ENV['DB_HOST'],
-            $_ENV['DB_PORT'],
-            $_ENV['DB_NAME']
+            $dbConfig['host'],
+            $dbConfig['port'],
+            $dbConfig['name']
         );
 
-        self::$pdo = new PDO($dsn, $_ENV['DB_USER'], $_ENV['DB_PASS'], [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]);
+        try {
+            self::$pdo = new PDO($dsn, $dbConfig['user'], $dbConfig['pass'], [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]);
+        } catch (PDOException $e) {
+            error_log('[clinica.database] Falha ao conectar ao banco: ' . $e->getMessage());
+            throw new RuntimeException('Falha ao conectar ao banco de dados.', 0, $e);
+        }
 
         return self::$pdo;
     }

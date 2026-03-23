@@ -225,11 +225,23 @@ class PlanoCursoRepository
         $stmt = $this->pdo()->prepare(
             "SELECT COALESCE(MAX(OrdemAula), 0) + 1
              FROM tb_plano_curso_aula
-             WHERE IdPlanoCurso = ?
-               AND Habilitado = 1"
+             WHERE IdPlanoCurso = ?"
         );
         $stmt->execute([$idPlanoCurso]);
         return (int) $stmt->fetchColumn();
+    }
+
+    public function normalizeDisabledOrdensByPlano(int $idPlanoCurso): int
+    {
+        $stmt = $this->pdo()->prepare(
+            "UPDATE tb_plano_curso_aula
+             SET OrdemAula = -IdPlanoCursoAula
+             WHERE IdPlanoCurso = ?
+               AND Habilitado = 0
+               AND OrdemAula > 0"
+        );
+        $stmt->execute([$idPlanoCurso]);
+        return $stmt->rowCount();
     }
 
     public function createAula(array $data): int
@@ -279,7 +291,8 @@ class PlanoCursoRepository
     {
         $stmt = $this->pdo()->prepare(
             "UPDATE tb_plano_curso_aula
-             SET Habilitado = 0
+             SET Habilitado = 0,
+                 OrdemAula = -IdPlanoCursoAula
              WHERE IdPlanoCursoAula = ?
                AND Habilitado = 1"
         );

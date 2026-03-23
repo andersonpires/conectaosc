@@ -5,11 +5,7 @@ $BASE_para_URL = $runtime['base_para_url'];
 header('Content-Type: application/json; charset=utf-8');
 
 $basePath = $BASE_para_PATH;
-$apiKeyCPF = null;
-$apiCpfPath = $basePath . '/temp/api-cpf.php';
-if (is_file($apiCpfPath)) {
-    require_once $apiCpfPath;
-}
+$apiKeyCPF = bootstrap_env('CPF_API_KEY', bootstrap_env('APICPF_API_KEY', ''));
 
 $logPath = __DIR__ . '/consulta-cpf.log';
 function logConsultaCpf(string $mensagem, string $logPath): void

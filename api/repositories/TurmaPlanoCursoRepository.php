@@ -199,9 +199,18 @@ class TurmaPlanoCursoRepository
                     tpc.IdTurmaPlanoCurso, tpc.IdPlanoCurso, tpc.DataVinculo,
                     p.NomePlano, p.Versao
              FROM tbTurma t
-             LEFT JOIN tb_turma_plano_curso tpc
+             LEFT JOIN (
+                    SELECT tpc1.*
+                    FROM tb_turma_plano_curso tpc1
+                    INNER JOIN (
+                        SELECT IdTurma, MAX(IdTurmaPlanoCurso) AS IdTurmaPlanoCurso
+                        FROM tb_turma_plano_curso
+                        WHERE Habilitado = 1
+                        GROUP BY IdTurma
+                    ) ultima
+                        ON ultima.IdTurmaPlanoCurso = tpc1.IdTurmaPlanoCurso
+                ) tpc
                     ON tpc.IdTurma = t.IdTurma
-                   AND tpc.Habilitado = 1
              LEFT JOIN tb_plano_curso p
                     ON p.IdPlanoCurso = tpc.IdPlanoCurso
              WHERE t.IdCurso = ?

@@ -1,0 +1,33 @@
+# Garantir que index.php rode primeiro (valida sessao antes do front)
+<IfModule mod_dir.c>
+    DirectoryIndex index.php index.html
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # API da clinica deve seguir fluxo proprio
+    RewriteRule ^api/ - [L]
+
+    # Impedir acesso direto ao index legado sem checagem
+    RewriteRule ^index\.html$ index.php [L]
+
+    # Front Angular deve passar por index.php para aplicar base href dinamico
+    RewriteCond %{REQUEST_URI} !frontend-angular/dist/frontend-angular/browser/ [NC]
+    RewriteCond %{ENV:ANGULAR_MAP} !=1
+    RewriteRule ^frontend-angular/?$ index.php [L,QSA,E=ANGULAR_MAP:1]
+    RewriteCond %{REQUEST_URI} !frontend-angular/dist/frontend-angular/browser/ [NC]
+    RewriteCond %{ENV:ANGULAR_MAP} !=1
+    RewriteRule ^frontend-angular/(.+\.(js|css|ico|png|jpg|jpeg|svg|webp|map|json|txt))$ frontend-angular/dist/frontend-angular/browser/$1 [L,NC,E=ANGULAR_MAP:1]
+    RewriteCond %{REQUEST_URI} !frontend-angular/dist/frontend-angular/browser/ [NC]
+    RewriteCond %{ENV:ANGULAR_MAP} !=1
+    RewriteRule ^frontend-angular/.*$ index.php [L,QSA,E=ANGULAR_MAP:1]
+
+    # Se arquivo/pasta existe, serve normalmente
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Rotas SPA Angular (deep-link) indo para index.php
+    RewriteRule ^(dashboard|agenda|pacientes|paciente|paciente/[^/]+|prontuario|atendimento|anamnese|configuracoes)$ index.php [L,QSA]
+</IfModule>

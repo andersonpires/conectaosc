@@ -199,32 +199,44 @@ final class PlanoCursoService
             throw new InvalidArgumentException('DuracaoMinutos deve ser maior que zero');
         }
 
-        $ordem = isset($payload['OrdemAula']) ? (int) $payload['OrdemAula'] : 0;
-        if ($ordem <= 0) {
-            $ordem = $this->repository->nextOrdemAula($idPlanoCurso);
+        $pdo = $this->repository->pdo();
+        $pdo->beginTransaction();
+        try {
+            $this->repository->normalizeDisabledOrdensByPlano($idPlanoCurso);
+            $ordem = isset($payload['OrdemAula']) ? (int) $payload['OrdemAula'] : 0;
+            if ($ordem <= 0) {
+                $ordem = $this->repository->nextOrdemAula($idPlanoCurso);
+            }
+
+            $idAula = $this->repository->createAula([
+                'IdPlanoCurso' => $idPlanoCurso,
+                'OrdemAula' => $ordem,
+                'NomeAula' => $nomeAula,
+                'Descricao' => $this->nullableString($payload['Descricao'] ?? null),
+                'DuracaoMinutos' => $duracao,
+                'Categoria' => $this->nullableString($payload['Categoria'] ?? null),
+                'Recursos' => $this->nullableString($payload['Recursos'] ?? null),
+                'Materiais' => $this->nullableString($payload['Materiais'] ?? null),
+                'Observacoes' => $this->nullableString($payload['Observacoes'] ?? null),
+            ]);
+
+            $vinculos = $this->repository->listVinculosAtivosByPlano($idPlanoCurso);
+            foreach ($vinculos as $vinculo) {
+                $idTurmaPlanoCurso = (int) ($vinculo['IdTurmaPlanoCurso'] ?? 0);
+                if ($idTurmaPlanoCurso <= 0) {
+                    continue;
+                }
+                $this->repository->createPendenteCronogramaIfMissing($idTurmaPlanoCurso, $idAula);
+            }
+
+            $pdo->commit();
+            return $idAula;
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
         }
-
-        $idAula = $this->repository->createAula([
-            'IdPlanoCurso' => $idPlanoCurso,
-            'OrdemAula' => $ordem,
-            'NomeAula' => $nomeAula,
-            'Descricao' => $this->nullableString($payload['Descricao'] ?? null),
-            'DuracaoMinutos' => $duracao,
-            'Categoria' => $this->nullableString($payload['Categoria'] ?? null),
-            'Recursos' => $this->nullableString($payload['Recursos'] ?? null),
-            'Materiais' => $this->nullableString($payload['Materiais'] ?? null),
-            'Observacoes' => $this->nullableString($payload['Observacoes'] ?? null),
-        ]);
-
-        $vinculos = $this->repository->listVinculosAtivosByPlano($idPlanoCurso);
-        foreach ($vinculos as $vinculo) {
-            $this->repository->createPendenteCronogramaIfMissing(
-                (int) ($vinculo['IdTurmaPlanoCurso'] ?? 0),
-                $idAula
-            );
-        }
-
-        return $idAula;
     }
 
     public function updateAula(int $idPlanoCursoAula, array $payload): bool
@@ -297,6 +309,8 @@ final class PlanoCursoService
         $pdo = $this->repository->pdo();
         $pdo->beginTransaction();
         try {
+            $this->repository->normalizeDisabledOrdensByPlano($idPlanoCurso);
+
             // Atualiza em duas fases para evitar colisão da unique (IdPlanoCurso, OrdemAula).
             foreach ($idsOrdenados as $index => $idAula) {
                 $this->repository->updateOrdemAula($idAula, -100000 - $index);

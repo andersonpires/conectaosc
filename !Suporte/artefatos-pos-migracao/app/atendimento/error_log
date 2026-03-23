@@ -1,0 +1,40 @@
+[28-May-2025 15:47:17 America/Sao_Paulo] PHP Warning:  Undefined array key "Cod" in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 7
+[28-May-2025 15:47:17 America/Sao_Paulo] PHP Warning:  Undefined array key "PaginasPermitidas" in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 24
+[28-May-2025 15:47:17 America/Sao_Paulo] PHP Fatal error:  Uncaught TypeError: in_array(): Argument #2 ($haystack) must be of type array, null given in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php:24
+Stack trace:
+#0 /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php(24): in_array('index.php', NULL)
+#1 /home1/mwtech63/iteva.com.br/conectaosc/app/atendimento/index.php(16): require_once('/home1/mwtech63...')
+#2 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 24
+[28-May-2025 15:47:18 America/Sao_Paulo] PHP Warning:  Undefined array key "Cod" in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 7
+[28-May-2025 15:47:18 America/Sao_Paulo] PHP Warning:  Undefined array key "PaginasPermitidas" in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 24
+[28-May-2025 15:47:18 America/Sao_Paulo] PHP Fatal error:  Uncaught TypeError: in_array(): Argument #2 ($haystack) must be of type array, null given in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php:24
+Stack trace:
+#0 /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php(24): in_array('index.php', NULL)
+#1 /home1/mwtech63/iteva.com.br/conectaosc/app/atendimento/index.php(16): require_once('/home1/mwtech63...')
+#2 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 24
+[28-May-2025 15:47:19 America/Sao_Paulo] PHP Warning:  Undefined array key "Cod" in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 7
+[28-May-2025 15:47:19 America/Sao_Paulo] PHP Warning:  Undefined array key "PaginasPermitidas" in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 24
+[28-May-2025 15:47:19 America/Sao_Paulo] PHP Fatal error:  Uncaught TypeError: in_array(): Argument #2 ($haystack) must be of type array, null given in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php:24
+Stack trace:
+#0 /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php(24): in_array('index.php', NULL)
+#1 /home1/mwtech63/iteva.com.br/conectaosc/app/atendimento/index.php(16): require_once('/home1/mwtech63...')
+#2 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 24
+[03-Oct-2025 09:08:37 America/Sao_Paulo] PHP Warning:  Undefined array key "Cod" in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 7
+[03-Oct-2025 09:08:37 America/Sao_Paulo] PHP Warning:  Undefined array key "PaginasPermitidas" in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 24
+[03-Oct-2025 09:08:37 America/Sao_Paulo] PHP Fatal error:  Uncaught TypeError: in_array(): Argument #2 ($haystack) must be of type array, null given in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php:24
+Stack trace:
+#0 /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php(24): in_array('index.php', NULL)
+#1 /home1/mwtech63/iteva.com.br/conectaosc/app/atendimento/index.php(16): require_once('/home1/mwtech63...')
+#2 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 24
+[03-Oct-2025 09:08:49 America/Sao_Paulo] PHP Warning:  Undefined array key "Cod" in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 7
+[03-Oct-2025 09:08:49 America/Sao_Paulo] PHP Warning:  Undefined array key "PaginasPermitidas" in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 24
+[03-Oct-2025 09:08:49 America/Sao_Paulo] PHP Fatal error:  Uncaught TypeError: in_array(): Argument #2 ($haystack) must be of type array, null given in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php:24
+Stack trace:
+#0 /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php(24): in_array('index.php', NULL)
+#1 /home1/mwtech63/iteva.com.br/conectaosc/app/atendimento/index.php(16): require_once('/home1/mwtech63...')
+#2 {main}
+  thrown in /home1/mwtech63/iteva.com.br/conectaosc/checa-token.php on line 24

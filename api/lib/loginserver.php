@@ -1,7 +1,7 @@
 <?php
-$servername = "localhost";
-$username = "root";
-$password = "F@ce1991!";
-$dbname = "mwtech63_matricula";
+$servername = "";
+$username = "";
+$password = "";
+$dbname = "";
 $port = 3306;
 ?>
