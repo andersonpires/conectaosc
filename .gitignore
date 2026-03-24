@@ -1,11 +1,11 @@
 temp/*
 !temp/*.php
 !temp/.env.example
-!Suporte/
+zz_Suporte/
 .vscode/
 backup-versao-1.93/
 banco/
-clinica/!Suporte/
+clinica/zz_Suporte/
 get/
 storage/
 tools/

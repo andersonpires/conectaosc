@@ -12,10 +12,27 @@ class CursoRepository
     public function listAll(): array
     {
         $pdo = $this->pdo();
-        $sql = "SELECT c.*, IFNULL(p.nomeProjeto, '-') AS nomeProjeto, IFNULL(c.Programa, '-') AS Programa,
-                       IFNULL((SELECT COUNT(*) FROM tbTurma t WHERE t.IdCurso = c.IdCurso), 0) AS QtdTurmas
+        $sql = "SELECT c.*,
+                       IFNULL(p.nomeProjeto, '-') AS nomeProjeto,
+                       IFNULL(c.Programa, '-') AS Programa,
+                       IFNULL(turmas.QtdTurmas, 0) AS QtdTurmas,
+                       IFNULL(matriculas.TotalAlunos, 0) AS TotalAlunos
                 FROM tbCurso c
-                LEFT JOIN tbProjeto p ON c.IdProjeto = p.IdProjeto
+                LEFT JOIN tbProjeto p
+                       ON c.IdProjeto = p.IdProjeto
+                LEFT JOIN (
+                    SELECT t.IdCurso, COUNT(*) AS QtdTurmas
+                    FROM tbTurma t
+                    GROUP BY t.IdCurso
+                ) turmas
+                       ON turmas.IdCurso = c.IdCurso
+                LEFT JOIN (
+                    SELECT m.IdCurso, COUNT(DISTINCT m.IdUsuario) AS TotalAlunos
+                    FROM tbMatricula m
+                    WHERE m.Habilitado = 1
+                    GROUP BY m.IdCurso
+                ) matriculas
+                       ON matriculas.IdCurso = c.IdCurso
                 ORDER BY c.NomeCurso ASC";
 
         return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);

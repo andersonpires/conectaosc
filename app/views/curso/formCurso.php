@@ -150,6 +150,7 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                             <th class="text-center">Programa</th>
                                             <th class="text-center">Situação</th>
                                             <th class="text-center">Qtd turmas</th>
+                                            <th class="text-center">Total alunos</th>
                                             <th class="text-center">Duração</th>
                                             <th class="text-center">Tipo</th>
                                             <th class="text-center">Carga horária</th>
@@ -440,6 +441,7 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
             <td class="text-center">${escapeHtml(item.Programa || '-')}</td>
             <td class="text-center">${badge}</td>
             <td class="text-center">${escapeHtml(item.QtdTurmas ?? 0)}</td>
+            <td class="text-center">${escapeHtml(item.TotalAlunos ?? 0)}</td>
             <td class="text-center">${escapeHtml(duracao)}</td>
             <td class="text-center">${escapeHtml(item.Tipo || '')}</td>
             <td class="text-center">${escapeHtml(carga)}</td>
