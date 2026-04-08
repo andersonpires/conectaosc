@@ -113,12 +113,12 @@ $tipoSessao = (string)($_SESSION['Tipo'] ?? '');
 			</li>
 			<li class="sidebar-item">
 				<a class="sidebar-link" href="<?php echo $BASE_para_URL ?>/beneficiarios/lista">
-					<i class="align-middle" data-feather="align-left"></i> <span class="align-middle">Lista de Beneficiários</span>
+					<i class="align-middle" data-feather="list"></i> <span class="align-middle">Lista de Beneficiários</span>
 				</a>
 			</li>
 			<li class="sidebar-item">
 				<a class="sidebar-link" href="<?php echo $BASE_para_URL ?>/beneficiarios/dados">
-					<i class="align-middle" data-feather="list"></i> <span class="align-middle">Dados de Beneficiários</span>
+					<i class="align-middle" data-feather="align-left"></i> <span class="align-middle">Dados de Beneficiários</span>
 				</a>
 			</li>
 			<li class="sidebar-item">

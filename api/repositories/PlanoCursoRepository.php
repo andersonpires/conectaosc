@@ -99,6 +99,74 @@ class PlanoCursoRepository
         return $data ?: null;
     }
 
+    public function findByIdForPdf(int $idPlanoCurso): ?array
+    {
+        $stmt = $this->pdo()->prepare(
+            "SELECT p.*,
+                    c.NomeCurso,
+                    c.IdProjeto,
+                    pr.NomeProjeto,
+                    pr.LogoProjeto
+             FROM tb_plano_curso p
+             INNER JOIN tbCurso c ON c.IdCurso = p.IdCurso
+             LEFT JOIN tbProjeto pr ON pr.IdProjeto = c.IdProjeto
+             WHERE p.IdPlanoCurso = ?
+               AND p.Habilitado = 1
+             LIMIT 1"
+        );
+        $stmt->execute([$idPlanoCurso]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    public function listTodosByPlano(int $idPlanoCurso): array
+    {
+        $stmt = $this->pdo()->prepare(
+            "SELECT t.*,
+                    u.Nome AS NomeConcluidoPor,
+                    u.Sobrenome AS SobrenomeConcluidoPor
+             FROM tb_plano_curso_aula_todo t
+             INNER JOIN tb_plano_curso_aula a ON a.IdPlanoCursoAula = t.IdPlanoCursoAula
+             LEFT JOIN tbUser u ON u.IdColaborador = t.ConcluidoPor
+             WHERE a.IdPlanoCurso = ?
+               AND a.Habilitado = 1
+               AND t.Habilitado = 1
+             ORDER BY a.OrdemAula ASC, t.OrdemItem ASC, t.IdPlanoCursoAulaTodo ASC"
+        );
+        $stmt->execute([$idPlanoCurso]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function listAulaAnexosByPlano(int $idPlanoCurso): array
+    {
+        $stmt = $this->pdo()->prepare(
+            "SELECT x.*
+             FROM tb_plano_curso_anexo x
+             INNER JOIN tb_plano_curso_aula a ON a.IdPlanoCursoAula = x.IdPlanoCursoAula
+             WHERE a.IdPlanoCurso = ?
+               AND a.Habilitado = 1
+             ORDER BY a.OrdemAula ASC, x.IdPlanoCursoAnexo ASC"
+        );
+        $stmt->execute([$idPlanoCurso]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function loadPdfHeaderConfig(): array
+    {
+        $row = $this->pdo()->query(
+            "SELECT c.LogoImpressao,
+                    c.CargoDirigente,
+                    c.IdColaboradorDirigente,
+                    u.Nome AS NomeDirigente,
+                    u.Sobrenome AS SobrenomeDirigente
+             FROM tbConfig c
+             LEFT JOIN tbUser u ON u.IdColaborador = c.IdColaboradorDirigente
+             LIMIT 1"
+        )->fetch(PDO::FETCH_ASSOC);
+
+        return is_array($row) ? $row : [];
+    }
+
     public function create(array $data): int
     {
         $stmt = $this->pdo()->prepare(

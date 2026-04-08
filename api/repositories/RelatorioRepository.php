@@ -265,7 +265,7 @@ class RelatorioRepository
             $joinProjeto = " LEFT JOIN tbProjeto p ON cu.IdProjeto = p.IdProjeto";
         }
 
-        $sql = "SELECT a.IdUsuario AS IdAluno, a.IdUsuario, a.Nome AS Aluno, a.Foto, a.CPF, c.Dia, c.Mes, c.Ano, c.Data,
+        $sql = "SELECT a.IdUsuario AS IdAluno, a.IdUsuario, a.Nome AS Aluno, a.Foto, a.CPF, c.IdChamada, c.Obs, c.IdCurso, c.IdTurma, c.Dia, c.Mes, c.Ano, c.Data,
                        c.presenca, c.falta, c.faltajust, cu.NomeCurso, t.NomeTurma, a.Habilitado
                        $selectProjeto
                 FROM tbChamada c
@@ -308,7 +308,7 @@ class RelatorioRepository
             $joinProjeto = " LEFT JOIN tbProjeto p ON cu.IdProjeto = p.IdProjeto";
         }
 
-        $sql = "SELECT a.IdUsuario AS IdAluno, a.IdUsuario, a.Nome AS Aluno, a.Foto, a.CPF, c.Dia, c.Mes, c.Ano, c.Data,
+        $sql = "SELECT a.IdUsuario AS IdAluno, a.IdUsuario, a.Nome AS Aluno, a.Foto, a.CPF, c.IdChamada, c.Obs, c.IdCurso, c.IdTurma, c.Dia, c.Mes, c.Ano, c.Data,
                        c.presenca, c.falta, c.faltajust, cu.NomeCurso, t.NomeTurma, a.Habilitado
                        $selectProjeto
                 FROM tbChamada c

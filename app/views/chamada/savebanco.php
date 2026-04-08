@@ -173,6 +173,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $dataSelecionada = $_POST['dataSelecionada'];
             $observacoes = $_POST['observacoes'];
 
+            // Resolve IdAluno from IdMatricula to keep tbChamada consistent.
+            $stmtAluno = $pdo->prepare("SELECT IdUsuario FROM tbMatricula WHERE IdMatricula = ? LIMIT 1");
+            $stmtAluno->execute([$idMatricula]);
+            $rowAluno = $stmtAluno->fetch(PDO::FETCH_ASSOC);
+            if (!$rowAluno || empty($rowAluno['IdUsuario'])) {
+                echo json_encode(['success' => false, 'message' => 'Matricula nao encontrada para registrar observacao.']);
+                exit;
+            }
+            $idAluno = (int)$rowAluno['IdUsuario'];
+
             // Divide a data selecionada em dia, mês e ano
             list($dia, $mes, $ano) = explode('/', $dataSelecionada);
             $data = $ano . '-' . $mes . '-' . $dia;
@@ -181,9 +191,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             // Prepara a consulta com ON DUPLICATE KEY UPDATE
             $sql = "
-                INSERT INTO tbChamada (IdCurso, IdTurma, IdMatricula, Dia, Mes, Ano, Data, Obs)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tbChamada (IdCurso, IdTurma, IdMatricula, IdAluno, Dia, Mes, Ano, Data, Obs)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE 
+                IdAluno = VALUES(IdAluno),
                 Obs = VALUES(Obs),
                 presenca = IF(VALUES(presenca) IS NOT NULL AND VALUES(presenca) <> '', VALUES(presenca), presenca),
                 falta = IF(VALUES(falta) IS NOT NULL AND VALUES(falta) <> '', VALUES(falta), falta),
@@ -198,11 +209,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->bindParam(1, $idCurso, PDO::PARAM_INT);
             $stmt->bindParam(2, $idTurma, PDO::PARAM_INT);
             $stmt->bindParam(3, $idMatricula, PDO::PARAM_INT);
-            $stmt->bindParam(4, $dia, PDO::PARAM_INT);
-            $stmt->bindParam(5, $mes, PDO::PARAM_INT);
-            $stmt->bindParam(6, $ano, PDO::PARAM_INT);
-            $stmt->bindParam(7, $data, PDO::PARAM_STR);
-            $stmt->bindParam(8, $obsValue, PDO::PARAM_STR);
+            $stmt->bindParam(4, $idAluno, PDO::PARAM_INT);
+            $stmt->bindParam(5, $dia, PDO::PARAM_INT);
+            $stmt->bindParam(6, $mes, PDO::PARAM_INT);
+            $stmt->bindParam(7, $ano, PDO::PARAM_INT);
+            $stmt->bindParam(8, $data, PDO::PARAM_STR);
+            $stmt->bindParam(9, $obsValue, PDO::PARAM_STR);
 
             if ($stmt->execute()) {
                 echo json_encode(['success' => true, 'message' => 'Observação salva com sucesso.']);
@@ -358,6 +370,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 // Comentário ajustado para UTF-8.
 //     echo "Erro ao abrir o arquivo erro.txt";
 // }
+
 
 
 

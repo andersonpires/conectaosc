@@ -134,7 +134,6 @@ final class TurmaPlanoCursoService
         $pdo = $this->repository->pdo();
         $pdo->beginTransaction();
         try {
-            $this->repository->clearCronogramaByTurmaPlano($idTurmaPlanoCurso);
             $this->repository->disableActiveByTurma($idTurma);
             $pdo->commit();
             return true;

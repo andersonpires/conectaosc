@@ -11,6 +11,7 @@ use BackEnd\Controllers\CursoController;
 use BackEnd\Controllers\EventoController;
 use BackEnd\Controllers\HealthController;
 use BackEnd\Controllers\MatriculaController;
+use BackEnd\Controllers\PlanoCursoAulaTodoController;
 use BackEnd\Controllers\PlanoCursoController;
 use BackEnd\Controllers\RelatorioController;
 use BackEnd\Controllers\TurmaController;
@@ -24,6 +25,7 @@ use BackEnd\Models\CronogramaAulaModel;
 use BackEnd\Models\CursoModel;
 use BackEnd\Models\EventoModel;
 use BackEnd\Models\MatriculaModel;
+use BackEnd\Models\PlanoCursoAulaTodoModel;
 use BackEnd\Models\PlanoCursoModel;
 use BackEnd\Models\RelatorioModel;
 use BackEnd\Models\TurmaModel;
@@ -36,6 +38,7 @@ use BackEnd\Services\CronogramaAulaService;
 use BackEnd\Services\CursoService;
 use BackEnd\Services\EventoService;
 use BackEnd\Services\MatriculaService;
+use BackEnd\Services\PlanoCursoAulaTodoService;
 use BackEnd\Services\PlanoCursoService;
 use BackEnd\Services\RelatorioService;
 use BackEnd\Services\TurmaService;
@@ -69,6 +72,9 @@ $matriculaController = new MatriculaController(
 );
 $planoCursoController = new PlanoCursoController(
     new PlanoCursoService(new PlanoCursoModel())
+);
+$planoCursoAulaTodoController = new PlanoCursoAulaTodoController(
+    new PlanoCursoAulaTodoService(new PlanoCursoAulaTodoModel())
 );
 $turmaPlanoCursoController = new TurmaPlanoCursoController(
     new TurmaPlanoCursoService(new TurmaPlanoCursoModel())
@@ -112,6 +118,7 @@ $router->put('/matriculas/{id}', [$matriculaController, 'update'], [$sessionAuth
 $router->delete('/matriculas/{id}', [$matriculaController, 'destroy'], [$sessionAuth]);
 $router->get('/planos-curso', [$planoCursoController, 'index'], [$sessionAuth]);
 $router->get('/plano-cursos/resumo', [$planoCursoController, 'resumoCursos'], [$sessionAuth]);
+$router->get('/planos-curso/{id}/pdf', [$planoCursoController, 'exportPdf'], [$sessionAuth]);
 $router->get('/planos-curso/{id}', [$planoCursoController, 'show'], [$sessionAuth]);
 $router->get('/planos-curso/{id}/impacto-exclusao', [$planoCursoController, 'deleteImpact'], [$sessionAuth]);
 $router->post('/planos-curso', [$planoCursoController, 'store'], [$sessionAuth]);
@@ -123,6 +130,12 @@ $router->post('/planos-curso/{id}/aulas', [$planoCursoController, 'storeAula'], 
 $router->post('/planos-curso/{id}/aulas/reordenar', [$planoCursoController, 'reorderAulas'], [$sessionAuth]);
 $router->put('/planos-curso/aulas/{id}', [$planoCursoController, 'updateAula'], [$sessionAuth]);
 $router->delete('/planos-curso/aulas/{id}', [$planoCursoController, 'destroyAula'], [$sessionAuth]);
+$router->get('/planos-curso/aulas/{id}/todos', [$planoCursoAulaTodoController, 'listByAula'], [$sessionAuth]);
+$router->post('/planos-curso/aulas/{id}/todos', [$planoCursoAulaTodoController, 'store'], [$sessionAuth]);
+$router->post('/planos-curso/aulas/{id}/todos/reordenar', [$planoCursoAulaTodoController, 'reorder'], [$sessionAuth]);
+$router->put('/planos-curso/aulas/todos/{id}', [$planoCursoAulaTodoController, 'update'], [$sessionAuth]);
+$router->put('/planos-curso/aulas/todos/{id}/status', [$planoCursoAulaTodoController, 'updateStatus'], [$sessionAuth]);
+$router->delete('/planos-curso/aulas/todos/{id}', [$planoCursoAulaTodoController, 'destroy'], [$sessionAuth]);
 $router->get('/planos-curso/aulas/{id}/anexos', [$anexoController, 'listPlanoAula'], [$sessionAuth]);
 $router->post('/planos-curso/aulas/{id}/anexos', [$anexoController, 'uploadPlanoAula'], [$sessionAuth]);
 $router->get('/turmas/{id}/plano-curso', [$turmaPlanoCursoController, 'show'], [$sessionAuth]);

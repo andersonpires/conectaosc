@@ -38,6 +38,7 @@ if ($idCurso > 0) {
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
     <style>
         .pc-page { padding: 1rem 0 1.25rem; background: #f5f7fb; color: #1f2937; }
         .pc-hero { background: linear-gradient(130deg, #0b4aac 0%, #08347f 100%); border-radius: 1rem; padding: 1rem 1.2rem; box-shadow: 0 12px 24px rgba(8, 52, 127, .24); margin-bottom: 1rem; }
@@ -71,9 +72,49 @@ if ($idCurso > 0) {
         .btn-success:hover { background: #1ea552; border-color: #1ea552; }
         .btn-soft-danger { color: #dc3545; background: #fff5f5; border: 1px solid #ffd4d8; }
         .btn-soft-danger:hover { color: #b42332; background: #ffecee; border-color: #ffbcc3; }
+        .btn-pdf-plano { width: 34px; height: 34px; border-radius: .65rem; display: inline-flex; align-items: center; justify-content: center; background: #dc2626; border: 1px solid #dc2626; color: #fff; box-shadow: 0 4px 12px rgba(220, 38, 38, .28); transition: .15s ease; }
+        .btn-pdf-plano:hover { background: #b91c1c; border-color: #b91c1c; color: #fff; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(185, 28, 28, .32); }
+        .btn-pdf-plano i { font-size: .98rem; }
         .icon-label { display: inline-flex; align-items: center; gap: .45rem; }
         .icon-label i { color: #1e4cad; }
         .form-control:focus, .form-select:focus { border-color: #9db7e8; box-shadow: 0 0 0 .2rem rgba(13, 78, 194, .12); }
+        .todo-wrap { margin-top: .65rem; }
+        .todo-header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .45rem; }
+        .todo-title { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; font-weight: 800; margin: 0; }
+        .todo-add { display: grid; grid-template-columns: 1fr 44px; gap: .45rem; margin-bottom: .55rem; }
+        .todo-add .form-control { border-radius: .6rem; min-height: 40px; }
+        .todo-add .btn { border-radius: .6rem; font-weight: 800; }
+        .todo-list { display: grid; gap: .45rem; }
+        .todo-empty { font-size: .82rem; color: #6b7280; background: #fff; border: 1px dashed #d6deec; border-radius: .65rem; padding: .65rem .7rem; }
+        .todo-item { position: relative; z-index: 1; border: 1px solid rgba(148, 163, 184, .35); border-radius: .75rem; padding: .55rem; box-shadow: 0 10px 22px rgba(15, 23, 42, .14); cursor: grab; transition: box-shadow .15s ease, transform .15s ease; animation: todoPopIn .22s ease; }
+        .todo-item.is-color-open { z-index: 60; }
+        .todo-item:hover { box-shadow: 0 12px 26px rgba(15, 23, 42, .18); transform: translateY(-1px); }
+        .todo-item:active { cursor: grabbing; }
+        .todo-item-main { display: flex; align-items: center; gap: .45rem; }
+        .todo-toggle { width: 18px; height: 18px; flex: 0 0 auto; }
+        .todo-text { border: 1px solid rgba(148, 163, 184, .35); background: rgba(255, 255, 255, .75); border-radius: .55rem; min-height: 36px; font-size: .92rem; }
+        .todo-actions { margin-top: .45rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+        .todo-actions-left { display: flex; align-items: center; gap: .35rem; }
+        .todo-actions .btn { border-radius: .55rem; }
+        .todo-color-wrap { position: relative; z-index: 2; }
+        .todo-color-toggle { width: 30px; height: 30px; border: 1px solid rgba(15, 23, 42, .22); border-radius: 50%; background: #fff; padding: 0; display: inline-flex; align-items: center; justify-content: center; transition: transform .18s ease, box-shadow .18s ease; }
+        .todo-color-wrap.is-open .todo-color-toggle { transform: rotate(18deg) scale(1.05); box-shadow: 0 4px 10px rgba(15, 23, 42, .2); }
+        .todo-color-dot { width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(15, 23, 42, .25); display: inline-block; }
+        .todo-color-menu { position: absolute; z-index: 80; top: calc(100% + 6px); left: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: .3rem; background: #fff; border: 1px solid #dce3f0; border-radius: .65rem; padding: .4rem; box-shadow: 0 8px 18px rgba(2, 6, 23, .15); opacity: 0; transform: translateY(-6px) scale(.94); transform-origin: top left; pointer-events: none; transition: opacity .2s ease, transform .2s ease; }
+        .todo-color-wrap.is-open .todo-color-menu { opacity: 1; transform: translateY(0) scale(1); pointer-events: auto; }
+        .todo-color-option { width: 22px; height: 22px; border-radius: 50%; border: 1px solid rgba(15, 23, 42, .24); padding: 0; }
+        .todo-item.is-done .todo-text { text-decoration: line-through; color: #475569; opacity: .88; }
+        .todo-avatar { position: absolute; top: -8px; right: -8px; width: 28px; height: 28px; border-radius: 50%; overflow: hidden; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(2, 6, 23, .2); background: #fff; }
+        .todo-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .todo-ghost { opacity: .6; }
+        .todo-saving { opacity: .8; pointer-events: none; }
+        .todo-item input, .todo-item button { cursor: auto; }
+        .todo-inline-tooltip { position: absolute; top: -10px; right: 10px; z-index: 120; padding: .2rem .45rem; border-radius: .45rem; background: rgba(15, 23, 42, .92); color: #fff; font-size: .68rem; font-weight: 700; box-shadow: 0 6px 16px rgba(2, 6, 23, .28); opacity: 0; transform: translateY(-4px); pointer-events: none; transition: opacity .18s ease, transform .18s ease; }
+        .todo-inline-tooltip.is-visible { opacity: 1; transform: translateY(0); }
+        @keyframes todoPopIn {
+            0% { opacity: 0; transform: translateY(8px) scale(.98); }
+            100% { opacity: 1; transform: none; }
+        }
         @media (min-width: 992px) {
             .planejamento-grid { grid-template-columns: 320px 1fr; }
             .pc-hero { padding: 1.1rem 1.25rem; }
@@ -253,6 +294,16 @@ if ($idCurso > 0) {
         let turmaVinculoTomSelect = null;
         let turmaDesvinculoTomSelect = null;
         let turmasCursoComPlano = [];
+        let todosPorAula = new Map();
+        let sortablesTodoPorAula = new Map();
+        const salvandoOrdemTodoAula = {};
+        const estadoAutoSaveTopico = {};
+        const timersTooltipTopico = new WeakMap();
+        let eventoGlobalPaletaCorVinculado = false;
+        const CORES_TODO = ['#FDE68A', '#FECACA', '#BFDBFE', '#BBF7D0', '#E9D5FF', '#FED7AA', '#FBCFE8'];
+        const BASE_FOTOS_COLABORADOR = <?php echo json_encode(rtrim(bootstrap_assets_img_url(), '/') . '/fotos', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+        const FOTO_PADRAO_COLABORADOR = <?php echo json_encode(bootstrap_foto_url(''), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+        const FOTO_USUARIO_LOGADO = <?php echo json_encode((string) ($_SESSION['Foto'] ?? ''), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
 
         function resolveApiBase() {
             const basePath = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>";
@@ -293,6 +344,106 @@ if ($idCurso > 0) {
             return String(text ?? '').replace(/[&<>"']/g, (m) => ({
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
             }[m]));
+        }
+
+        function escAttr(text) {
+            return esc(text).replace(/`/g, '&#096;');
+        }
+
+        function normalizarCorHex(valor) {
+            const cor = String(valor || '').trim().toUpperCase();
+            return /^#[0-9A-F]{6}$/.test(cor) ? cor : '#FDE68A';
+        }
+
+        function fotoColaboradorUrl(foto) {
+            const nomeArquivo = String(foto || '').trim();
+            if (!nomeArquivo) return FOTO_PADRAO_COLABORADOR;
+            return `${BASE_FOTOS_COLABORADOR}/${encodeURIComponent(nomeArquivo)}`;
+        }
+
+        function destruirSortablesTodos() {
+            sortablesTodoPorAula.forEach((sortable) => {
+                try {
+                    sortable.destroy();
+                } catch (err) {
+                    console.warn('Falha ao destruir sortable de topicos.', err);
+                }
+            });
+            sortablesTodoPorAula.clear();
+        }
+
+        function definirEstadoPaletaCor(wrap, aberto) {
+            if (!wrap) return;
+            wrap.classList.toggle('is-open', Boolean(aberto));
+            const todoItem = wrap.closest('.todo-item');
+            if (todoItem) {
+                todoItem.classList.toggle('is-color-open', Boolean(aberto));
+            }
+        }
+
+        function fecharPaletasCorTopicos() {
+            document.querySelectorAll('.todo-color-wrap.is-open').forEach((wrap) => {
+                definirEstadoPaletaCor(wrap, false);
+            });
+        }
+
+        function garantirEventosGlobaisPaletaCor() {
+            if (eventoGlobalPaletaCorVinculado) return;
+            eventoGlobalPaletaCorVinculado = true;
+
+            document.addEventListener('click', (evt) => {
+                const dentro = evt.target && evt.target.closest ? evt.target.closest('.todo-color-wrap') : null;
+                if (!dentro) {
+                    fecharPaletasCorTopicos();
+                }
+            });
+
+            document.addEventListener('keydown', (evt) => {
+                if (evt.key === 'Escape') {
+                    fecharPaletasCorTopicos();
+                }
+            });
+        }
+
+        function mostrarTooltipTopico(elemento, mensagem) {
+            if (!elemento) return;
+            const texto = String(mensagem || '').trim();
+            if (!texto) return;
+
+            if (!['relative', 'absolute', 'fixed', 'sticky'].includes(window.getComputedStyle(elemento).position)) {
+                elemento.style.position = 'relative';
+            }
+
+            const anterior = elemento.querySelector('.todo-inline-tooltip');
+            if (anterior) {
+                anterior.remove();
+            }
+
+            const timerAnterior = timersTooltipTopico.get(elemento);
+            if (timerAnterior) {
+                clearTimeout(timerAnterior);
+            }
+
+            const tooltip = document.createElement('span');
+            tooltip.className = 'todo-inline-tooltip';
+            tooltip.textContent = texto;
+            elemento.appendChild(tooltip);
+
+            window.requestAnimationFrame(() => {
+                tooltip.classList.add('is-visible');
+            });
+
+            const timer = setTimeout(() => {
+                tooltip.classList.remove('is-visible');
+                setTimeout(() => {
+                    if (tooltip.parentNode) {
+                        tooltip.parentNode.removeChild(tooltip);
+                    }
+                }, 200);
+                timersTooltipTopico.delete(elemento);
+            }, 1100);
+
+            timersTooltipTopico.set(elemento, timer);
         }
 
         function uxModalElements() {
@@ -405,12 +556,29 @@ if ($idCurso > 0) {
                             <div class="fw-bold">${esc(p.NomePlano)}</div>
                             <div class="small text-muted">Versão: <strong>${esc(p.Versao || '-')}</strong></div>
                         </div>
-                        <i class="fa-solid ${planoSelecionado && Number(planoSelecionado.IdPlanoCurso) === Number(p.IdPlanoCurso) ? 'fa-circle-check text-primary' : 'fa-clock-rotate-left text-muted'}"></i>
+                        <div class="d-flex align-items-center gap-1">
+                            <a
+                                class="btn btn-sm btn-pdf-plano"
+                                data-action="pdf-plano"
+                                href="${resolveApiBase()}/planos-curso/${Number(p.IdPlanoCurso)}/pdf"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Gerar PDF do planejamento"
+                                aria-label="Gerar PDF do planejamento">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </a>
+                            <i class="fa-solid ${planoSelecionado && Number(planoSelecionado.IdPlanoCurso) === Number(p.IdPlanoCurso) ? 'fa-circle-check text-primary' : 'fa-clock-rotate-left text-muted'}"></i>
+                        </div>
                     </div>
                 </div>
             `).join('');
             el.querySelectorAll('.planejamento-item').forEach((item) => {
                 item.addEventListener('click', () => selecionarPlano(Number(item.dataset.id)));
+            });
+            el.querySelectorAll('.planejamento-item [data-action="pdf-plano"]').forEach((btnPdf) => {
+                btnPdf.addEventListener('click', (evt) => {
+                    evt.stopPropagation();
+                });
             });
         }
 
@@ -479,6 +647,18 @@ if ($idCurso > 0) {
                         </div>
                     </div>
                     <div class="small mt-2" data-box="anexos" style="display:none;"></div>
+                    <div class="pc-soft-box todo-wrap">
+                        <div class="todo-header">
+                            <h4 class="todo-title mb-0"><i class="fa-solid fa-list-check me-1"></i>T&oacute;picos da aula</h4>
+                        </div>
+                        <div class="todo-add">
+                            <input type="text" class="form-control form-control-sm" data-field="todoNovoTexto" placeholder="Novo t&oacute;pico">
+                            <button class="btn btn-primary btn-sm" type="button" data-action="todo-add" aria-label="Adicionar t&oacute;pico">+</button>
+                        </div>
+                        <div class="todo-list" data-box="todo-list">
+                            <div class="todo-empty">Carregando t&oacute;picos...</div>
+                        </div>
+                    </div>
                     </div>
                 </div>
             `).join('');
@@ -488,6 +668,10 @@ if ($idCurso > 0) {
                     const item = e.target.closest('.aula-item');
                     const id = Number(item.dataset.id);
                     const action = btn.dataset.action;
+                    if (action === 'todo-add') {
+                        await adicionarTopicoAula(item, id);
+                        return;
+                    }
                     if (action === 'up' || action === 'down') {
                         moverAula(id, action);
                         return;
@@ -519,6 +703,12 @@ if ($idCurso > 0) {
                         nomeInput.value = file.name || '';
                     }
                 });
+            });
+
+            el.querySelectorAll('.aula-item').forEach((aulaItem) => {
+                const idAula = Number(aulaItem.dataset.id || 0);
+                if (idAula <= 0) return;
+                renderTopicosAula(idAula);
             });
         }
 
@@ -571,6 +761,413 @@ if ($idCurso > 0) {
             await listarAnexosAula(item, idAula, false);
             toastOk('Anexo(s) enviado(s).');
             showStatus('Anexo(s) enviados com sucesso.', 'success');
+        }
+
+        async function carregarTopicosAula(idAula, { silencioso = true } = {}) {
+            try {
+                const result = await apiFetch(`/planos-curso/aulas/${idAula}/todos`);
+                todosPorAula.set(idAula, result.data || []);
+                renderTopicosAula(idAula);
+            } catch (err) {
+                if (!silencioso) {
+                    toastErr(err.message);
+                    showStatus(err.message, 'danger');
+                }
+                const aulaItem = document.querySelector(`.aula-item[data-id="${idAula}"]`);
+                const box = aulaItem?.querySelector('[data-box="todo-list"]');
+                if (box) {
+                    box.innerHTML = '<div class="todo-empty">Falha ao carregar t&oacute;picos.</div>';
+                }
+            }
+        }
+
+        async function carregarTopicosDasAulas() {
+            const idsAula = aulasOrdemEditada.map((a) => Number(a.IdPlanoCursoAula)).filter((id) => id > 0);
+            if (!idsAula.length) return;
+            await Promise.all(idsAula.map((idAula) => carregarTopicosAula(idAula, { silencioso: true })));
+        }
+
+        function renderTopicosAula(idAula) {
+            const aulaItem = document.querySelector(`.aula-item[data-id="${idAula}"]`);
+            if (!aulaItem) return;
+
+            const box = aulaItem.querySelector('[data-box="todo-list"]');
+            if (!box) return;
+
+            if (!todosPorAula.has(idAula)) {
+                box.innerHTML = '<div class="todo-empty">Carregando t&oacute;picos...</div>';
+                return;
+            }
+
+            const topicos = todosPorAula.get(idAula) || [];
+            if (!topicos.length) {
+                box.innerHTML = '<div class="todo-empty">Sem t&oacute;picos cadastrados.</div>';
+                inicializarSortableTopicosAula(aulaItem, idAula);
+                vincularEventosTopicosAula(aulaItem, idAula);
+                return;
+            }
+
+            box.innerHTML = topicos.map((topico) => {
+                const idTodo = Number(topico.IdPlanoCursoAulaTodo || 0);
+                const concluido = Number(topico.Concluido || 0) === 1;
+                const corHex = normalizarCorHex(topico.CorHex || '#FDE68A');
+                const nomeConcluido = `${String(topico.NomeConcluidoPor || '').trim()} ${String(topico.SobrenomeConcluidoPor || '').trim()}`.trim() || 'Usu\u00E1rio';
+                const fotoConcluido = String(topico.FotoConcluidoPor || '').trim();
+                const avatarUrl = fotoColaboradorUrl(fotoConcluido || FOTO_USUARIO_LOGADO);
+                const chipsCores = CORES_TODO.map((cor) => `
+                    <button
+                        type="button"
+                        class="todo-color-option"
+                        data-action="todo-cor-chip"
+                        data-color="${escAttr(cor)}"
+                        title="Aplicar cor ${escAttr(cor)}"
+                        style="background:${escAttr(cor)};">
+                    </button>
+                `).join('');
+
+                return `
+                    <div class="todo-item ${concluido ? 'is-done' : ''}" data-todo-id="${idTodo}" data-saved-text="${escAttr(topico.TextoTopico || '')}" data-saved-color="${escAttr(corHex)}" data-current-color="${escAttr(corHex)}" style="background:${escAttr(corHex)};">
+                        ${concluido ? `
+                            <div class="todo-avatar" title="Conclu\u00EDdo por ${escAttr(nomeConcluido)}">
+                                <img src="${escAttr(avatarUrl)}" alt="${escAttr(nomeConcluido)}">
+                            </div>
+                        ` : ''}
+                        <div class="todo-item-main">
+                            <input type="checkbox" class="todo-toggle" data-action="todo-toggle" ${concluido ? 'checked' : ''} aria-label="Marcar t&oacute;pico como conclu&iacute;do">
+                            <input type="text" class="form-control form-control-sm todo-text" data-field="todoTexto" maxlength="500" value="${escAttr(topico.TextoTopico || '')}">
+                        </div>
+                        <div class="todo-actions">
+                            <div class="todo-actions-left">
+                                <div class="todo-color-wrap">
+                                    <button type="button" class="todo-color-toggle" data-action="todo-color-toggle" aria-label="Escolher cor do t&oacute;pico" title="Escolher cor do t&oacute;pico">
+                                        <span class="todo-color-dot" data-box="todo-color-dot" style="background:${escAttr(corHex)};"></span>
+                                    </button>
+                                    <div class="todo-color-menu" data-box="todo-color-menu">
+                                        ${chipsCores}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-outline-danger btn-sm" data-action="todo-delete"><i class="fa-regular fa-trash-can"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            vincularEventosTopicosAula(aulaItem, idAula);
+            inicializarSortableTopicosAula(aulaItem, idAula);
+        }
+
+        function vincularEventosTopicosAula(aulaItem, idAula) {
+            garantirEventosGlobaisPaletaCor();
+
+            const novoTopicoInput = aulaItem.querySelector('[data-field="todoNovoTexto"]');
+            const btnAdicionarTopico = aulaItem.querySelector('[data-action="todo-add"]');
+            if (novoTopicoInput && !novoTopicoInput.dataset.boundEnter) {
+                novoTopicoInput.dataset.boundEnter = '1';
+                novoTopicoInput.addEventListener('keydown', (evt) => {
+                    if (evt.key === 'Enter') {
+                        evt.preventDefault();
+                        if (btnAdicionarTopico) {
+                            btnAdicionarTopico.click();
+                        } else {
+                            void adicionarTopicoAula(aulaItem, idAula);
+                        }
+                    }
+                });
+            }
+
+            aulaItem.querySelectorAll('.todo-item [data-action="todo-toggle"]').forEach((checkbox) => {
+                checkbox.addEventListener('change', async () => {
+                    const todoItem = checkbox.closest('.todo-item');
+                    const idTodo = Number(todoItem?.dataset.todoId || 0);
+                    if (idTodo > 0) {
+                        await atualizarStatusTopicoAula(aulaItem, idAula, idTodo, checkbox.checked);
+                    }
+                });
+            });
+
+            aulaItem.querySelectorAll('.todo-item [data-action="todo-color-toggle"]').forEach((btnCor) => {
+                btnCor.addEventListener('click', (evt) => {
+                    evt.stopPropagation();
+                    const wrap = btnCor.closest('.todo-color-wrap');
+                    if (!wrap) return;
+                    const abrir = !wrap.classList.contains('is-open');
+                    fecharPaletasCorTopicos();
+                    if (abrir) {
+                        definirEstadoPaletaCor(wrap, true);
+                    }
+                });
+            });
+
+            aulaItem.querySelectorAll('.todo-item [data-action="todo-cor-chip"]').forEach((chip) => {
+                chip.addEventListener('click', async () => {
+                    const todoItem = chip.closest('.todo-item');
+                    const idTodo = Number(todoItem?.dataset.todoId || 0);
+                    if (idTodo <= 0) return;
+                    const corHex = normalizarCorHex(chip.dataset.color || '#FDE68A');
+                    const dot = todoItem.querySelector('[data-box="todo-color-dot"]');
+                    if (dot) {
+                        dot.style.background = corHex;
+                    }
+                    todoItem.style.background = corHex;
+                    todoItem.dataset.currentColor = corHex;
+                    const menu = chip.closest('[data-box="todo-color-menu"]');
+                    if (menu) {
+                        const wrap = menu.closest('.todo-color-wrap');
+                        if (wrap) {
+                            definirEstadoPaletaCor(wrap, false);
+                        }
+                    }
+                    await agendarAutoSaveTopico(aulaItem, idAula, idTodo, todoItem, { imediato: true, tooltip: 'Cor salva automaticamente' });
+                });
+            });
+
+            aulaItem.querySelectorAll('.todo-item [data-action="todo-delete"]').forEach((btnExcluir) => {
+                btnExcluir.addEventListener('click', async () => {
+                    const todoItem = btnExcluir.closest('.todo-item');
+                    const idTodo = Number(todoItem?.dataset.todoId || 0);
+                    if (idTodo > 0) {
+                        await excluirTopicoAula(aulaItem, idAula, idTodo);
+                    }
+                });
+            });
+
+            aulaItem.querySelectorAll('.todo-item [data-field="todoTexto"]').forEach((inputTexto) => {
+                inputTexto.addEventListener('input', async () => {
+                    const todoItem = inputTexto.closest('.todo-item');
+                    const idTodo = Number(todoItem?.dataset.todoId || 0);
+                    if (idTodo > 0) {
+                        await agendarAutoSaveTopico(aulaItem, idAula, idTodo, todoItem, { tooltip: 'T\u00F3pico salvo automaticamente' });
+                    }
+                });
+                inputTexto.addEventListener('blur', async () => {
+                    const todoItem = inputTexto.closest('.todo-item');
+                    const idTodo = Number(todoItem?.dataset.todoId || 0);
+                    if (idTodo > 0) {
+                        await agendarAutoSaveTopico(aulaItem, idAula, idTodo, todoItem, { imediato: true, tooltip: 'T\u00F3pico salvo automaticamente' });
+                    }
+                });
+                inputTexto.addEventListener('keydown', async (evt) => {
+                    if (evt.key === 'Enter') {
+                        evt.preventDefault();
+                        const todoItem = inputTexto.closest('.todo-item');
+                        const idTodo = Number(todoItem?.dataset.todoId || 0);
+                        if (idTodo > 0) {
+                            await agendarAutoSaveTopico(aulaItem, idAula, idTodo, todoItem, { imediato: true, tooltip: 'T\u00F3pico salvo automaticamente' });
+                        }
+                    }
+                });
+            });
+        }
+
+        function inicializarSortableTopicosAula(aulaItem, idAula) {
+            const box = aulaItem.querySelector('[data-box="todo-list"]');
+            if (!box) return;
+
+            const sortableAtual = sortablesTodoPorAula.get(idAula);
+            if (sortableAtual) {
+                try {
+                    sortableAtual.destroy();
+                } catch (err) {
+                    console.warn('Falha ao destruir sortable antigo de topicos.', err);
+                }
+                sortablesTodoPorAula.delete(idAula);
+            }
+
+            if (!window.Sortable) return;
+            if (box.querySelectorAll('.todo-item').length < 2) return;
+
+            const sortable = Sortable.create(box, {
+                animation: 150,
+                draggable: '.todo-item',
+                handle: '.todo-item',
+                filter: 'input,button,a,label,[data-box="todo-color-menu"]',
+                preventOnFilter: false,
+                ghostClass: 'todo-ghost',
+                onEnd: async () => {
+                    await persistirOrdemTopicosAula(aulaItem, idAula);
+                }
+            });
+            sortablesTodoPorAula.set(idAula, sortable);
+        }
+
+        async function adicionarTopicoAula(aulaItem, idAula) {
+            const input = aulaItem.querySelector('[data-field="todoNovoTexto"]');
+            const textoTopico = String(input?.value || '').trim();
+            if (!textoTopico) {
+                toastWarn('Informe o texto do t\u00F3pico.');
+                return;
+            }
+
+            await apiFetch(`/planos-curso/aulas/${idAula}/todos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    TextoTopico: textoTopico,
+                    CorHex: '#FDE68A'
+                })
+            });
+
+            if (input) input.value = '';
+            await carregarTopicosAula(idAula);
+            toastOk('T\u00F3pico adicionado.');
+            showStatus('T\u00F3pico adicionado com sucesso.', 'success');
+        }
+
+        async function agendarAutoSaveTopico(aulaItem, idAula, idTodo, todoItem, { imediato = false, tooltip = 'T\u00F3pico salvo automaticamente' } = {}) {
+            if (!estadoAutoSaveTopico[idTodo]) {
+                estadoAutoSaveTopico[idTodo] = { timer: null, salvando: false, pendente: false, tooltip };
+            }
+            const estado = estadoAutoSaveTopico[idTodo];
+            estado.tooltip = tooltip;
+
+            if (estado.timer) {
+                clearTimeout(estado.timer);
+                estado.timer = null;
+            }
+
+            if (imediato) {
+                await executarAutoSaveTopico(aulaItem, idAula, idTodo, todoItem);
+                return;
+            }
+
+            estado.timer = setTimeout(() => {
+                void executarAutoSaveTopico(aulaItem, idAula, idTodo, todoItem);
+            }, 500);
+        }
+
+        async function executarAutoSaveTopico(aulaItem, idAula, idTodo, todoItem) {
+            const estado = estadoAutoSaveTopico[idTodo] || { timer: null, salvando: false, pendente: false, tooltip: 'T\u00F3pico salvo automaticamente' };
+            estadoAutoSaveTopico[idTodo] = estado;
+            if (estado.salvando) {
+                estado.pendente = true;
+                return;
+            }
+
+            estado.salvando = true;
+            try {
+                const salvo = await salvarTopicoAula(aulaItem, idAula, idTodo, todoItem, { silencioso: true, tooltip: estado.tooltip });
+                if (!salvo) {
+                    return;
+                }
+            } finally {
+                estado.salvando = false;
+                if (estado.pendente) {
+                    estado.pendente = false;
+                    await executarAutoSaveTopico(aulaItem, idAula, idTodo, todoItem);
+                }
+            }
+        }
+
+        async function salvarTopicoAula(aulaItem, idAula, idTodo, todoItem, { silencioso = false, tooltip = '' } = {}) {
+            const inputTexto = todoItem.querySelector('[data-field="todoTexto"]');
+            const dotCor = todoItem.querySelector('[data-box="todo-color-dot"]');
+            const textoTopico = String(inputTexto?.value || '').trim();
+            const corHex = normalizarCorHex(todoItem.dataset.currentColor || '#FDE68A');
+            const textoSalvo = String(todoItem.dataset.savedText || '');
+            const corSalva = normalizarCorHex(todoItem.dataset.savedColor || '#FDE68A');
+
+            if (!textoTopico) {
+                toastWarn('Informe o texto do t\u00F3pico.');
+                return false;
+            }
+            if (textoTopico === textoSalvo && corHex === corSalva) {
+                return false;
+            }
+
+            await apiFetch(`/planos-curso/aulas/todos/${idTodo}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    TextoTopico: textoTopico,
+                    CorHex: corHex
+                })
+            });
+
+            todoItem.dataset.savedText = textoTopico;
+            todoItem.dataset.savedColor = corHex;
+            todoItem.dataset.currentColor = corHex;
+            todoItem.style.background = corHex;
+            if (dotCor) {
+                dotCor.style.background = corHex;
+            }
+
+            const topicos = todosPorAula.get(idAula) || [];
+            const idx = topicos.findIndex((row) => Number(row.IdPlanoCursoAulaTodo) === idTodo);
+            if (idx >= 0) {
+                topicos[idx].TextoTopico = textoTopico;
+                topicos[idx].CorHex = corHex;
+                todosPorAula.set(idAula, topicos);
+            }
+
+            if (!silencioso) {
+                toastOk('T\u00F3pico atualizado.');
+                showStatus('T\u00F3pico atualizado com sucesso.', 'success');
+            } else if (tooltip) {
+                mostrarTooltipTopico(todoItem, tooltip);
+            }
+            return true;
+        }
+
+        async function atualizarStatusTopicoAula(aulaItem, idAula, idTodo, concluido) {
+            await apiFetch(`/planos-curso/aulas/todos/${idTodo}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Concluido: !!concluido })
+            });
+
+            await carregarTopicosAula(idAula);
+            const alvo = aulaItem.querySelector(`.todo-item[data-todo-id="${idTodo}"]`);
+            mostrarTooltipTopico(alvo, concluido ? 'Status salvo: conclu\u00EDdo' : 'Status salvo: pendente');
+        }
+
+        async function excluirTopicoAula(aulaItem, idAula, idTodo) {
+            const ok = await openUxConfirm({
+                title: 'Excluir t\u00F3pico',
+                message: 'Essa a\u00E7\u00E3o remove o t\u00F3pico da aula. Deseja continuar?',
+                confirmText: 'Excluir',
+                confirmClass: 'btn-danger'
+            });
+            if (!ok) return;
+
+            await apiFetch(`/planos-curso/aulas/todos/${idTodo}`, {
+                method: 'DELETE'
+            });
+
+            await carregarTopicosAula(idAula);
+            toastOk('T\u00F3pico exclu\u00EDdo.');
+            showStatus('T\u00F3pico exclu\u00EDdo com sucesso.', 'success');
+        }
+
+        async function persistirOrdemTopicosAula(aulaItem, idAula) {
+            const box = aulaItem.querySelector('[data-box="todo-list"]');
+            if (!box) return;
+
+            const ids = Array.from(box.querySelectorAll('.todo-item'))
+                .map((el) => Number(el.dataset.todoId || 0))
+                .filter((id) => id > 0);
+            if (ids.length < 2) return;
+            if (salvandoOrdemTodoAula[idAula]) return;
+
+            salvandoOrdemTodoAula[idAula] = true;
+            box.classList.add('todo-saving');
+            try {
+                await apiFetch(`/planos-curso/aulas/${idAula}/todos/reordenar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Itens: ids })
+                });
+                await carregarTopicosAula(idAula);
+            } catch (err) {
+                toastErr(err.message);
+                showStatus(err.message, 'danger');
+                await carregarTopicosAula(idAula);
+            } finally {
+                salvandoOrdemTodoAula[idAula] = false;
+                box.classList.remove('todo-saving');
+            }
         }
 
         function moverAula(idAula, direcao) {
@@ -644,7 +1241,10 @@ if ($idCurso > 0) {
             aulasOrdemEditada = [...aulas];
             ordemAlterada = false;
             document.getElementById('btnSalvarOrdem').disabled = true;
+            destruirSortablesTodos();
+            todosPorAula = new Map();
             renderAulas();
+            await carregarTopicosDasAulas();
         }
 
         function atualizarSelectsTurmaVinculo() {
@@ -893,6 +1493,7 @@ if ($idCurso > 0) {
                 toastWarn('Selecione ao menos uma turma válida.');
                 return;
             }
+            let deveRecarregar = false;
             try {
                 const results = await Promise.allSettled(idsTurma.map((idTurma) => apiFetch(`/turmas/${idTurma}/plano-curso/vincular`, {
                     method: 'POST',
@@ -909,11 +1510,15 @@ if ($idCurso > 0) {
                     toastWarn(`Vínculo concluído parcialmente: ${ok} sucesso(s), ${falhas} falha(s).`);
                     showStatus(`Vínculo parcial: ${ok} sucesso(s), ${falhas} falha(s).`, 'warning');
                 }
+                deveRecarregar = true;
             } catch (err) {
                 toastErr(err.message);
                 showStatus(err.message, 'danger');
             } finally {
                 await recarregarSelectsTurma();
+                if (deveRecarregar) {
+                    window.location.reload();
+                }
             }
         });
 
@@ -941,6 +1546,7 @@ if ($idCurso > 0) {
             });
             if (!ok) return;
 
+            let deveRecarregar = false;
             try {
                 const results = await Promise.allSettled(idsTurma.map((idTurma) => apiFetch(`/turmas/${idTurma}/plano-curso/desvincular`, {
                     method: 'POST'
@@ -955,11 +1561,15 @@ if ($idCurso > 0) {
                     toastWarn(`Desvínculo parcial: ${sucesso} sucesso(s), ${falhas} falha(s).`);
                     showStatus(`Desvínculo parcial: ${sucesso} sucesso(s), ${falhas} falha(s).`, 'warning');
                 }
+                deveRecarregar = true;
             } catch (err) {
                 toastErr(err.message);
                 showStatus(err.message, 'danger');
             } finally {
                 await recarregarSelectsTurma();
+                if (deveRecarregar) {
+                    window.location.reload();
+                }
             }
         });
 

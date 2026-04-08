@@ -1,5 +1,6 @@
 temp/*
 !temp/*.php
+!temp/*.log
 !temp/.env.example
 zz_Suporte/
 .vscode/

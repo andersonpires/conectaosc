@@ -44,6 +44,7 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
         .datatable-toolbar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
         .datatable-toolbar .dataTables_filter { margin-left: auto; }
         #matricularAluno { position: fixed; right: 10px; top: 100px; z-index: 100; border-radius: 50%; width: 80px; height: 80px; border: none; font-weight: bold; text-align: center; padding: 5px; display: flex; justify-content: center; align-items: center; }
+        #minhaTabela tbody tr[data-popover-content] { cursor: help; }
     </style>
     <link rel="stylesheet" href="<?php echo $BASE_para_URL; ?>/assets/css/overlayNotifica.css">
     <script src="<?php echo $BASE_para_URL; ?>/assets/js/overlayNotifica.js"></script>
@@ -160,8 +161,33 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
                                     $def = (string)($dados['DeficienciasCasa'] ?? '');
                                     $defCurto = mb_strlen($def) > 40 ? mb_substr($def, 0, 40) . '...' : $def;
                                     $cpfNumerico = preg_replace('/\D/', '', $cpf ?? '');
+                                    $nomeCriador = trim((string)($dados['NomeUserEnt'] ?? ''));
+                                    $nomeAlteracao = trim((string)($dados['NomeUserAlt'] ?? ''));
+                                    $dataCriacaoBr = '-';
+                                    $dataAlteracaoBr = '-';
 
-                                    echo '<tr>';
+                                    $timeEntrada = trim((string)($dados['TimeEntrada'] ?? ''));
+                                    if ($timeEntrada !== '') {
+                                        $dtEntrada = date_create($timeEntrada);
+                                        if ($dtEntrada instanceof DateTime) {
+                                            $dataCriacaoBr = $dtEntrada->format('d/m/Y');
+                                        }
+                                    }
+
+                                    $timeAlterado = trim((string)($dados['TimeAlterado'] ?? ''));
+                                    if ($timeAlterado !== '') {
+                                        $dtAlterado = date_create($timeAlterado);
+                                        if ($dtAlterado instanceof DateTime) {
+                                            $dataAlteracaoBr = $dtAlterado->format('d/m/Y');
+                                        }
+                                    }
+
+                                    $textoCriador = $nomeCriador !== '' ? $nomeCriador : 'NÃ£o informado';
+                                    $textoAlteracao = $nomeAlteracao !== '' ? $nomeAlteracao : 'NÃ£o informado';
+                                    $popoverContent = "Criado por: {$textoCriador} em {$dataCriacaoBr}<br>Ãšltimo ajuste: {$textoAlteracao} em {$dataAlteracaoBr}";
+                                    $popoverContentAttr = htmlspecialchars($popoverContent, ENT_QUOTES, 'UTF-8');
+
+                                    echo '<tr data-popover-content="' . $popoverContentAttr . '" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="HistÃ³rico do registro">';
                                     echo '<td><input type="checkbox" class="form-radio-input doacao" name="checkbox[]" value="' . $id . '"></td>';
                                     echo '<td>' . $id . '</td>';
                                     echo '<td><span class="hover-container"><img src="' . htmlspecialchars($FOTO_PADRAO_URL) . '" data-foto-id="' . $id . '" class="rounded-circle img-cover hover-img beneficiario-foto js-foto-pendente" width="40" height="40" loading="lazy" decoding="async" alt="Foto de beneficiário"></span></td>';
@@ -239,11 +265,13 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
             autoWidth: false,
             drawCallback: function() {
                 if (window.feather) feather.replace();
+                inicializarPopoversRegistros();
                 agendarCarregamentoFotos();
             }
         });
         $('.dataTables_filter input[type="search"]').attr('placeholder', 'Buscar beneficiário');
         if (window.feather) feather.replace();
+        inicializarPopoversRegistros();
         agendarCarregamentoFotos();
 
         $('#minhaTabela').on('change', 'input[name="checkbox[]"]', function() {
@@ -269,6 +297,25 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
     function agendarCarregamentoFotos() {
         if (timerCarregarFotos) clearTimeout(timerCarregarFotos);
         timerCarregarFotos = setTimeout(carregarFotosDaPaginaAtual, 80);
+    }
+
+    function inicializarPopoversRegistros() {
+        if (!window.bootstrap || !bootstrap.Popover) return;
+
+        document.querySelectorAll('#minhaTabela tbody tr[data-popover-content]').forEach(function(linha) {
+            const popoverExistente = bootstrap.Popover.getInstance(linha);
+            if (popoverExistente) {
+                popoverExistente.dispose();
+            }
+
+            new bootstrap.Popover(linha, {
+                container: 'body',
+                trigger: 'hover focus',
+                placement: 'top',
+                html: true,
+                content: linha.getAttribute('data-popover-content') || ''
+            });
+        });
     }
 
     async function carregarFotosDaPaginaAtual() {

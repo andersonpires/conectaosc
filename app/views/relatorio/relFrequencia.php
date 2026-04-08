@@ -118,14 +118,182 @@ $avatarPadraoUrl = bootstrap_foto_url('');
             color: inherit;
             text-decoration: none;
             font-weight: 600;
+            cursor: pointer;
         }
 
         .relatorio-beneficiario-link:hover {
             text-decoration: underline;
         }
 
-        .filtros-grid .col-4,
-        .filtros-grid .col-2 {
+        .relatorio-data-link {
+            color: inherit;
+            text-decoration: underline;
+            font-weight: 700;
+        }
+
+        .relatorio-data-link:hover {
+            color: #f3e8ff;
+        }
+
+        .fj-popover-wrap {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .fj-popover-content {
+            position: absolute;
+            left: 50%;
+            bottom: calc(100% + 10px);
+            transform: translateX(-50%) translateY(6px);
+            min-width: 240px;
+            max-width: 340px;
+            padding: .6rem .75rem;
+            border-radius: 10px;
+            background: #111827;
+            color: #f9fafb;
+            font-size: .82rem;
+            line-height: 1.35;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, .28);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+            z-index: 12;
+            text-align: left;
+            white-space: normal;
+            pointer-events: none;
+        }
+
+        .fj-popover-content::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 100%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: #111827 transparent transparent transparent;
+        }
+
+        .fj-popover-wrap:hover .fj-popover-content,
+        .fj-popover-wrap:focus-within .fj-popover-content {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        #relatorio2 .table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        #relatorio2 .table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background-color: rgb(83, 37, 126) !important;
+            color: #fff;
+        }
+
+        .beneficiario-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            padding: 1rem;
+        }
+
+        .beneficiario-modal-overlay.show {
+            display: flex;
+        }
+
+        .beneficiario-modal {
+            width: min(520px, 100%);
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, .25);
+        }
+
+        .beneficiario-modal h3 {
+            margin: 0 0 .35rem 0;
+            font-size: 1.6rem;
+            color: #1f2937;
+        }
+
+        .beneficiario-modal .status-chip {
+            display: inline-block;
+            margin-bottom: 1rem;
+            padding: .25rem .7rem;
+            border-radius: 999px;
+            background: #d1fae5;
+            color: #065f46;
+            font-size: .85rem;
+            font-weight: 600;
+        }
+
+        .beneficiario-modal .modal-info {
+            color: #4b5563;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .beneficiario-modal .acoes {
+            display: grid;
+            gap: .75rem;
+            margin-bottom: 1rem;
+        }
+
+        .beneficiario-modal .acao-btn {
+            width: 100%;
+            border: 0;
+            border-radius: 12px;
+            color: #fff;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 700;
+            padding: .85rem 1rem;
+            display: block;
+        }
+
+        .beneficiario-modal .acao-cadastro {
+            background: #1f2f46;
+        }
+
+        .beneficiario-modal .acao-frequencia {
+            background: #f59e0b;
+        }
+
+        .beneficiario-modal .acao-turma {
+            background: #0f9d70;
+        }
+
+        .beneficiario-modal .fechar-btn {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            color: #374151;
+            border-radius: 12px;
+            padding: .75rem 1rem;
+            font-weight: 600;
+        }
+
+        body.modal-acoes-open {
+            overflow: hidden;
+        }
+
+        .relatorio-frequencia-card {
+            width: 100%;
+        }
+
+        .filtros-grid > [class*="col-"] {
             margin-bottom: .75rem;
         }
 
@@ -145,11 +313,6 @@ $avatarPadraoUrl = bootstrap_foto_url('');
 
             .content .card-body {
                 padding: 1rem .75rem;
-            }
-
-            .filtros-grid .col-4,
-            .filtros-grid .col-2 {
-                width: 100%;
             }
 
             .mb-3.d-flex.gap-3 {
@@ -229,12 +392,12 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                                 </form>
                             </div>
                         </div> -->
-                        <div class="card">
+                        <div class="card relatorio-frequencia-card">
                             <div class="card-body">
                                 <form id="filterForm2">
                                     <div class="mb-3">
                                         <div class="row filtros-grid">
-                                            <div class="col-4">
+                                            <div class="col-12 col-md-6 col-lg-3">
                                                 <label for="curso2" class="form-label">Curso:</label>
                                                 <select id="curso2" name="curso2" class="form-select">
                                                     <option value="">Selecione o Curso</option>
@@ -244,18 +407,18 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                                                 </select>
                                             </div>
 
-                                            <div class="col-4">
+                                            <div class="col-12 col-md-6 col-lg-3">
                                                 <label for="turma2" class="form-label">Turma:</label>
                                                 <select id="turma2" name="turma2" class="form-select">
                                                     <option value="">Selecione um curso primeiro</option>
                                                 </select>
                                             </div>
-                                            <div class="col-2">
+                                            <div class="col-12 col-md-6 col-lg-3">
                                                 <label for="dataInicio" class="form-label">Data de Início:</label>
                                                 <input type="date" id="dataInicio" name="dataInicio" class="form-control">
                                             </div>
 
-                                            <div class="col-2">
+                                            <div class="col-12 col-md-6 col-lg-3">
                                                 <label for="dataFim" class="form-label">Data de Fim:</label>
                                                 <input type="date" id="dataFim" name="dataFim" class="form-control">
                                             </div>
@@ -310,6 +473,24 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                 </div>
                 <div id="relatorio2">
                     <!-- Comentário interno -->
+                </div>
+
+                <div id="beneficiarioAcoesOverlay" class="beneficiario-modal-overlay" aria-hidden="true">
+                    <div class="beneficiario-modal" role="dialog" aria-modal="true" aria-labelledby="beneficiarioModalNome">
+                        <h3 id="beneficiarioModalNome">Beneficiário</h3>
+                        <span class="status-chip">Selecionada</span>
+                        <div class="modal-info">
+                            <div id="beneficiarioModalLinha1"></div>
+                            <div id="beneficiarioModalLinha2"></div>
+                            <div id="beneficiarioModalLinha3"></div>
+                        </div>
+                        <div class="acoes">
+                            <a id="beneficiarioBtnCadastro" class="acao-btn acao-cadastro" href="#" target="_blank" rel="noopener noreferrer">Ver/Alterar dados do beneficiário</a>
+                            <a id="beneficiarioBtnFrequencia" class="acao-btn acao-frequencia" href="#" target="_blank" rel="noopener noreferrer">Acompanhar registro diário de frequência</a>
+                            <a id="beneficiarioBtnTurma" class="acao-btn acao-turma" href="#" target="_blank" rel="noopener noreferrer">Informações sobre a turma</a>
+                        </div>
+                        <button type="button" class="fechar-btn" data-modal-close-beneficiario>Fechar</button>
+                    </div>
                 </div>
 
             </main>
@@ -392,6 +573,60 @@ $avatarPadraoUrl = bootstrap_foto_url('');
             </script>
             <script>
                 // Pesquisa por período - na tela
+                const abrirModalBeneficiario = (dados) => {
+                    $('#beneficiarioModalNome').text(dados.nome || 'Beneficiário');
+                    $('#beneficiarioModalLinha1').text(`${dados.cursoNome || 'Curso não informado'} • ${dados.turmaNome || 'Turma não informada'}`);
+                    $('#beneficiarioModalLinha2').text(`Data de referência: ${dados.dataSelecionada || 'Não informada'}`);
+                    $('#beneficiarioModalLinha3').text(`CPF: ${dados.cpfFormatado || 'Não informado'}`);
+
+                    $('#beneficiarioBtnCadastro').attr('href', dados.urlCadastro || '#');
+                    $('#beneficiarioBtnFrequencia').attr('href', dados.urlFrequencia || '#');
+                    $('#beneficiarioBtnTurma').attr('href', dados.urlTurma || '#');
+
+                    $('#beneficiarioAcoesOverlay').addClass('show').attr('aria-hidden', 'false');
+                    $('body').addClass('modal-acoes-open');
+                };
+
+                const fecharModalBeneficiario = () => {
+                    $('#beneficiarioAcoesOverlay').removeClass('show').attr('aria-hidden', 'true');
+                    $('body').removeClass('modal-acoes-open');
+                };
+
+                $(document).on('click', '.js-beneficiario-modal', function(e) {
+                    e.preventDefault();
+                    const payload = $(this).attr('data-aluno');
+                    if (!payload) {
+                        window.location.href = $(this).attr('href');
+                        return;
+                    }
+                    try {
+                        const dados = JSON.parse(decodeURIComponent(payload));
+                        abrirModalBeneficiario(dados);
+                    } catch (error) {
+                        window.location.href = $(this).attr('href');
+                    }
+                });
+
+                $(document).on('click', '[data-modal-close-beneficiario]', function() {
+                    fecharModalBeneficiario();
+                });
+
+                $(document).on('click', '#beneficiarioAcoesOverlay', function(e) {
+                    if (e.target === this) {
+                        fecharModalBeneficiario();
+                    }
+                });
+
+                $(document).on('keydown', function(e) {
+                    if (e.key === 'Escape' && $('#beneficiarioAcoesOverlay').hasClass('show')) {
+                        fecharModalBeneficiario();
+                    }
+                });
+
+                $(document).on('click', '#beneficiarioAcoesOverlay .acao-btn', function() {
+                    fecharModalBeneficiario();
+                });
+
                 $('#gerarRelatorioInterval').click(function(e) {
                     e.preventDefault();
 
@@ -416,8 +651,13 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                         $('#relatorio2').empty();
 
                         const beneficiarioCadastroBaseUrl = <?php echo json_encode($beneficiarioCadastroUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+                        const faltasBaseUrl = <?php echo json_encode($BASE_para_URL . '/chamada/faltas', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+                        const chamadaListaBaseUrl = <?php echo json_encode($BASE_para_URL . '/chamada/lista/', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+                        const turmaInfoBaseUrl = <?php echo json_encode($BASE_para_URL . '/matriculas/turma', JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
                         const fotosBaseUrl = <?php echo json_encode($assetsFotosBaseUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
                         const avatarPadraoUrl = <?php echo json_encode($avatarPadraoUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+                        const nomeCursoSelecionado = ($('#curso2 option:selected').text() || '').trim();
+                        const nomeTurmaSelecionada = ($('#turma2 option:selected').text() || '').trim();
 
                         const escapeHtml = (value) => String(value ?? '')
                             .replace(/&/g, '&amp;')
@@ -427,6 +667,46 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                             .replace(/'/g, '&#039;');
 
                         const normalizeCpf = (cpf) => String(cpf ?? '').replace(/\D/g, '');
+                        const normalizeIdNumerico = (valor) => {
+                            const id = String(valor ?? '').replace(/\D/g, '');
+                            return id === '' ? '' : id;
+                        };
+                        const formatarCpf = (cpf) => {
+                            const valor = normalizeCpf(cpf);
+                            if (valor.length !== 11) {
+                                return valor;
+                            }
+                            return valor.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+                        };
+
+                        const isoParaDataBr = (dataIso) => {
+                            if (!dataIso || !/^\d{4}-\d{2}-\d{2}$/.test(dataIso)) {
+                                return '';
+                            }
+                            const [ano, mes, dia] = dataIso.split('-');
+                            return `${dia}/${mes}/${ano}`;
+                        };
+
+                        const dataBrParaIso = (dataBr) => {
+                            if (!dataBr || !/^\d{2}\/\d{2}\/\d{4}$/.test(dataBr)) {
+                                return '';
+                            }
+                            const [dia, mes, ano] = dataBr.split('/');
+                            return `${ano}-${mes}-${dia}`;
+                        };
+
+                        const anoCompleto = (valorAno) => {
+                            const anoTexto = String(valorAno ?? '').trim();
+                            if (/^\d{4}$/.test(anoTexto)) {
+                                return anoTexto;
+                            }
+                            if (/^\d{2}$/.test(anoTexto)) {
+                                return `20${anoTexto}`;
+                            }
+                            return '2000';
+                        };
+
+                        const dataFiltroPadrao = isoParaDataBr(dataInicio);
 
                         const fotoUrl = (foto) => {
                             const nomeArquivo = String(foto ?? '').trim();
@@ -454,17 +734,66 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                             return query ? `${beneficiarioCadastroBaseUrl}?${query}` : beneficiarioCadastroBaseUrl;
                         };
 
+                        const frequenciaUrl = (aluno) => {
+                            const params = new URLSearchParams();
+                            params.set('chamada', '1');
+                            if (aluno.id) {
+                                params.set('idAluno', aluno.id);
+                            }
+                            const dataSelecionada = aluno.dataSelecionada || dataFiltroPadrao;
+                            if (dataSelecionada) {
+                                params.set('dataSelecionada', dataSelecionada);
+                            }
+                            const cursoId = normalizeIdNumerico(aluno.cursoId);
+                            if (cursoId) {
+                                params.set('NNomeCurso', cursoId);
+                            }
+                            const turmaId = normalizeIdNumerico(aluno.turmaId);
+                            if (turmaId) {
+                                params.set('NNomeTurma', turmaId);
+                            }
+                            return `${faltasBaseUrl}?${params.toString()}`;
+                        };
+
+                        const turmaUrl = (aluno) => {
+                            const params = new URLSearchParams();
+                            const turmaRef = normalizeIdNumerico(aluno.turmaId) || aluno.turmaNome;
+                            if (turmaRef) {
+                                params.set('turma', turmaRef);
+                            }
+                            const query = params.toString();
+                            return query ? `${turmaInfoBaseUrl}?${query}` : turmaInfoBaseUrl;
+                        };
+
                         // Comentário ajustado para UTF-8.
-                        const diasUnicos = [...new Set(data.map(d => {
+                        const diasMap = new Map();
+                        data.forEach((d) => {
                             const dia = String(d.Dia).padStart(2, '0');
                             const mes = String(d.Mes).padStart(2, '0');
-                            const ano = String(d.Ano).slice(-2);
-                            return `${dia}/${mes}/${ano}`;
-                        }))].sort((a, b) => {
+                            const anoCompletoValor = anoCompleto(d.Ano);
+                            const dataCompleta = `${dia}/${mes}/${anoCompletoValor}`;
+                            const dataChave = `${dia}/${mes}/${String(anoCompletoValor).slice(-2)}`;
+                            diasMap.set(dataChave, dataCompleta);
+                        });
+
+                        const diasUnicos = [...diasMap.keys()].sort((a, b) => {
                             const [da, ma, ya] = a.split('/').map(Number);
                             const [db, mb, yb] = b.split('/').map(Number);
                             return (ya - yb) || (ma - mb) || (da - db);
                         });
+
+                        const cursoIdSelecionado = normalizeIdNumerico(curso2);
+                        const turmaIdSelecionada = normalizeIdNumerico(turma2);
+                        const linkListaPresenca = (dataCompleta) => {
+                            if (!cursoIdSelecionado || !turmaIdSelecionada || !dataCompleta) {
+                                return '';
+                            }
+                            const params = new URLSearchParams();
+                            params.set('NNomeCurso', cursoIdSelecionado);
+                            params.set('NNomeTurma', turmaIdSelecionada);
+                            params.set('dataSelecionada', dataCompleta);
+                            return `${chamadaListaBaseUrl}?${params.toString()}`;
+                        };
 
                         // Mapear alunos por IdAluno
                         const alunosMap = new Map();
@@ -477,12 +806,24 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                                     nome: row.Aluno,
                                     cpf: row.CPF || '',
                                     foto: row.Foto || '',
-                                    turma: row.NomeTurma,
+                                    turmaNome: row.NomeTurma || nomeTurmaSelecionada || '',
+                                    turmaId: normalizeIdNumerico(row.IdTurma || row.idTurma || row.IdTurmaMatricula || turma2),
+                                    cursoNome: row.NomeCurso || nomeCursoSelecionado || '',
+                                    cursoId: normalizeIdNumerico(row.IdCurso || row.idCurso || row.IdCursoMatricula || curso2),
+                                    dataSelecionada: '',
+                                    detalhes: {},
                                     frequencias: {},
                                     totalP: 0,
                                     totalF: 0,
                                     totalFJ: 0
                                 });
+                            }
+
+                            const dataIso = `${anoCompleto(row.Ano)}-${String(row.Mes).padStart(2, '0')}-${String(row.Dia).padStart(2, '0')}`;
+                            const alunoAtual = alunosMap.get(id);
+                            const dataAtualIso = dataBrParaIso(alunoAtual.dataSelecionada);
+                            if (!dataAtualIso || dataIso < dataAtualIso) {
+                                alunoAtual.dataSelecionada = isoParaDataBr(dataIso);
                             }
 
                             const dataFormatada = `${String(row.Dia).padStart(2, '0')}/${String(row.Mes).padStart(2, '0')}/${String(row.Ano).slice(-2)}`;
@@ -498,6 +839,11 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                                 alunosMap.get(id).totalF++;
                             }
                             alunosMap.get(id).frequencias[dataFormatada] = status;
+                            alunosMap.get(id).detalhes[dataFormatada] = {
+                                idChamada: row.IdChamada || '',
+                                obs: String(row.Obs ?? '').trim(),
+                                status: status
+                            };
 
                         });
 
@@ -506,23 +852,53 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                         table = table.replace('<th>Ordem</th>', '<th>Ordem</th><th>Foto</th>');
                         if (turmaInterval) table += '<th>Turma</th>';
                         table += '<th>Qtd P</th><th>Qtd F</th><th>Qtd FJ</th><th>Qtd Aulas</th>';
-                        diasUnicos.forEach(dia => table += `<th>${dia}</th>`);
+                        diasUnicos.forEach((dia) => {
+                            const dataCompleta = diasMap.get(dia) || '';
+                            const urlLista = linkListaPresenca(dataCompleta);
+                            if (urlLista) {
+                                table += `<th><a href="${escapeHtml(urlLista)}" class="relatorio-data-link" target="_blank" rel="noopener noreferrer">${dia}</a></th>`;
+                                return;
+                            }
+                            table += `<th>${dia}</th>`;
+                        });
                         table += '</tr></thead><tbody>';
 
 
                         let index = 1;
                         alunosMap.forEach((aluno, idAluno) => {
                             const nomeSeguro = escapeHtml(aluno.nome);
-                            const turmaSegura = escapeHtml(aluno.turma);
+                            const turmaSegura = escapeHtml(aluno.turmaNome);
                             const fotoSegura = escapeHtml(fotoUrl(aluno.foto));
                             const linkSeguro = escapeHtml(beneficiarioUrl(aluno));
-                            table += `<tr><td>${index++}</td><td><img src="${fotoSegura}" class="relatorio-foto" alt="${nomeSeguro}"></td><td><a href="${linkSeguro}" class="relatorio-beneficiario-link">${nomeSeguro}</a></td>`;
+                            const dadosModal = encodeURIComponent(JSON.stringify({
+                                nome: aluno.nome || '',
+                                cpfFormatado: formatarCpf(aluno.cpf),
+                                cursoNome: aluno.cursoNome || nomeCursoSelecionado || '',
+                                turmaNome: aluno.turmaNome || nomeTurmaSelecionada || '',
+                                dataSelecionada: aluno.dataSelecionada || dataFiltroPadrao,
+                                urlCadastro: beneficiarioUrl(aluno),
+                                urlFrequencia: frequenciaUrl(aluno),
+                                urlTurma: turmaUrl(aluno)
+                            }));
+                            const dadosModalSeguro = escapeHtml(dadosModal);
+
+                            table += `<tr><td>${index++}</td><td><img src="${fotoSegura}" class="relatorio-foto" alt="${nomeSeguro}"></td><td><a href="${linkSeguro}" class="relatorio-beneficiario-link js-beneficiario-modal" data-aluno="${dadosModalSeguro}">${nomeSeguro}</a></td>`;
                             if (turmaInterval) table += `<td>${turmaSegura}</td>`;
                             const totalAulas = aluno.totalP + aluno.totalF + aluno.totalFJ;
                             table += `<td>${aluno.totalP}</td><td>${aluno.totalF}</td><td>${aluno.totalFJ}</td><td>${totalAulas}</td>`;
 
                             diasUnicos.forEach(dia => {
                                 const status = aluno.frequencias[dia] || 'NA';
+                                const detalheDia = aluno.detalhes[dia] || null;
+                                if (status === 'FJ' && detalheDia && detalheDia.obs) {
+                                    const obsSegura = escapeHtml(detalheDia.obs);
+                                    table += `<td><span class="fj-popover-wrap" tabindex="0">FJ<span class="fj-popover-content">Obs: ${obsSegura}</span></span></td>`;
+                                    return;
+                                }
+                                if (status === 'FJ') {
+                                    table += `<td><span class="fj-popover-wrap" tabindex="0">FJ<span class="fj-popover-content">Obs: Sem observação registrada.</span></span></td>`;
+                                    return;
+                                }
                                 table += `<td>${status}</td>`;
                             });
 

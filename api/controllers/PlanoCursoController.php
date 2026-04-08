@@ -60,6 +60,30 @@ final class PlanoCursoController
         ]);
     }
 
+    public function exportPdf(string $id): void
+    {
+        try {
+            $result = $this->service->exportPdf((int) $id);
+            $filename = (string) ($result['filename'] ?? ('planejamento_' . (int) $id . '.pdf'));
+            $content = (string) ($result['content'] ?? '');
+            if ($content === '') {
+                throw new \RuntimeException('Falha ao gerar PDF');
+            }
+
+            if (!headers_sent()) {
+                header('Content-Type: application/pdf');
+                header('Content-Disposition: inline; filename="' . str_replace('"', '', $filename) . '"');
+                header('Cache-Control: private, max-age=0, must-revalidate');
+                header('Pragma: public');
+                header('Content-Length: ' . strlen($content));
+            }
+            echo $content;
+            exit;
+        } catch (Throwable $e) {
+            $this->handleException($e, 'Falha ao gerar PDF do plano', 'export_pdf', ['id' => (int) $id]);
+        }
+    }
+
     public function store(): void
     {
         try {

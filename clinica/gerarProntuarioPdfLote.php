@@ -151,13 +151,13 @@ $sessionCookiePath = $projectBasePath !== '' ? $projectBasePath : '/';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_name('PHPSESSID3');
-}
-session_set_cookie_params([
-    'path' => $sessionCookiePath,
-    'httponly' => true,
-    'samesite' => 'Lax',
-]);
-if (session_status() === PHP_SESSION_NONE) {
+    if (!headers_sent()) {
+        session_set_cookie_params([
+            'path' => $sessionCookiePath,
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+    }
     session_start();
 }
 date_default_timezone_set('America/Sao_Paulo');

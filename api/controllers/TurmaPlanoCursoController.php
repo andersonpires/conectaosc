@@ -123,6 +123,7 @@ final class TurmaPlanoCursoController
                 'data' => (object) [],
                 'errors' => [$e->getMessage()],
             ], 422);
+            return;
         }
 
         $traceId = $this->audit->error('turma_plano_curso', $action, $e, $context);

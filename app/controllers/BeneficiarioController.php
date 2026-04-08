@@ -22,12 +22,12 @@ final class BeneficiarioController
 
     public function lista(): void
     {
-        $this->render('/app/views/beneficiario/listagemBeneficiarios.php');
+        $this->render('/app/views/beneficiario/listagemSBenef.php');
     }
 
     public function dados(): void
     {
-        $this->render('/app/views/beneficiario/listagemSBenef.php');
+        $this->render('/app/views/beneficiario/listagemBeneficiarios.php');
     }
 
     public function aniversariantes(): void

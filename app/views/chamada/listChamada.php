@@ -181,6 +181,58 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             justify-content: center;
             text-decoration: none;
         }
+
+        .plano-topicos-box {
+            border: 1px solid #dbe5f3;
+            border-radius: .65rem;
+            background: #fff;
+            padding: .55rem;
+        }
+
+        .plano-topico-item {
+            display: flex;
+            align-items: flex-start;
+            gap: .55rem;
+            padding: .4rem .2rem;
+            border-bottom: 1px dashed #e7edf8;
+        }
+
+        .plano-topico-item:last-child {
+            border-bottom: 0;
+            padding-bottom: .1rem;
+        }
+
+        .plano-topico-item .form-check-input {
+            margin-top: .2rem;
+            cursor: pointer;
+        }
+
+        .plano-topico-texto {
+            flex: 1;
+            font-size: .87rem;
+            color: #1e293b;
+            line-height: 1.3;
+        }
+
+        .plano-topico-texto.is-done {
+            text-decoration: line-through;
+            color: #64748b;
+        }
+
+        .plano-topico-meta {
+            display: flex;
+            gap: .35rem;
+            align-items: center;
+            margin-top: .15rem;
+        }
+
+        .plano-topico-cor {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            border: 1px solid rgba(15, 23, 42, .2);
+            display: inline-block;
+        }
     </style>
 
 
@@ -1178,6 +1230,73 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             return data.data || [];
         }
 
+        async function loadTopicosPlano(idPlanoCursoAula) {
+            const data = await apiFetch(`/planos-curso/aulas/${idPlanoCursoAula}/todos`);
+            return data.data || [];
+        }
+
+        async function updateStatusTopico(idPlanoCursoAulaTodo, concluido) {
+            return apiFetch(`/planos-curso/aulas/todos/${idPlanoCursoAulaTodo}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Concluido: !!concluido })
+            });
+        }
+
+        function normalizarCorHex(valor) {
+            const cor = String(valor || '').trim().toUpperCase();
+            return /^#[0-9A-F]{6}$/.test(cor) ? cor : '#FDE68A';
+        }
+
+        function renderTopicosAulaHtml(topicos) {
+            if (!Array.isArray(topicos) || topicos.length === 0) {
+                return '<div class="small text-muted">Sem t&oacute;picos cadastrados para esta aula.</div>';
+            }
+
+            return topicos.map((topico, idx) => {
+                const idTodo = Number(topico.IdPlanoCursoAulaTodo || 0);
+                const concluido = Number(topico.Concluido || 0) === 1;
+                const texto = String(topico.TextoTopico || '').trim();
+                const cor = normalizarCorHex(topico.CorHex || '#FDE68A');
+                const nomeConcluido = `${String(topico.NomeConcluidoPor || '').trim()} ${String(topico.SobrenomeConcluidoPor || '').trim()}`.trim();
+                const statusTxt = concluido ? 'Conclu\u00EDdo' : 'Pendente';
+                const concluidoPorTxt = concluido && nomeConcluido ? ` - ${esc(nomeConcluido)}` : '';
+
+                return `
+                    <div class="plano-topico-item" data-id-todo="${idTodo}">
+                        <input
+                            type="checkbox"
+                            class="form-check-input"
+                            data-action="topico-toggle"
+                            data-id-todo="${idTodo}"
+                            ${concluido ? 'checked' : ''}
+                            aria-label="Marcar item como conclu&iacute;do">
+                        <div class="plano-topico-texto ${concluido ? 'is-done' : ''}">
+                            <div><strong>${idx + 1}.</strong> ${esc(texto || '-')}</div>
+                            <div class="plano-topico-meta">
+                                <span class="plano-topico-cor" style="background:${esc(cor)};"></span>
+                                <span class="small text-muted">${statusTxt}${concluidoPorTxt}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function carregarTopicosCard(card) {
+            if (!card) return;
+            const idAula = Number(card.dataset.idAula || 0);
+            const box = card.querySelector('[data-box="topicos"]');
+            if (!idAula || !box) return;
+
+            try {
+                const topicos = await loadTopicosPlano(idAula);
+                box.innerHTML = renderTopicosAulaHtml(topicos);
+            } catch (_e) {
+                box.innerHTML = '<div class="small text-danger">Erro ao carregar t&oacute;picos.</div>';
+            }
+        }
+
         async function loadComentarios(idCronogramaAula) {
             const data = await apiFetch(`/cronograma-aulas/${idCronogramaAula}/comentarios`);
             return data.data || [];
@@ -1250,6 +1369,12 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                         <div class="small mb-1"><strong>Recursos:</strong> ${esc(item.Recursos || '-')}</div>
                         <div class="small mb-1"><strong>Materiais:</strong> ${esc(item.Materiais || '-')}</div>
                         <div class="small mb-2"><strong>Observações pedagógicas:</strong> ${esc(item.ObservacoesPlano || '-')}</div>
+                        <div class="mb-2">
+                            <div class="small mb-1"><strong>T&oacute;picos da aula</strong></div>
+                            <div class="plano-topicos-box" data-box="topicos">
+                                <div class="small text-muted">Carregando t&oacute;picos...</div>
+                            </div>
+                        </div>
 
                         <div class="d-flex flex-wrap gap-1 mb-2">
                             <button class="btn btn-sm btn-outline-success" data-action="realizada">Marcar realizada</button>
@@ -1283,11 +1408,19 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                     </div>
                 `).join('');
 
+                await loadTopicosAll();
                 bindPlanoAulaEvents();
                 await loadComentariosAll();
             } catch (err) {
                 statusEl.textContent = `Erro ao carregar plano da aula: ${err.message}`;
                 containerEl.innerHTML = '';
+            }
+        }
+
+        async function loadTopicosAll() {
+            const cards = document.querySelectorAll('.plano-aula-card');
+            for (const card of cards) {
+                await carregarTopicosCard(card);
             }
         }
 
@@ -1318,10 +1451,31 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
         function bindPlanoAulaEvents() {
             document.querySelectorAll('.plano-aula-card [data-action]').forEach((btn) => {
+                if (btn.dataset.actionBound === '1') {
+                    return;
+                }
+                btn.dataset.actionBound = '1';
                 btn.addEventListener('click', async (e) => {
                     const action = btn.dataset.action;
                     const card = e.target.closest('.plano-aula-card');
                     if (!card) return;
+                    if (action === 'topico-toggle') {
+                        const idTodo = Number(btn.dataset.idTodo || 0);
+                        if (!idTodo) return;
+                        const novoStatus = Boolean(btn.checked);
+                        try {
+                            await updateStatusTopico(idTodo, novoStatus);
+                            await carregarTopicosCard(card);
+                            bindPlanoAulaEvents();
+                            if (window.toastr) {
+                                toastr.success('Status do t\u00F3pico atualizado.');
+                            }
+                        } catch (err) {
+                            btn.checked = !novoStatus;
+                            alert(`Erro: ${err.message}`);
+                        }
+                        return;
+                    }
                     const idCronograma = Number(card.dataset.idCronograma || 0);
                     const idAula = Number(card.dataset.idAula || 0);
                     if (!idCronograma) return;
