@@ -145,6 +145,43 @@ function prontuarioGerarNomeArquivoFinalLote(string $diretorioAssinados, int $id
     return $nome;
 }
 
+function prontuarioPdfFlagLote(array $sourcePost, string $name, bool $default = true): bool
+{
+    $raw = $sourcePost[$name] ?? null;
+    if ($raw === null) return $default;
+    return (string) $raw !== '0';
+}
+
+function carregarCursosTurmasPacienteProntuarioLote(PDO $pdo, int $alunoId): string
+{
+    if ($alunoId <= 0) return '';
+    try {
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT
+                COALESCE(NULLIF(TRIM(c.NomeCurso), ''), 'Curso não informado') AS nome_curso,
+                COALESCE(NULLIF(TRIM(t.NomeTurma), ''), 'Turma não informada') AS nome_turma
+            FROM tbMatricula m
+            LEFT JOIN tbCurso c ON c.IdCurso = m.IdCurso
+            LEFT JOIN tbTurma t ON t.IdTurma = m.IdTurma
+            WHERE m.IdUsuario = ?
+              AND m.Habilitado = 1
+            ORDER BY nome_curso, nome_turma
+        ");
+        $stmt->execute([$alunoId]);
+    } catch (Throwable $e) {
+        return '';
+    }
+
+    $itens = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $item) {
+        $curso = trim((string) ($item['nome_curso'] ?? ''));
+        $turma = trim((string) ($item['nome_turma'] ?? ''));
+        if ($curso === '' && $turma === '') continue;
+        $itens[] = $curso . ' - ' . $turma;
+    }
+    return implode('; ', $itens);
+}
+
 $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? '/conecta/clinica/gerarProntuarioPdfLote.php'));
 $projectBasePath = preg_match('#^(.*?)/clinica(?:/|$)#', $scriptName, $matches) ? rtrim((string) ($matches[1] ?? ''), '/') : '';
 $sessionCookiePath = $projectBasePath !== '' ? $projectBasePath : '/';
@@ -196,7 +233,7 @@ $logoSistemaPath = resolveLogoPathProntuarioLote($logoSistema, $basePath);
 $placeholders = implode(',', array_fill(0, count($ids), '?'));
 $orderSql = implode(',', array_map('intval', $ids));
 $stmt = $pdo->prepare("
-    SELECT p.id, p.profissional_id, p.conteudo_editado, p.conteudo_ia, p.created_at,
+    SELECT p.id, p.profissional_id, p.aluno_id, p.conteudo_editado, p.conteudo_ia, p.created_at,
            CONCAT(u.Nome, ' ', u.Sobrenome) AS profissional_nome,
            al.Nome AS paciente_nome, al.Foto AS paciente_foto,
            c.data_consulta, c.hora_inicio_prevista
@@ -226,6 +263,10 @@ if (empty($conteudos)) {
 }
 
 $assinar = (string) ($_POST['assinar'] ?? '0') === '1';
+$incluirProfissional = prontuarioPdfFlagLote($_POST, 'incluir_profissional', true);
+$incluirDataHora = prontuarioPdfFlagLote($_POST, 'incluir_data_hora', true);
+$incluirFoto = prontuarioPdfFlagLote($_POST, 'incluir_foto', true);
+$incluirCursosTurmas = prontuarioPdfFlagLote($_POST, 'incluir_cursos_turmas', true);
 
 class ProntuarioLotePDF extends TCPDF
 {
@@ -310,8 +351,8 @@ foreach ($conteudos as $row) {
     $fotoGap = 4;
     $fotoHeight = 18;
     $fotoWidth = 0.0;
-    $pacienteFotoPath = resolvePacienteFotoPathProntuarioLote($row['paciente_foto'] ?? '', $basePath);
-    if ($pacienteFotoPath !== '' && is_file($pacienteFotoPath)) {
+    $pacienteFotoPath = $incluirFoto ? resolvePacienteFotoPathProntuarioLote($row['paciente_foto'] ?? '', $basePath) : '';
+    if ($incluirFoto && $pacienteFotoPath !== '' && is_file($pacienteFotoPath)) {
         $imgSize = @getimagesize($pacienteFotoPath);
         if (is_array($imgSize) && !empty($imgSize[1])) {
             $fotoWidth = max(10, ($imgSize[0] / $imgSize[1]) * $fotoHeight);
@@ -324,9 +365,18 @@ foreach ($conteudos as $row) {
 
     $textoLargura = $pdf->getPageWidth() - $leftX - $rightMargin - ($fotoWidth > 0 ? ($fotoWidth + $fotoGap) : 0);
     $pdf->SetXY($leftX, $infoTopY);
-    $pdf->Cell($textoLargura, 5, 'Paciente: ' . (string) $row['paciente_nome'], 0, 1);
-    $pdf->Cell($textoLargura, 5, 'Profissional: ' . (string) $row['profissional_nome'], 0, 1);
-    $pdf->Cell($textoLargura, 5, 'Data do atendimento: ' . $dataDocumento, 0, 1);
+    if ($incluirProfissional) {
+        $pdf->Cell($textoLargura, 5, 'Profissional: ' . (string) $row['profissional_nome'], 0, 1);
+    }
+    if ($incluirDataHora) {
+        $pdf->Cell($textoLargura, 5, 'Data do atendimento: ' . $dataDocumento, 0, 1);
+    }
+    if ($incluirCursosTurmas) {
+        $cursosTurmasTexto = carregarCursosTurmasPacienteProntuarioLote($pdo, (int) ($row['aluno_id'] ?? 0));
+        if ($cursosTurmasTexto !== '') {
+            $pdf->MultiCell($textoLargura, 5, 'Cursos/Turmas: ' . $cursosTurmasTexto, 0, 'L');
+        }
+    }
     $pdf->SetY(max($pdf->GetY(), $infoTopY + ($fotoWidth > 0 ? $fotoHeight : 0)) + 3);
     $pdf->WriteHTML($htmlConteudo);
 

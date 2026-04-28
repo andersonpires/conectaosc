@@ -54,7 +54,32 @@ function getPacienteFotoUrl(paciente) {
   return new URL(`../assets/img/fotos/${safeFileName}`, currentUrl).toString();
 }
 
-function abrirProntuarioPdf(prontuarioId, assinar) {
+const PDF_OPCOES_PADRAO = {
+  incluir_profissional: true,
+  incluir_data_hora: true,
+  incluir_foto: true,
+  incluir_cursos_turmas: true
+};
+
+function normalizarOpcoesPdf(opcoes) {
+  return {
+    ...PDF_OPCOES_PADRAO,
+    ...(opcoes && typeof opcoes === 'object' ? opcoes : {})
+  };
+}
+
+function appendPdfOptionInputs(form, opcoes) {
+  const normalized = normalizarOpcoesPdf(opcoes);
+  Object.entries(normalized).forEach(([name, checked]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = checked ? '1' : '0';
+    form.appendChild(input);
+  });
+}
+
+function abrirProntuarioPdf(prontuarioId, assinar, opcoes) {
   const form = document.createElement('form');
   form.method = 'POST';
   form.action = getProntuarioPdfEndpoint();
@@ -72,13 +97,14 @@ function abrirProntuarioPdf(prontuarioId, assinar) {
   assinarInput.name = 'assinar';
   assinarInput.value = assinar ? '1' : '0';
   form.appendChild(assinarInput);
+  appendPdfOptionInputs(form, opcoes);
 
   document.body.appendChild(form);
   form.submit();
   form.remove();
 }
 
-function abrirProntuariosPdfLote(prontuarioIds, assinar) {
+function abrirProntuariosPdfLote(prontuarioIds, assinar, opcoes) {
   const ids = Array.isArray(prontuarioIds) ? prontuarioIds.map((id) => parseInt(id, 10)).filter((id) => id > 0) : [];
   if (ids.length === 0) return;
   const form = document.createElement('form');
@@ -100,6 +126,7 @@ function abrirProntuariosPdfLote(prontuarioIds, assinar) {
   assinarInput.name = 'assinar';
   assinarInput.value = assinar ? '1' : '0';
   form.appendChild(assinarInput);
+  appendPdfOptionInputs(form, opcoes);
 
   document.body.appendChild(form);
   form.submit();
@@ -112,6 +139,25 @@ function openModalEscolhaAssinatura(onChoose) {
   modal.innerHTML = `
     <div class="bg-white rounded-2xl shadow-monday-lg max-w-sm w-full p-6">
       <h3 class="text-lg font-semibold text-gray-800 mb-3">Gerar documento em PDF</h3>
+      <p class="text-gray-600 mb-3">Selecione os dados que quer que constem no PDF</p>
+      <div class="mb-4 space-y-2">
+        <div class="form-check form-switch">
+          <input class="form-check-input pdf-opcao" type="checkbox" role="switch" id="pdf-opt-profissional" data-option="incluir_profissional" checked>
+          <label class="form-check-label text-sm text-gray-700" for="pdf-opt-profissional">Profissional que atendeu</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input pdf-opcao" type="checkbox" role="switch" id="pdf-opt-data-hora" data-option="incluir_data_hora" checked>
+          <label class="form-check-label text-sm text-gray-700" for="pdf-opt-data-hora">Data/hora do atendimento</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input pdf-opcao" type="checkbox" role="switch" id="pdf-opt-foto" data-option="incluir_foto" checked>
+          <label class="form-check-label text-sm text-gray-700" for="pdf-opt-foto">Foto</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input pdf-opcao" type="checkbox" role="switch" id="pdf-opt-cursos-turmas" data-option="incluir_cursos_turmas" checked>
+          <label class="form-check-label text-sm text-gray-700" for="pdf-opt-cursos-turmas">Cursos e turmas em que ele está matriculado</label>
+        </div>
+      </div>
       <p class="text-gray-600 mb-5">Você deseja assinar digitalmente este prontuário agora?</p>
       <div class="flex flex-col gap-2">
         <button type="button" class="btn-assinar-sim min-h-touch py-3 px-4 bg-monday-blue text-white rounded-xl font-medium">Sim, assinar digitalmente</button>
@@ -119,29 +165,39 @@ function openModalEscolhaAssinatura(onChoose) {
       </div>
     </div>
   `;
+  const getPdfOpcoesSelecionadas = () => {
+    const opcoes = { ...PDF_OPCOES_PADRAO };
+    modal.querySelectorAll('.pdf-opcao').forEach((input) => {
+      const key = String(input.dataset.option || '').trim();
+      if (key) opcoes[key] = !!input.checked;
+    });
+    return opcoes;
+  };
+
   modal.querySelector('.btn-assinar-sim').onclick = () => {
+    const opcoes = getPdfOpcoesSelecionadas();
     modal.remove();
-    onChoose(true);
+    onChoose(true, opcoes);
   };
   modal.querySelector('.btn-assinar-nao').onclick = () => {
+    const opcoes = getPdfOpcoesSelecionadas();
     modal.remove();
-    onChoose(false);
+    onChoose(false, opcoes);
   };
   modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
   document.body.appendChild(modal);
 }
 
 function openModalAssinarPdf(prontuarioId) {
-  openModalEscolhaAssinatura((assinar) => abrirProntuarioPdf(prontuarioId, assinar));
+  openModalEscolhaAssinatura((assinar, opcoes) => abrirProntuarioPdf(prontuarioId, assinar, opcoes));
 }
 
 function openModalAssinarPdfLote(prontuarioIds) {
   if (!Array.isArray(prontuarioIds) || prontuarioIds.length === 0) return;
-  openModalEscolhaAssinatura((assinar) => {
-    abrirProntuariosPdfLote(prontuarioIds, assinar);
+  openModalEscolhaAssinatura((assinar, opcoes) => {
+    abrirProntuariosPdfLote(prontuarioIds, assinar, opcoes);
   });
 }
-
 let prontuariosFiltroPaciente = null;
 let prontuariosFiltroNome = '';
 let prontuariosFiltroData = '';
@@ -702,5 +758,3 @@ async function openModalEditarProntuario(id, container) {
     hideLoadingOverlay();
   }
 }
-
-

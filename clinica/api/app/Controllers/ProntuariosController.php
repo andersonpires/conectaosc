@@ -793,8 +793,17 @@ Exemplo de estrutura:
             $baseUrl = ($isHttps ? 'https' : 'http') . '://' . $host . $projectBasePath;
         }
         $pdfUrl = rtrim($baseUrl, '/') . '/clinica/gerarProntuarioPdf.php?id=' . $id;
+        $query = [];
         if (!empty($_GET['assinar']) && $_GET['assinar'] === '1') {
-            $pdfUrl .= '&assinar=1';
+            $query['assinar'] = '1';
+        }
+        foreach (['incluir_profissional', 'incluir_data_hora', 'incluir_foto', 'incluir_cursos_turmas'] as $flagName) {
+            if (isset($_GET[$flagName])) {
+                $query[$flagName] = (string) $_GET[$flagName] === '0' ? '0' : '1';
+            }
+        }
+        if (!empty($query)) {
+            $pdfUrl .= '&' . http_build_query($query);
         }
         header('Location: ' . $pdfUrl);
         exit;
@@ -822,8 +831,9 @@ Exemplo de estrutura:
 
             $userId = AuthMiddleware::getUserId();
             $isSuper = AuthMiddleware::isSuperAdmin();
+            $isProfSaude = (int) ($_SESSION['profissional_saude'] ?? 0) === 1;
             foreach ($rows as $row) {
-                if ((int) ($row['profissional_id'] ?? 0) !== $userId && !$isSuper) {
+                if ((int) ($row['profissional_id'] ?? 0) !== $userId && !$isSuper && !$isProfSaude) {
                     JsonResponse::error('Acesso negado', [], 403);
                 }
             }
@@ -841,6 +851,10 @@ Exemplo de estrutura:
 
             $pdfUrl = rtrim($baseUrl, '/') . '/clinica/gerarProntuarioPdfLote.php';
             $assinar = !empty($_POST['assinar']) && (string) $_POST['assinar'] === '1' ? '1' : '0';
+            $incluirProfissional = !isset($_POST['incluir_profissional']) || (string) $_POST['incluir_profissional'] !== '0' ? '1' : '0';
+            $incluirDataHora = !isset($_POST['incluir_data_hora']) || (string) $_POST['incluir_data_hora'] !== '0' ? '1' : '0';
+            $incluirFoto = !isset($_POST['incluir_foto']) || (string) $_POST['incluir_foto'] !== '0' ? '1' : '0';
+            $incluirCursosTurmas = !isset($_POST['incluir_cursos_turmas']) || (string) $_POST['incluir_cursos_turmas'] !== '0' ? '1' : '0';
             $_SESSION['prontuario_pdf_token'] = bin2hex(random_bytes(32));
             $token = $_SESSION['prontuario_pdf_token'];
 
@@ -851,6 +865,10 @@ Exemplo de estrutura:
                 echo '<input type="hidden" name="ids[]" value="' . (int) $idItem . '">';
             }
             echo '<input type="hidden" name="assinar" value="' . htmlspecialchars($assinar, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<input type="hidden" name="incluir_profissional" value="' . htmlspecialchars($incluirProfissional, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<input type="hidden" name="incluir_data_hora" value="' . htmlspecialchars($incluirDataHora, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<input type="hidden" name="incluir_foto" value="' . htmlspecialchars($incluirFoto, ENT_QUOTES, 'UTF-8') . '">';
+            echo '<input type="hidden" name="incluir_cursos_turmas" value="' . htmlspecialchars($incluirCursosTurmas, ENT_QUOTES, 'UTF-8') . '">';
             echo '<input type="hidden" name="token" value="' . htmlspecialchars($token, ENT_QUOTES, 'UTF-8') . '">';
             echo '</form>';
             echo '<script>document.getElementById("prontuarioPdfLoteForm").submit();</script>';
@@ -864,6 +882,10 @@ Exemplo de estrutura:
         }
 
         $_GET['assinar'] = !empty($_POST['assinar']) && (string) $_POST['assinar'] === '1' ? '1' : '0';
+        $_GET['incluir_profissional'] = !isset($_POST['incluir_profissional']) || (string) $_POST['incluir_profissional'] !== '0' ? '1' : '0';
+        $_GET['incluir_data_hora'] = !isset($_POST['incluir_data_hora']) || (string) $_POST['incluir_data_hora'] !== '0' ? '1' : '0';
+        $_GET['incluir_foto'] = !isset($_POST['incluir_foto']) || (string) $_POST['incluir_foto'] !== '0' ? '1' : '0';
+        $_GET['incluir_cursos_turmas'] = !isset($_POST['incluir_cursos_turmas']) || (string) $_POST['incluir_cursos_turmas'] !== '0' ? '1' : '0';
         $this->pdf((string) $id);
     }
 }

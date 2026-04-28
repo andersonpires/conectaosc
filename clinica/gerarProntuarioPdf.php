@@ -161,6 +161,43 @@ function prontuarioGerarNomeArquivoFinal(string $diretorioAssinados, int $idCola
     return $nome;
 }
 
+function prontuarioPdfFlag(array $sourcePost, array $sourceGet, string $name, bool $default = true): bool
+{
+    $raw = $sourcePost[$name] ?? $sourceGet[$name] ?? null;
+    if ($raw === null) return $default;
+    return (string) $raw !== '0';
+}
+
+function carregarCursosTurmasPacienteProntuario(PDO $pdo, int $alunoId): string
+{
+    if ($alunoId <= 0) return '';
+
+    try {
+        $stmt = $pdo->prepare("
+            SELECT DISTINCT
+                COALESCE(NULLIF(TRIM(c.NomeCurso), ''), 'Curso não informado') AS nome_curso,
+                COALESCE(NULLIF(TRIM(t.NomeTurma), ''), 'Turma não informada') AS nome_turma
+            FROM tbMatricula m
+            LEFT JOIN tbCurso c ON c.IdCurso = m.IdCurso
+            LEFT JOIN tbTurma t ON t.IdTurma = m.IdTurma
+            WHERE m.IdUsuario = ?
+              AND m.Habilitado = 1
+            ORDER BY nome_curso, nome_turma
+        ");
+        $stmt->execute([$alunoId]);
+    } catch (Throwable $e) {
+        return '';
+    }
+    $itens = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $item) {
+        $curso = trim((string) ($item['nome_curso'] ?? ''));
+        $turma = trim((string) ($item['nome_turma'] ?? ''));
+        if ($curso === '' && $turma === '') continue;
+        $itens[] = $curso . ' - ' . $turma;
+    }
+    return implode('; ', $itens);
+}
+
 if (empty($_SESSION['Cod'])) {
     header('Content-Type: text/html; charset=utf-8');
     die('<div class="alert alert-danger">Faça login no ConectaOSC e acesse o App Clínica novamente.</div>');
@@ -186,6 +223,7 @@ require_once $tcpdfPath;
 
 $stmt = $pdo->prepare("
     SELECT p.conteudo_editado, p.conteudo_ia, p.created_at, p.profissional_id,
+           p.aluno_id,
            CONCAT(u.Nome, ' ', u.Sobrenome) AS profissional_nome,
            al.Nome AS paciente_nome,
            al.Foto AS paciente_foto,
@@ -207,6 +245,11 @@ $config = $pdo->query("SELECT LogoImpressao FROM tbConfig LIMIT 1")->fetch(PDO::
 $logoSistema = $config['LogoImpressao'] ?? '';
 $logoSistemaPath = resolveLogoPathProntuario($logoSistema, $basePath);
 $pacienteFotoPath = resolvePacienteFotoPathProntuario($row['paciente_foto'] ?? '', $basePath);
+$incluirProfissional = prontuarioPdfFlag($_POST, $_GET, 'incluir_profissional', true);
+$incluirDataHora = prontuarioPdfFlag($_POST, $_GET, 'incluir_data_hora', true);
+$incluirFoto = prontuarioPdfFlag($_POST, $_GET, 'incluir_foto', true);
+$incluirCursosTurmas = prontuarioPdfFlag($_POST, $_GET, 'incluir_cursos_turmas', true);
+$cursosTurmasTexto = $incluirCursosTurmas ? carregarCursosTurmasPacienteProntuario($pdo, (int) ($row['aluno_id'] ?? 0)) : '';
 
 class ProntuarioPDF extends TCPDF
 {
@@ -280,7 +323,7 @@ $rightMargin = 15;
 $fotoGap = 4;
 $fotoHeight = 18;
 $fotoWidth = 0.0;
-if ($pacienteFotoPath !== '' && is_file($pacienteFotoPath)) {
+if ($incluirFoto && $pacienteFotoPath !== '' && is_file($pacienteFotoPath)) {
     $imgSize = @getimagesize($pacienteFotoPath);
     if (is_array($imgSize) && !empty($imgSize[1])) {
         $fotoWidth = max(10, ($imgSize[0] / $imgSize[1]) * $fotoHeight);
@@ -292,9 +335,15 @@ if ($pacienteFotoPath !== '' && is_file($pacienteFotoPath)) {
 }
 $textoLargura = $pdf->getPageWidth() - $leftX - $rightMargin - ($fotoWidth > 0 ? ($fotoWidth + $fotoGap) : 0);
 $pdf->SetXY($leftX, $infoTopY);
-$pdf->Cell($textoLargura, 5, 'Paciente: ' . $row['paciente_nome'], 0, 1);
-$pdf->Cell($textoLargura, 5, 'Profissional: ' . $row['profissional_nome'], 0, 1);
-$pdf->Cell($textoLargura, 5, 'Data do atendimento: ' . $dataDocumento, 0, 1);
+if ($incluirProfissional) {
+    $pdf->Cell($textoLargura, 5, 'Profissional: ' . $row['profissional_nome'], 0, 1);
+}
+if ($incluirDataHora) {
+    $pdf->Cell($textoLargura, 5, 'Data do atendimento: ' . $dataDocumento, 0, 1);
+}
+if ($incluirCursosTurmas && $cursosTurmasTexto !== '') {
+    $pdf->MultiCell($textoLargura, 5, 'Cursos/Turmas: ' . $cursosTurmasTexto, 0, 'L');
+}
 $pdf->SetY(max($pdf->GetY(), $infoTopY + ($fotoWidth > 0 ? $fotoHeight : 0)) + 3);
 $pdf->SetFont('dejavusans', '', 10);
 

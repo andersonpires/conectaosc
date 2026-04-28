@@ -479,7 +479,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                     <br>
                     <label for="uploadImage" class="form-label">Foto beneficiario</label>
                     <input type="hidden" name="fotoAtual" value="<?= $_POST['Foto'] ?? 'padrao.jfif' ?>">
-                    <input class="form-control mb-3" type="file" name="foto" id="uploadImage" accept="image/*" capture="environment">
+                    <input class="form-control mb-3" type="file" name="foto" id="uploadImage" accept="image/*">
 
                     <div id="previewContainer" style="display: none; margin-top: 10px;">
                         <img id="preview" style="width: 300px; height: 300px; margin-top: 10px;">
