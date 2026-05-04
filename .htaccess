@@ -10,6 +10,7 @@
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /conectaosc/
 
     # Do not interfere with the Clinica app routing.
     RewriteRule ^clinica(/|$) - [L]
