@@ -1,4 +1,6 @@
 .env
+/*.zip
+.claude/settings.local.json
 temp/*
 !temp/*.php
 !temp/*.log
