@@ -169,6 +169,30 @@ function backupCronGenerateViaPdo(PDO $pdo, string $dbName, string $arquivoBacku
     }
 }
 
+function backupCronIsLocalhostContext(): bool
+{
+    $rawHost = (string) ($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '');
+    $host = strtolower(trim($rawHost));
+
+    if ($host === '') {
+        $baseUrl = strtolower(trim((string) ($_ENV['APP_PUBLIC_BASE_URL'] ?? '')));
+        if ($baseUrl !== '') {
+            $parsedHost = (string) parse_url($baseUrl, PHP_URL_HOST);
+            $host = strtolower(trim($parsedHost));
+        }
+    }
+
+    if ($host === '') {
+        return false;
+    }
+
+    if (($pos = strpos($host, ':')) !== false) {
+        $host = substr($host, 0, $pos);
+    }
+
+    return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+}
+
 ensureBackupLogTable($pdo);
 logBackupCron('Cron iniciado.', $pdo);
 
@@ -228,12 +252,18 @@ $dbName = (string) ($_ENV['DB_NAME'] ?? '');
 $dbUser = (string) ($_ENV['DB_USER'] ?? '');
 $dbPass = (string) ($_ENV['DB_PASS'] ?? '');
 
-$mysqldumpCandidates = [
-    (string) ($_ENV['MYSQLDUMP_PATH'] ?? ''),
-    'mysqldump',
-    'D:/xampp/mysql/bin/mysqldump.exe',
-    'C:/xampp/mysql/bin/mysqldump.exe',
-];
+$isLocalhostContext = backupCronIsLocalhostContext();
+$mysqldumpCandidates = $isLocalhostContext
+    ? [
+        'D:/xampp/mysql/bin/mysqldump.exe',
+        'C:/xampp/mysql/bin/mysqldump.exe',
+        (string) ($_ENV['MYSQLDUMP_PATH'] ?? ''),
+        'mysqldump',
+    ]
+    : [
+        (string) ($_ENV['MYSQLDUMP_PATH'] ?? ''),
+        'mysqldump',
+    ];
 $mysqldumpCandidates = array_values(array_unique(array_filter(array_map(
     static fn($item): string => trim((string) $item),
     $mysqldumpCandidates

@@ -118,6 +118,23 @@ if (!function_exists('backupGenerateViaPdo')) {
     }
 }
 
+if (!function_exists('backupIsLocalhostRequest')) {
+    function backupIsLocalhostRequest(): bool
+    {
+        $rawHost = (string)($_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? '');
+        $host = strtolower(trim($rawHost));
+        if ($host === '') {
+            return false;
+        }
+
+        if (($pos = strpos($host, ':')) !== false) {
+            $host = substr($host, 0, $pos);
+        }
+
+        return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+    }
+}
+
 $dataHora = date('Y-m-d_H-i-s');
 $arquivoBackup = $BASE_para_PATH . '/temp/backup_' . $dataHora . '.sql';
 $arquivoBackup = str_replace('\\', '/', $arquivoBackup);
@@ -134,12 +151,18 @@ if ($dbName === '' || $dbUser === '') {
     exit;
 }
 
-$mysqldumpCandidates = [
-    (string)($_ENV['MYSQLDUMP_PATH'] ?? ''),
-    'mysqldump',
-    'D:/xampp/mysql/bin/mysqldump.exe',
-    'C:/xampp/mysql/bin/mysqldump.exe',
-];
+$isLocalhostRequest = backupIsLocalhostRequest();
+$mysqldumpCandidates = $isLocalhostRequest
+    ? [
+        'D:/xampp/mysql/bin/mysqldump.exe',
+        'C:/xampp/mysql/bin/mysqldump.exe',
+        (string)($_ENV['MYSQLDUMP_PATH'] ?? ''),
+        'mysqldump',
+    ]
+    : [
+        (string)($_ENV['MYSQLDUMP_PATH'] ?? ''),
+        'mysqldump',
+    ];
 $mysqldumpCandidates = array_values(array_unique(array_filter(array_map(
     static fn($item): string => trim((string)$item),
     $mysqldumpCandidates
