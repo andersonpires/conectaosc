@@ -13,12 +13,9 @@ RUN apt-get update && apt-get install -y \
         libzip-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
-        curl \
         gd \
         intl \
-        mbstring \
         mysqli \
-        opcache \
         pdo_mysql \
         zip \
     && rm -rf /var/lib/apt/lists/*
