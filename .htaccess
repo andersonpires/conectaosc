@@ -2,6 +2,12 @@
     AddDefaultCharset UTF-8
 </IfModule>
 
+# Repassa o protocolo original do proxy reverso (Traefik/Easypanel) para o PHP.
+# Sem isso, $_SERVER['HTTPS'] fica vazio no container e o login.php entra em loop.
+<IfModule mod_setenvif.c>
+    SetEnvIf X-Forwarded-Proto https HTTPS=on
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
