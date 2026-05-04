@@ -65,6 +65,110 @@ function resolveFotoSourceDir(string $projectRoot): string
     return '';
 }
 
+function backupCronSqlIdentifier(string $value): string
+{
+    return '`' . str_replace('`', '``', $value) . '`';
+}
+
+function backupCronSqlLiteral(PDO $pdo, mixed $value): string
+{
+    if ($value === null) {
+        return 'NULL';
+    }
+    if (is_bool($value)) {
+        return $value ? '1' : '0';
+    }
+    if (is_int($value) || is_float($value)) {
+        return (string) $value;
+    }
+    return $pdo->quote((string) $value);
+}
+
+function backupCronGenerateViaPdo(PDO $pdo, string $dbName, string $arquivoBackup): void
+{
+    $fp = @fopen($arquivoBackup, 'wb');
+    if ($fp === false) {
+        throw new RuntimeException('Nao foi possivel abrir o arquivo de backup para escrita.');
+    }
+
+    try {
+        $header = '-- Backup gerado via PDO em ' . date('Y-m-d H:i:s') . PHP_EOL
+            . '-- Banco: ' . $dbName . PHP_EOL . PHP_EOL
+            . 'SET NAMES utf8mb4;' . PHP_EOL
+            . 'SET FOREIGN_KEY_CHECKS=0;' . PHP_EOL . PHP_EOL;
+        fwrite($fp, $header);
+
+        $tablesStmt = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'");
+        if ($tablesStmt === false) {
+            $tablesStmt = $pdo->query('SHOW TABLES');
+        }
+
+        $tables = [];
+        if ($tablesStmt instanceof PDOStatement) {
+            while (($row = $tablesStmt->fetch(PDO::FETCH_NUM)) !== false) {
+                if (isset($row[0]) && (string) $row[0] !== '') {
+                    $tables[] = (string) $row[0];
+                }
+            }
+        }
+
+        foreach ($tables as $table) {
+            $tableId = backupCronSqlIdentifier($table);
+            $createStmt = $pdo->query('SHOW CREATE TABLE ' . $tableId);
+            $createRow = $createStmt ? $createStmt->fetch(PDO::FETCH_NUM) : false;
+            if (!is_array($createRow) || !isset($createRow[1])) {
+                throw new RuntimeException('Nao foi possivel ler estrutura da tabela: ' . $table);
+            }
+
+            fwrite($fp, 'DROP TABLE IF EXISTS ' . $tableId . ';' . PHP_EOL);
+            fwrite($fp, $createRow[1] . ';' . PHP_EOL . PHP_EOL);
+
+            $dataStmt = $pdo->query('SELECT * FROM ' . $tableId);
+            if (!($dataStmt instanceof PDOStatement)) {
+                continue;
+            }
+
+            while (($row = $dataStmt->fetch(PDO::FETCH_ASSOC)) !== false) {
+                $colunas = [];
+                $valores = [];
+                foreach ($row as $coluna => $valor) {
+                    $colunas[] = backupCronSqlIdentifier((string) $coluna);
+                    $valores[] = backupCronSqlLiteral($pdo, $valor);
+                }
+                fwrite(
+                    $fp,
+                    'INSERT INTO ' . $tableId . ' (' . implode(', ', $colunas) . ') VALUES (' . implode(', ', $valores) . ');' . PHP_EOL
+                );
+            }
+
+            fwrite($fp, PHP_EOL);
+        }
+
+        $viewsStmt = $pdo->query("SHOW FULL TABLES WHERE Table_type = 'VIEW'");
+        if ($viewsStmt instanceof PDOStatement) {
+            while (($row = $viewsStmt->fetch(PDO::FETCH_NUM)) !== false) {
+                $viewName = isset($row[0]) ? (string) $row[0] : '';
+                if ($viewName === '') {
+                    continue;
+                }
+                $viewId = backupCronSqlIdentifier($viewName);
+                $createViewStmt = $pdo->query('SHOW CREATE VIEW ' . $viewId);
+                $createViewRow = $createViewStmt ? $createViewStmt->fetch(PDO::FETCH_NUM) : false;
+                if (!is_array($createViewRow) || !isset($createViewRow[1])) {
+                    continue;
+                }
+
+                fwrite($fp, 'DROP VIEW IF EXISTS ' . $viewId . ';' . PHP_EOL);
+                fwrite($fp, $createViewRow[1] . ';' . PHP_EOL . PHP_EOL);
+            }
+        }
+
+        fwrite($fp, 'SET FOREIGN_KEY_CHECKS=1;' . PHP_EOL);
+    } finally {
+        fclose($fp);
+    }
+}
+
 ensureBackupLogTable($pdo);
 logBackupCron('Cron iniciado.', $pdo);
 
@@ -126,44 +230,67 @@ $dbPass = (string) ($_ENV['DB_PASS'] ?? '');
 
 $mysqldumpCandidates = [
     (string) ($_ENV['MYSQLDUMP_PATH'] ?? ''),
+    'mysqldump',
     'D:/xampp/mysql/bin/mysqldump.exe',
     'C:/xampp/mysql/bin/mysqldump.exe',
-    'mysqldump',
 ];
-
-$mysqldump = '';
-foreach ($mysqldumpCandidates as $candidate) {
-    $candidate = trim($candidate);
-    if ($candidate === '') {
-        continue;
-    }
-    if ($candidate === 'mysqldump' || is_file($candidate)) {
-        $mysqldump = $candidate;
-        break;
-    }
-}
-if ($mysqldump === '') {
-    $mysqldump = 'mysqldump';
-}
+$mysqldumpCandidates = array_values(array_unique(array_filter(array_map(
+    static fn($item): string => trim((string) $item),
+    $mysqldumpCandidates
+))));
 
 $q = static fn(string $valor): string => '"' . str_replace('"', '\"', $valor) . '"';
-$comando = sprintf(
-    '%s --host=%s --port=%s --user=%s --password=%s --single-transaction --quick --skip-lock-tables %s --result-file=%s 2>&1',
-    $q($mysqldump),
-    $q($dbHost),
-    $q($dbPort),
-    $q($dbUser),
-    $q($dbPass),
-    $q($dbName),
-    $q($arquivoBackup)
-);
+$saidaDump = '';
+$errosTentativasDump = [];
 
-logBackupCron('Executando comando mysqldump.', $pdo, 'banco');
-$saidaDump = shell_exec($comando);
+foreach ($mysqldumpCandidates as $mysqldump) {
+    $isCommandOnly = strcasecmp($mysqldump, 'mysqldump') === 0;
+    if (!$isCommandOnly && !is_file($mysqldump)) {
+        continue;
+    }
+
+    $comando = sprintf(
+        '%s --host=%s --port=%s --user=%s --password=%s --single-transaction --quick --skip-lock-tables %s --result-file=%s 2>&1',
+        $q($mysqldump),
+        $q($dbHost),
+        $q($dbPort),
+        $q($dbUser),
+        $q($dbPass),
+        $q($dbName),
+        $q($arquivoBackup)
+    );
+
+    logBackupCron('Executando mysqldump com: ' . $mysqldump, $pdo, 'banco');
+    $saidaDump = (string) shell_exec($comando);
+    if (is_file($arquivoBackup) && filesize($arquivoBackup) > 0) {
+        break;
+    }
+
+    if (is_file($arquivoBackup)) {
+        @unlink($arquivoBackup);
+    }
+
+    $erroLimpo = trim($saidaDump);
+    $errosTentativasDump[] = '[' . $mysqldump . '] ' . ($erroLimpo !== '' ? $erroLimpo : 'sem retorno de erro');
+}
+
+if (!is_file($arquivoBackup) || filesize($arquivoBackup) === 0) {
+    try {
+        logBackupCron('Fallback ativado: gerando backup via PDO.', $pdo, 'banco');
+        backupCronGenerateViaPdo($pdo, $dbName, $arquivoBackup);
+        logBackupCron('Backup via PDO gerado com sucesso.', $pdo, 'banco', 'ok');
+    } catch (Throwable $e) {
+        if (is_file($arquivoBackup)) {
+            @unlink($arquivoBackup);
+        }
+        $errosTentativasDump[] = '[fallback-pdo] ' . $e->getMessage();
+    }
+}
 
 if (!is_file($arquivoBackup) || filesize($arquivoBackup) === 0) {
     @unlink($arquivoBackup);
-    logBackupCron('ERRO: Arquivo de backup nao foi gerado. ' . trim((string) $saidaDump), $pdo, 'banco', 'erro');
+    $detalhes = trim(implode(' | ', $errosTentativasDump));
+    logBackupCron('ERRO: Arquivo de backup nao foi gerado. ' . $detalhes, $pdo, 'banco', 'erro');
     exit;
 }
 

@@ -7,8 +7,11 @@ import {
   getConsultasAguardandoProntuario,
   getProfissionais,
   postProntuarioStreamIa,
-  postProntuario
-} from '../services/api.js?v=20260305a';
+  postProntuario,
+  getCursosFiltroProntuarios,
+  getTurmasFiltroProntuarios,
+  getBeneficiariosFiltroProntuarios
+} from '../services/api.js?v=20260502a';
 import { markdownToHtml } from '../utils/markdownToHtml.js?v=20260301d';
 import { getSpinnerHtml, getButtonSpinnerHtml, showLoadingOverlay, hideLoadingOverlay } from '../utils/loading.js?v=20260301d';
 
@@ -104,8 +107,24 @@ function abrirProntuarioPdf(prontuarioId, assinar, opcoes) {
   form.remove();
 }
 
-function abrirProntuariosPdfLote(prontuarioIds, assinar, opcoes) {
-  const ids = Array.isArray(prontuarioIds) ? prontuarioIds.map((id) => parseInt(id, 10)).filter((id) => id > 0) : [];
+function normalizarProntuariosLote(prontuarios) {
+  if (!Array.isArray(prontuarios)) return [];
+  return prontuarios
+    .map((item) => {
+      if (item && typeof item === 'object') {
+        const id = parseInt(item.id, 10);
+        const nome = String(item.nome || '').trim();
+        return Number.isInteger(id) && id > 0 ? { id, nome } : null;
+      }
+      const id = parseInt(item, 10);
+      return Number.isInteger(id) && id > 0 ? { id, nome: '' } : null;
+    })
+    .filter((item) => item !== null);
+}
+
+function abrirProntuariosPdfLote(prontuarios, assinar, opcoes, modoLote = 'unico') {
+  const items = normalizarProntuariosLote(prontuarios);
+  const ids = items.map((item) => item.id);
   if (ids.length === 0) return;
   const form = document.createElement('form');
   form.method = 'POST';
@@ -124,8 +143,14 @@ function abrirProntuariosPdfLote(prontuarioIds, assinar, opcoes) {
   const assinarInput = document.createElement('input');
   assinarInput.type = 'hidden';
   assinarInput.name = 'assinar';
-  assinarInput.value = assinar ? '1' : '0';
+  assinarInput.value = assinar && modoLote !== 'individual' ? '1' : '0';
   form.appendChild(assinarInput);
+
+  const modoLoteInput = document.createElement('input');
+  modoLoteInput.type = 'hidden';
+  modoLoteInput.name = 'modo_lote';
+  modoLoteInput.value = modoLote === 'individual' ? 'individual' : 'unico';
+  form.appendChild(modoLoteInput);
   appendPdfOptionInputs(form, opcoes);
 
   document.body.appendChild(form);
@@ -192,11 +217,110 @@ function openModalAssinarPdf(prontuarioId) {
   openModalEscolhaAssinatura((assinar, opcoes) => abrirProntuarioPdf(prontuarioId, assinar, opcoes));
 }
 
-function openModalAssinarPdfLote(prontuarioIds) {
-  if (!Array.isArray(prontuarioIds) || prontuarioIds.length === 0) return;
-  openModalEscolhaAssinatura((assinar, opcoes) => {
-    abrirProntuariosPdfLote(prontuarioIds, assinar, opcoes);
+function openModalAssinarPdfLote(prontuarios) {
+  const items = normalizarProntuariosLote(prontuarios);
+  if (items.length === 0) return;
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4';
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-monday-lg max-w-md w-full p-6">
+      <h3 class="text-lg font-semibold text-gray-800 mb-3">Gerar documento em PDF</h3>
+      <p class="text-gray-600 mb-3">Selecione os dados que quer que constem no PDF</p>
+      <div class="mb-4 space-y-2">
+        <div class="form-check form-switch">
+          <input class="form-check-input pdf-opcao" type="checkbox" role="switch" id="pdf-lote-opt-profissional" data-option="incluir_profissional" checked>
+          <label class="form-check-label text-sm text-gray-700" for="pdf-lote-opt-profissional">Profissional que atendeu</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input pdf-opcao" type="checkbox" role="switch" id="pdf-lote-opt-data-hora" data-option="incluir_data_hora" checked>
+          <label class="form-check-label text-sm text-gray-700" for="pdf-lote-opt-data-hora">Data/hora do atendimento</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input pdf-opcao" type="checkbox" role="switch" id="pdf-lote-opt-foto" data-option="incluir_foto" checked>
+          <label class="form-check-label text-sm text-gray-700" for="pdf-lote-opt-foto">Foto</label>
+        </div>
+        <div class="form-check form-switch">
+          <input class="form-check-input pdf-opcao" type="checkbox" role="switch" id="pdf-lote-opt-cursos-turmas" data-option="incluir_cursos_turmas" checked>
+          <label class="form-check-label text-sm text-gray-700" for="pdf-lote-opt-cursos-turmas">Cursos e turmas em que ele está matriculado</label>
+        </div>
+      </div>
+
+      <p class="text-gray-600 mb-2">Formato do download</p>
+      <div class="mb-4 space-y-2">
+        <label class="flex items-start gap-2 rounded-xl border border-slate-200 px-3 py-2 cursor-pointer">
+          <input type="radio" name="pdf-lote-modo" value="unico" checked class="mt-1">
+          <span class="text-sm text-slate-700">PDF único com todos os prontuários</span>
+        </label>
+        <label class="flex items-start gap-2 rounded-xl border border-slate-200 px-3 py-2 cursor-pointer">
+          <input type="radio" name="pdf-lote-modo" value="individual" class="mt-1">
+          <span class="text-sm text-slate-700">Um PDF por paciente (sem assinatura)</span>
+        </label>
+      </div>
+
+      <div data-aviso-individual class="hidden mb-4 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+        No modo individual, os PDFs serão gerados sem assinatura digital e baixados automaticamente um a um em uma nova guia.
+      </div>
+
+      <div data-acoes-unico>
+        <p class="text-gray-600 mb-3">Você deseja assinar digitalmente os prontuários agora?</p>
+        <div class="flex flex-col gap-2">
+          <button type="button" class="btn-lote-assinar-sim min-h-touch py-3 px-4 bg-monday-blue text-white rounded-xl font-medium">Sim, assinar digitalmente</button>
+          <button type="button" class="btn-lote-assinar-nao min-h-touch py-3 px-4 border border-gray-300 rounded-xl font-medium hover:bg-gray-50">Não, gerar sem assinatura</button>
+        </div>
+      </div>
+
+      <div data-acoes-individual class="hidden">
+        <button type="button" class="btn-lote-individual min-h-touch w-full py-3 px-4 bg-monday-blue text-white rounded-xl font-medium">Gerar um PDF por paciente</button>
+      </div>
+    </div>
+  `;
+
+  const getPdfOpcoesSelecionadas = () => {
+    const opcoes = { ...PDF_OPCOES_PADRAO };
+    modal.querySelectorAll('.pdf-opcao').forEach((input) => {
+      const key = String(input.dataset.option || '').trim();
+      if (key) opcoes[key] = !!input.checked;
+    });
+    return opcoes;
+  };
+
+  const getModoSelecionado = () => {
+    const selected = modal.querySelector('input[name="pdf-lote-modo"]:checked');
+    return selected?.value === 'individual' ? 'individual' : 'unico';
+  };
+
+  const syncModo = () => {
+    const modo = getModoSelecionado();
+    modal.querySelector('[data-acoes-unico]')?.classList.toggle('hidden', modo !== 'unico');
+    modal.querySelector('[data-acoes-individual]')?.classList.toggle('hidden', modo !== 'individual');
+    modal.querySelector('[data-aviso-individual]')?.classList.toggle('hidden', modo !== 'individual');
+  };
+
+  modal.querySelectorAll('input[name="pdf-lote-modo"]').forEach((input) => {
+    input.addEventListener('change', syncModo);
   });
+
+  modal.querySelector('.btn-lote-assinar-sim').onclick = () => {
+    const opcoes = getPdfOpcoesSelecionadas();
+    modal.remove();
+    abrirProntuariosPdfLote(items, true, opcoes, 'unico');
+  };
+
+  modal.querySelector('.btn-lote-assinar-nao').onclick = () => {
+    const opcoes = getPdfOpcoesSelecionadas();
+    modal.remove();
+    abrirProntuariosPdfLote(items, false, opcoes, 'unico');
+  };
+
+  modal.querySelector('.btn-lote-individual').onclick = () => {
+    const opcoes = getPdfOpcoesSelecionadas();
+    modal.remove();
+    abrirProntuariosPdfLote(items, false, opcoes, 'individual');
+  };
+
+  modal.onclick = (e) => { if (e.target === modal) modal.remove(); };
+  syncModo();
+  document.body.appendChild(modal);
 }
 let prontuariosFiltroPaciente = null;
 let prontuariosFiltroNome = '';
@@ -204,8 +328,11 @@ let prontuariosFiltroData = '';
 let prontuariosFiltroHoraInicio = '';
 let prontuariosFiltroHoraFim = '';
 let prontuariosFiltroProfissional = '';
+let prontuariosFiltroCurso = '';
+let prontuariosFiltroTurma = '';
 let prontuariosBuscaRealizada = false;
 let prontuariosSelecionados = new Set();
+let prontuariosCursosDisponiveis = [];
 
 export async function renderProntuarios(container, opts = {}) {
   if (opts?.aluno_id !== undefined) {
@@ -213,14 +340,30 @@ export async function renderProntuarios(container, opts = {}) {
     prontuariosFiltroPaciente = Number.isInteger(parsedAlunoId) ? parsedAlunoId : null;
     prontuariosBuscaRealizada = prontuariosFiltroPaciente !== null;
     prontuariosFiltroNome = '';
+    prontuariosFiltroCurso = '';
+    prontuariosFiltroTurma = '';
     prontuariosSelecionados = new Set();
   }
-  const alunoIdFiltro = prontuariosFiltroPaciente;
+  const cursoIdSelecionado = parseInt(prontuariosFiltroCurso, 10);
+  const turmaIdSelecionada = parseInt(prontuariosFiltroTurma, 10);
+  const alunoIdFiltro = prontuariosFiltroPaciente || null;
   container.innerHTML = getSpinnerHtml('Carregando...');
   let prontuarios = [];
   let consultasAguardando = [];
   let profissionaisFiltro = [];
+  let turmasDisponiveis = [];
+  let idsPermitidosTurma = new Set();
   try {
+    const cursosPromise = prontuariosCursosDisponiveis.length > 0
+      ? Promise.resolve(prontuariosCursosDisponiveis)
+      : getCursosFiltroProntuarios(1).catch(() => []);
+    const turmasPromise = Number.isInteger(cursoIdSelecionado) && cursoIdSelecionado > 0
+      ? getTurmasFiltroProntuarios(cursoIdSelecionado, 1).catch(() => [])
+      : Promise.resolve([]);
+    const beneficiariosPromise = Number.isInteger(cursoIdSelecionado) && cursoIdSelecionado > 0 && Number.isInteger(turmaIdSelecionada) && turmaIdSelecionada > 0
+      ? getBeneficiariosFiltroProntuarios(cursoIdSelecionado, turmaIdSelecionada).catch(() => [])
+      : Promise.resolve([]);
+
     const filtrosApi = {
       aluno_id: alunoIdFiltro || undefined,
       paciente_nome: alunoIdFiltro ? undefined : (prontuariosFiltroNome || undefined),
@@ -229,14 +372,39 @@ export async function renderProntuarios(container, opts = {}) {
       hora_fim: prontuariosFiltroHoraFim || undefined,
       profissional_id: prontuariosFiltroProfissional || undefined
     };
-    const [prontRes, aguardandoRes, profissionaisRes] = await Promise.all([
+    const [prontRes, aguardandoRes, profissionaisRes, cursosRes, turmasRes, beneficiariosRes] = await Promise.all([
       prontuariosBuscaRealizada ? getProntuarios(filtrosApi) : Promise.resolve({ prontuarios: [] }),
       getConsultasAguardandoProntuario().catch(() => []),
-      getProfissionais().catch(() => [])
+      getProfissionais().catch(() => []),
+      cursosPromise,
+      turmasPromise,
+      beneficiariosPromise
     ]);
     prontuarios = prontRes?.prontuarios ?? [];
     consultasAguardando = Array.isArray(aguardandoRes) ? aguardandoRes : [];
     profissionaisFiltro = Array.isArray(profissionaisRes) ? profissionaisRes : [];
+    prontuariosCursosDisponiveis = Array.isArray(cursosRes) ? cursosRes : [];
+    turmasDisponiveis = Array.isArray(turmasRes) ? turmasRes : [];
+    const beneficiariosTurma = Array.isArray(beneficiariosRes) ? beneficiariosRes : [];
+    idsPermitidosTurma = new Set(
+      beneficiariosTurma
+        .map((item) => parseInt(item.id, 10))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    );
+
+    if (prontuariosFiltroTurma) {
+      const turmaExiste = turmasDisponiveis.some((turma) => String(turma.value) === String(prontuariosFiltroTurma));
+      if (!turmaExiste) {
+        prontuariosFiltroTurma = '';
+        prontuariosFiltroPaciente = null;
+        idsPermitidosTurma = new Set();
+      }
+    }
+
+    if (Number.isInteger(turmaIdSelecionada) && turmaIdSelecionada > 0 && prontuariosBuscaRealizada) {
+      prontuarios = prontuarios.filter((item) => idsPermitidosTurma.has(Number(item.aluno_id)));
+    }
+
     const idsAtuais = new Set(prontuarios.map((p) => Number(p.id)));
     prontuariosSelecionados = new Set(Array.from(prontuariosSelecionados).filter((id) => idsAtuais.has(Number(id))));
   } catch (e) {
@@ -250,6 +418,12 @@ export async function renderProntuarios(container, opts = {}) {
 
   const filtroOptionsHtml = '';
   const filtroSelectHtml = '';
+  const cursosOptionsHtml = prontuariosCursosDisponiveis
+    .map((curso) => `<option value="${escapeAttribute(curso.value)}" ${String(prontuariosFiltroCurso) === String(curso.value) ? 'selected' : ''}>${escapeHtml(curso.label)}</option>`)
+    .join('');
+  const turmasOptionsHtml = turmasDisponiveis
+    .map((turma) => `<option value="${escapeAttribute(turma.value)}" ${String(prontuariosFiltroTurma) === String(turma.value) ? 'selected' : ''}>${escapeHtml(turma.label)}</option>`)
+    .join('');
 
   const colaborador = getCurrentUser();
   const colaboradorNome = escapeAttribute(colaborador.nome || 'Perfil do Médico');
@@ -309,9 +483,9 @@ export async function renderProntuarios(container, opts = {}) {
         </div>
         <div class="lg:mt-6 lg:flex lg:items-end lg:justify-between lg:gap-5">
           <div class="lg:flex-1 lg:max-w-4xl">
-            <div class="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:mt-0 lg:grid-cols-3">
+            <div class="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4 lg:mt-0">
               <label class="block">
-                <span class="mb-2 block px-1 text-sm font-medium text-slate-500">Paciente</span>
+                <span class="mb-2 block px-1 text-sm font-medium text-slate-500">Paciente (nome livre)</span>
                 <input type="text" id="filtro-paciente-pront" list="pacientes-pront-list" value="${escapeAttribute(prontuariosFiltroNome || '')}" placeholder="Digite para filtrar" class="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
                 <datalist id="pacientes-pront-list">${filtroOptionsHtml}</datalist>
               </label>
@@ -334,7 +508,21 @@ export async function renderProntuarios(container, opts = {}) {
                 <span class="mb-2 block px-1 text-sm font-medium text-slate-500">Hora final</span>
                 <input type="time" id="filtro-hora-fim-pront" value="${escapeAttribute(prontuariosFiltroHoraFim || '')}" class="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
               </label>
-              <div class="flex items-end gap-2">
+              <label class="block">
+                <span class="mb-2 block px-1 text-sm font-medium text-slate-500">Curso</span>
+                <select id="filtro-curso-pront" class="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <option value="">Selecione o curso</option>
+                  ${cursosOptionsHtml}
+                </select>
+              </label>
+              <label class="block">
+                <span class="mb-2 block px-1 text-sm font-medium text-slate-500">Turma</span>
+                <select id="filtro-turma-pront" class="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20" ${!prontuariosFiltroCurso ? 'disabled' : ''}>
+                  <option value="">${prontuariosFiltroCurso ? 'Selecione a turma' : 'Selecione o curso primeiro'}</option>
+                  ${turmasOptionsHtml}
+                </select>
+              </label>
+              <div class="flex items-end gap-2 sm:col-span-2 xl:col-span-2">
                 <button type="button" id="btn-pesquisar-pront" class="min-h-touch px-4 py-3 bg-monday-blue text-white rounded-xl text-sm font-semibold">Pesquisar</button>
                 <button type="button" id="btn-limpar-pront" class="min-h-touch px-4 py-3 border border-slate-300 rounded-xl text-sm font-semibold text-slate-600">Limpar</button>
               </div>
@@ -355,9 +543,9 @@ export async function renderProntuarios(container, opts = {}) {
   `;
 
   const prontuariosHtml = !prontuariosBuscaRealizada
-    ? '<p class="text-gray-500 py-8 text-center">Clique em "Pesquisar" para listar os prontuarios.</p>'
+    ? '<p class="text-gray-500 py-8 text-center">Clique em "Pesquisar" para listar os prontuários.</p>'
     : prontuarios.length === 0
-      ? '<p class="text-gray-500 py-8 text-center">Nenhum prontuario registrado.</p>'
+      ? '<p class="text-gray-500 py-8 text-center">Nenhum prontuário registrado.</p>'
       : `
       <div class="mb-3 flex flex-wrap items-center gap-2">
         <button type="button" id="btn-selecionar-todos-pront" class="px-3 py-2 text-sm border border-slate-300 rounded-xl hover:bg-slate-50">Selecionar todos</button>
@@ -416,14 +604,36 @@ export async function renderProntuarios(container, opts = {}) {
     <div id="tab-content-aguardando" class="tab-content-pront hidden">${aguardandoHtml}</div>
   ` + shellSuffix;
 
+  const filtroCursoEl = container.querySelector('#filtro-curso-pront');
+  const filtroTurmaEl = container.querySelector('#filtro-turma-pront');
   const filtroPacienteEl = container.querySelector('#filtro-paciente-pront');
   const btnPesquisarPront = container.querySelector('#btn-pesquisar-pront');
   const btnLimparPront = container.querySelector('#btn-limpar-pront');
-  const executarBuscaPront = async () => {
-    const nome = String(filtroPacienteEl?.value || '').trim();
-    if (nome) {
+
+  if (filtroCursoEl) {
+    filtroCursoEl.addEventListener('change', async () => {
+      prontuariosFiltroCurso = String(filtroCursoEl.value || '').trim();
+      prontuariosFiltroTurma = '';
       prontuariosFiltroPaciente = null;
-    }
+      prontuariosBuscaRealizada = false;
+      await renderProntuarios(container);
+    });
+  }
+
+  if (filtroTurmaEl) {
+    filtroTurmaEl.addEventListener('change', async () => {
+      prontuariosFiltroTurma = String(filtroTurmaEl.value || '').trim();
+      prontuariosFiltroPaciente = null;
+      prontuariosBuscaRealizada = false;
+      await renderProntuarios(container);
+    });
+  }
+
+  const executarBuscaPront = async () => {
+    prontuariosFiltroCurso = String(filtroCursoEl?.value || '').trim();
+    prontuariosFiltroTurma = String(filtroTurmaEl?.value || '').trim();
+    const nome = String(filtroPacienteEl?.value || '').trim();
+    prontuariosFiltroPaciente = null;
     prontuariosFiltroNome = nome;
     prontuariosFiltroData = String(container.querySelector('#filtro-data-pront')?.value || '').trim();
     prontuariosFiltroHoraInicio = String(container.querySelector('#filtro-hora-inicio-pront')?.value || '').trim();
@@ -452,6 +662,8 @@ export async function renderProntuarios(container, opts = {}) {
       prontuariosFiltroHoraInicio = '';
       prontuariosFiltroHoraFim = '';
       prontuariosFiltroProfissional = '';
+      prontuariosFiltroCurso = '';
+      prontuariosFiltroTurma = '';
       prontuariosBuscaRealizada = false;
       prontuariosSelecionados = new Set();
       await renderProntuarios(container);
@@ -533,7 +745,13 @@ export async function renderProntuarios(container, opts = {}) {
   });
 
   container.querySelector('#btn-baixar-selecionados-pront')?.addEventListener('click', () => {
-    openModalAssinarPdfLote(Array.from(prontuariosSelecionados));
+    const selecionados = prontuarios
+      .filter((p) => prontuariosSelecionados.has(Number(p.id)))
+      .map((p) => ({
+        id: Number(p.id),
+        nome: String(p.paciente_nome || '')
+      }));
+    openModalAssinarPdfLote(selecionados);
   });
 
   container.querySelectorAll('.btn-editar').forEach((btn) => {

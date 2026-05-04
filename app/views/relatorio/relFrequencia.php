@@ -23,6 +23,12 @@ $cursos = array_values(array_filter(
 $beneficiarioCadastroUrl = $BASE_para_URL . '/beneficiarios/cadastro';
 $assetsFotosBaseUrl = rtrim(bootstrap_assets_img_url(), '/') . '/fotos';
 $avatarPadraoUrl = bootstrap_foto_url('');
+$cargoColaboradorPadrao = '';
+if (isset($pdo) && $pdo instanceof PDO) {
+    $stmtCargoColaborador = $pdo->prepare('SELECT COALESCE(Cargo, "") AS Cargo FROM tbUser WHERE IdColaborador = ? LIMIT 1');
+    $stmtCargoColaborador->execute([(int)($_SESSION['Cod'] ?? 0)]);
+    $cargoColaboradorPadrao = trim((string)($stmtCargoColaborador->fetchColumn() ?: ''));
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -289,6 +295,44 @@ $avatarPadraoUrl = bootstrap_foto_url('');
             overflow: hidden;
         }
 
+        .pdf-assinatura-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1150;
+            padding: 1rem;
+        }
+
+        .pdf-assinatura-overlay.show {
+            display: flex;
+        }
+
+        .pdf-assinatura-modal {
+            width: min(520px, 100%);
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.2rem 1.2rem 1.3rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, .25);
+        }
+
+        .pdf-assinatura-acoes {
+            display: grid;
+            gap: .55rem;
+            margin-top: .8rem;
+        }
+
+        .pdf-assinatura-cargo-wrap {
+            display: none;
+            margin-top: .55rem;
+        }
+
+        .pdf-assinatura-cargo-wrap.show {
+            display: block;
+        }
+
         .relatorio-frequencia-card {
             width: 100%;
         }
@@ -490,6 +534,28 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                             <a id="beneficiarioBtnTurma" class="acao-btn acao-turma" href="#" target="_blank" rel="noopener noreferrer">Informações sobre a turma</a>
                         </div>
                         <button type="button" class="fechar-btn" data-modal-close-beneficiario>Fechar</button>
+                    </div>
+                </div>
+
+                <div id="pdfAssinaturaOverlay" class="pdf-assinatura-overlay" aria-hidden="true">
+                    <div class="pdf-assinatura-modal" role="dialog" aria-modal="true" aria-labelledby="pdfAssinaturaTitulo">
+                        <h5 id="pdfAssinaturaTitulo" class="mb-2">Gerar documento em PDF</h5>
+                        <p class="mb-2 text-muted">Você deseja assinar digitalmente este relatório agora?</p>
+
+                        <div class="form-check mb-1">
+                            <input class="form-check-input pdf-opcao" type="checkbox" id="pdfOptCargoNome">
+                            <label class="form-check-label" for="pdfOptCargoNome">Desejo adicionar o cargo ao nome?</label>
+                        </div>
+                        <div id="pdfCargoWrap" class="pdf-assinatura-cargo-wrap">
+                            <label for="pdfCargoInput" class="form-label mb-1">Cargo para exibir junto ao nome</label>
+                            <input type="text" id="pdfCargoInput" class="form-control" maxlength="120" value="<?= htmlspecialchars($cargoColaboradorPadrao, ENT_QUOTES, 'UTF-8') ?>" placeholder="Digite o cargo (opcional)">
+                            <small class="text-muted">Essa alteraÃ§Ã£o Ã© apenas para este PDF e nÃ£o altera o cadastro.</small>
+                        </div>
+
+                        <div class="pdf-assinatura-acoes">
+                            <button type="button" class="btn btn-primary" id="pdfAssinarSim">Sim, assinar digitalmente</button>
+                            <button type="button" class="btn btn-outline-secondary" id="pdfAssinarNao">NÃ£o, gerar sem assinatura</button>
+                        </div>
                     </div>
                 </div>
 
@@ -882,7 +948,7 @@ $avatarPadraoUrl = bootstrap_foto_url('');
                             }));
                             const dadosModalSeguro = escapeHtml(dadosModal);
 
-                            table += `<tr><td>${index++}</td><td><img src="${fotoSegura}" class="relatorio-foto" alt="${nomeSeguro}"></td><td><a href="${linkSeguro}" class="relatorio-beneficiario-link js-beneficiario-modal" data-aluno="${dadosModalSeguro}">${nomeSeguro}</a></td>`;
+                            table += `<tr><td>${index++}</td><td><img src="${fotoSegura}" class="relatorio-foto" alt="${nomeSeguro}" onerror="this.onerror=null;this.src='${escapeHtml(avatarPadraoUrl)}';"></td><td><a href="${linkSeguro}" class="relatorio-beneficiario-link js-beneficiario-modal" data-aluno="${dadosModalSeguro}">${nomeSeguro}</a></td>`;
                             if (turmaInterval) table += `<td>${turmaSegura}</td>`;
                             const totalAulas = aluno.totalP + aluno.totalF + aluno.totalFJ;
                             table += `<td>${aluno.totalP}</td><td>${aluno.totalF}</td><td>${aluno.totalFJ}</td><td>${totalAulas}</td>`;
@@ -927,20 +993,84 @@ $avatarPadraoUrl = bootstrap_foto_url('');
 
 
                 // Pesquisa por período - PDF
-                $('#salvarPDF2').click(function(e) {
-                    e.preventDefault();
+                const pdfAssinaturaOverlay = $('#pdfAssinaturaOverlay');
+                const pdfCargoWrap = $('#pdfCargoWrap');
+                const pdfOptCargoNome = $('#pdfOptCargoNome');
+                const pdfCargoInput = $('#pdfCargoInput');
+                const pdfFrequenciaIntervalUrl = "<?php echo $BASE_para_URL ?>/relatorios/frequencia/pdf-intervalo";
 
+                const abrirModalPdfAssinatura = () => {
+                    pdfAssinaturaOverlay.addClass('show').attr('aria-hidden', 'false');
+                    $('body').addClass('modal-acoes-open');
+                };
+
+                const fecharModalPdfAssinatura = () => {
+                    pdfAssinaturaOverlay.removeClass('show').attr('aria-hidden', 'true');
+                    $('body').removeClass('modal-acoes-open');
+                };
+
+                const syncCampoCargoPdf = () => {
+                    const ativo = !!pdfOptCargoNome.prop('checked');
+                    pdfCargoWrap.toggleClass('show', ativo);
+                };
+
+                const abrirPdfIntervalo = (assinarDigitalmente) => {
                     const curso2 = $('#curso2').val();
                     const turma2 = $('#turma2').val();
-                    const dataInicio = $('#dataInicio').val(); // Data de início selecionada
-                    const dataFim = $('#dataFim').val(); // Data de fim selecionada
+                    const dataInicio = $('#dataInicio').val();
+                    const dataFim = $('#dataFim').val();
                     const habilitado2 = $('#checkHabilitado2').is(':checked') ? 1 : 0;
                     const turmaInterval = $('#turmaInterval').is(':checked') ? 1 : 0;
-                    let getPDFInterval = "<?php echo $BASE_para_URL ?>/get/";
+                    const incluirCargo = pdfOptCargoNome.is(':checked') ? 1 : 0;
+                    const cargoPersonalizado = incluirCargo ? String(pdfCargoInput.val() || '').trim() : '';
 
-                    // Abre o PDF em uma nova aba diretamente
-                    const url = getPDFInterval + `getPDFInterval.php?curso2=${curso2}&turma2=${turma2}&dataInicio=${dataInicio}&dataFim=${dataFim}&habilitado=${habilitado2}&turmaInterval=${turmaInterval}`;
-                    window.open(url, '_blank');
+                    const params = new URLSearchParams({
+                        curso2: String(curso2 ?? ''),
+                        turma2: String(turma2 ?? ''),
+                        dataInicio: String(dataInicio ?? ''),
+                        dataFim: String(dataFim ?? ''),
+                        habilitado: String(habilitado2),
+                        turmaInterval: String(turmaInterval),
+                        assinar: assinarDigitalmente ? '1' : '0',
+                        incluir_cargo: String(incluirCargo),
+                    });
+
+                    if (incluirCargo && cargoPersonalizado !== '') {
+                        params.set('cargo_personalizado', cargoPersonalizado);
+                    }
+
+                    const url = `${pdfFrequenciaIntervalUrl}?${params.toString()}`;
+                    window.open(url, '_blank', 'noopener');
+                };
+
+                $('#salvarPDF2').click(function(e) {
+                    e.preventDefault();
+                    abrirModalPdfAssinatura();
+                });
+
+                pdfOptCargoNome.on('change', syncCampoCargoPdf);
+                syncCampoCargoPdf();
+
+                $('#pdfAssinarSim').on('click', function() {
+                    abrirPdfIntervalo(true);
+                    fecharModalPdfAssinatura();
+                });
+
+                $('#pdfAssinarNao').on('click', function() {
+                    abrirPdfIntervalo(false);
+                    fecharModalPdfAssinatura();
+                });
+
+                pdfAssinaturaOverlay.on('click', function(e) {
+                    if (e.target === this) {
+                        fecharModalPdfAssinatura();
+                    }
+                });
+
+                $(document).on('keydown', function(e) {
+                    if (e.key === 'Escape' && pdfAssinaturaOverlay.hasClass('show')) {
+                        fecharModalPdfAssinatura();
+                    }
                 });
             </script>
 </body>
@@ -1190,6 +1320,7 @@ $avatarPadraoUrl = bootstrap_foto_url('');
 </script>
 
 </html>
+
 
 
 

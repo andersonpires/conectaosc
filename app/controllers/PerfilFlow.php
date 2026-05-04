@@ -26,20 +26,7 @@ final class PerfilFlow
         require_once $this->basePath . '/app/models/colaborador/especialidadeProfissionalModel.php';
         require_once $this->basePath . '/app/models/perfil/perfilModel.php';
 
-        $authCookieName = 'login_v43';
-        $cookieConfigPath = $this->basePath . '/temp/setCookie.env';
-        if (is_file($cookieConfigPath)) {
-            $rawCookieName = trim((string) file_get_contents($cookieConfigPath));
-            if ($rawCookieName !== '') {
-                if (str_contains($rawCookieName, '=')) {
-                    $parts = explode('=', $rawCookieName, 2);
-                    $rawCookieName = trim((string) ($parts[1] ?? ''));
-                }
-                if ($rawCookieName !== '') {
-                    $authCookieName = $rawCookieName;
-                }
-            }
-        }
+        $authCookieName = bootstrap_auth_cookie_name($this->basePath);
 
         $authSessionKeys = [
             'token',

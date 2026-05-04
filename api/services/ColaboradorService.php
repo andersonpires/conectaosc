@@ -19,7 +19,7 @@ final class ColaboradorService
 
         $rows = $this->repository->listProfissionaisSaude($search, $especialidadeId, $habilitado);
 
-        return array_map(static function (array $row): array {
+        return array_map(function (array $row): array {
             $nome = trim((string)($row['Nome'] ?? ''));
             $sobrenome = trim((string)($row['Sobrenome'] ?? ''));
             return [
@@ -27,6 +27,8 @@ final class ColaboradorService
                 'nome' => $nome,
                 'sobrenome' => $sobrenome,
                 'nome_completo' => trim($nome . ' ' . $sobrenome),
+                'nascimento' => $this->normalizeDate($row['Nascimento'] ?? null),
+                'cargo' => trim((string)($row['Cargo'] ?? '')),
                 'especialidade_id' => isset($row['especialidade_id']) && $row['especialidade_id'] !== null ? (int)$row['especialidade_id'] : null,
                 'profissional_saude' => (int)($row['profissional_saude'] ?? 0),
                 'habilitado' => (int)($row['Habilitado'] ?? 0),
@@ -49,6 +51,8 @@ final class ColaboradorService
             'nome' => $nome,
             'sobrenome' => $sobrenome,
             'nome_completo' => trim($nome . ' ' . $sobrenome),
+            'nascimento' => $this->normalizeDate($row['Nascimento'] ?? null),
+            'cargo' => trim((string)($row['Cargo'] ?? '')),
             'email' => (string)($row['Email'] ?? ''),
             'especialidade_id' => isset($row['especialidade_id']) && $row['especialidade_id'] !== null ? (int)$row['especialidade_id'] : null,
             'profissional_saude' => (int)($row['profissional_saude'] ?? 0),
@@ -83,5 +87,20 @@ final class ColaboradorService
         }
 
         return (int)$value;
+    }
+
+    private function normalizeDate(mixed $value): ?string
+    {
+        $raw = trim((string)$value);
+        if ($raw === '') {
+            return null;
+        }
+
+        $timestamp = strtotime($raw);
+        if ($timestamp === false) {
+            return null;
+        }
+
+        return date('Y-m-d', $timestamp);
     }
 }

@@ -263,9 +263,9 @@ class ProntuariosController
         }
         $introducao = "Você é um {$titulo} atuando em uma organização social, e deve elaborar prontuários e evoluções {$evolucoes} multiprofissionais, conforme a Resolução do conselho profissional associado à sua especialidade.\n\n";
         return $introducao . "
-## FORMATO OBRIGAT�RIO (HTML)
+## FORMATO OBRIGATÓRIO (HTML)
 
-CRÍTICO: Responda APENAS com HTML puro. NUNCA use markdown. NÒO envolva em ```html ou ``` � envie somente o código HTML, sem cercas de código.
+CRÍTICO: Responda APENAS com HTML puro. NUNCA use markdown. NÃO envolva em ```html ou ``` - envie somente o código HTML, sem cercas de código.
 
 Use:
 - <strong>TÍTULO</strong> para cada seção (em negrito).
@@ -283,18 +283,18 @@ Exemplo de estrutura:
 <p><strong>DO HUMOR</strong></p>
 <p>Eutímico.</p>
 
-## ESTRUTURA OBRIGAT�RIA (todas as seções, na ordem)
+## ESTRUTURA OBRIGATÓRIA (todas as seções, na ordem)
 
-1. DADOS DO PACIENTE: APENAS identificação � nome completo, idade, sexo, estado civil, filhos, profissão, escolaridade, procedência (cidade). Via de demanda se aplicável. NUNCA incluir renda. NÒO coloque aqui avaliação cognitiva, orientação, linguagem, sono-vigília nem nenhum dado da anamnese/avaliação do profissional � isso vai em ESTADO MENTAL.
-2. HIST�RICO: Apenas se houver prontuários anteriores (síntese). Primeiro prontuário = NÒO incluir.
-3. ESTADO MENTAL (ou DO COGNITIVO): Toda a avaliação do profissional � orientação (tempo/espaço/pessoa), memória, atenção, linguagem, agitação psicomotora, senso-percepção, pensamento (curso e conteúdo), compreensão do quadro clínico, histórico psiquiátrico, funções executivas. Ciclo sono-vigília e aceitação da dieta quando aplicável. Receptivo/colaborativo ao atendimento.
+1. DADOS DO PACIENTE: APENAS identificação - nome completo, idade, sexo, estado civil, filhos, profissão, escolaridade, procedência (cidade). Via de demanda se aplicável. NUNCA incluir renda. NÃO coloque aqui avaliação cognitiva, orientação, linguagem, sono-vigília nem nenhum dado da anamnese/avaliação do profissional - isso vai em ESTADO MENTAL.
+2. HISTÓRICO: Apenas se houver prontuários anteriores (síntese). Primeiro prontuário = NÃO incluir.
+3. ESTADO MENTAL (ou DO COGNITIVO): Toda a avaliação do profissional - orientação (tempo/espaço/pessoa), memória, atenção, linguagem, agitação psicomotora, senso-percepção, pensamento (curso e conteúdo), compreensão do quadro clínico, histórico psiquiátrico, funções executivas. Ciclo sono-vigília e aceitação da dieta quando aplicável. Receptivo/colaborativo ao atendimento.
 4. DO HUMOR: Ansioso, deprimido, eutímico, disfórico, lábil, afetividade congruente.
 5. DO SOCIAL: Rede de apoio funcional.
-6. IMPRESSÒO: Síntese técnica, recursos adaptativos, insight, negação, sobrecarga, ansiedade ou risco.
+6. IMPRESSÃO: Síntese técnica, recursos adaptativos, insight, negação, sobrecarga, ansiedade ou risco.
 7. MANEJO: Técnicas utilizadas (anamnese, escuta ativa, psicoeducação, etc.).
 8. CONDUTA: Um item por linha. Encaminhamentos, continuidade, intervenções.
 
-## REGRAS DE CONTE�aDO
+## REGRAS DE CONTEÚDO
 
 - Use termos técnicos (orientado em tempo/espaço/pessoa, humor ansioso, afetividade congruente, etc.).
 - Desenvolva cada seção com 2 a 5 frases quando houver dados. Seja completo, não superficial.
@@ -442,15 +442,15 @@ Exemplo de estrutura:
                     $label = $labelsAnam[$k] ?? str_replace('_', ' ', ucfirst($k));
                     $partes[] = strtoupper($label) . ": " . trim((string)$v);
                 }
-                $anamneseTexto = !empty($partes) ? "\n\nANAMNESE PSICOL�GICA (tb_anamnese_psi):\n\n" . implode("\n", $partes) : '';
+                $anamneseTexto = !empty($partes) ? "\n\nANAMNESE PSICOLÓGICA (tb_anamnese_psi):\n\n" . implode("\n", $partes) : '';
             }
         }
 
         $basePath = $_SESSION['BASE_para_PATH'] ?? dirname(dirname(dirname(dirname(__DIR__))));
-        if (!file_exists($basePath . '/temp/openaikey.php')) {
-            JsonResponse::error('Configuração de IA indisponível', [], 500);
+        $apiKey = function_exists('bootstrap_openai_api_key') ? bootstrap_openai_api_key($basePath) : '';
+        if (trim((string)$apiKey) === '') {
+            JsonResponse::error('Configuracao de IA indisponivel', [], 500);
         }
-        require_once $basePath . '/temp/openaikey.php';
 
         $prontuariosAnterioresTexto = '';
         $ehPrimeiroProntuario = false;
@@ -468,7 +468,7 @@ Exemplo de estrutura:
                 $data = isset($a['created_at']) ? date('d/m/Y H:i', strtotime($a['created_at'])) : '';
                 $partesAnt[] = "--- Prontuário " . ($i + 1) . " ($data) ---\n" . substr($txt, 0, 3000);
             }
-            $prontuariosAnterioresTexto = "\n\nPRONTUÁRIOS ANTERIORES DO PACIENTE (use para elaborar o tópico HIST�RICO):\n\n" . implode("\n\n", $partesAnt);
+            $prontuariosAnterioresTexto = "\n\nPRONTUÁRIOS ANTERIORES DO PACIENTE (use para elaborar o tópico HISTÓRICO):\n\n" . implode("\n\n", $partesAnt);
         }
 
         $clinicaPath = $basePath . '/clinica';
@@ -498,7 +498,7 @@ Exemplo de estrutura:
         $client = @file_get_contents('https://api.openai.com/v1/chat/completions', false, stream_context_create([
             'http' => [
                 'method' => 'POST',
-                'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . ($apiKey ?? ''),
+                'header' => "Content-Type: application/json\r\nAuthorization: Bearer " . trim((string)$apiKey),
                 'content' => json_encode([
                     'model' => 'gpt-5.2',
                     'messages' => [['role' => 'user', 'content' => $prompt]],
@@ -665,18 +665,18 @@ Exemplo de estrutura:
                     $label = $labelsAnam[$k] ?? str_replace('_', ' ', ucfirst($k));
                     $partes[] = strtoupper($label) . ": " . trim((string)$v);
                 }
-                $anamneseTexto = !empty($partes) ? "\n\nANAMNESE PSICOL�GICA (tb_anamnese_psi):\n\n" . implode("\n", $partes) : '';
+                $anamneseTexto = !empty($partes) ? "\n\nANAMNESE PSICOLÓGICA (tb_anamnese_psi):\n\n" . implode("\n", $partes) : '';
             }
         }
 
         $basePath = $_SESSION['BASE_para_PATH'] ?? dirname(dirname(dirname(dirname(__DIR__))));
-        if (!file_exists($basePath . '/temp/openaikey.php')) {
+        $apiKey = function_exists('bootstrap_openai_api_key') ? bootstrap_openai_api_key($basePath) : '';
+        if (trim((string)$apiKey) === '') {
             header('Content-Type: text/event-stream; charset=utf-8');
             header('Cache-Control: no-cache');
-            $enviarEvento('error', 'Configuração de IA indisponível');
+            $enviarEvento('error', 'Configuracao de IA indisponivel');
             exit;
         }
-        require_once $basePath . '/temp/openaikey.php';
 
         $prontuariosAnterioresTexto = '';
         $ehPrimeiroProntuario = false;
@@ -694,7 +694,7 @@ Exemplo de estrutura:
                 $data = isset($a['created_at']) ? date('d/m/Y H:i', strtotime($a['created_at'])) : '';
                 $partesAnt[] = "--- Prontuário " . ($i + 1) . " ($data) ---\n" . substr($txt, 0, 3000);
             }
-            $prontuariosAnterioresTexto = "\n\nPRONTUÁRIOS ANTERIORES DO PACIENTE (use para elaborar o tópico HIST�RICO):\n\n" . implode("\n\n", $partesAnt);
+            $prontuariosAnterioresTexto = "\n\nPRONTUÁRIOS ANTERIORES DO PACIENTE (use para elaborar o tópico HISTÓRICO):\n\n" . implode("\n\n", $partesAnt);
         }
 
         $clinicaPath = $basePath . '/clinica';
@@ -731,7 +731,7 @@ Exemplo de estrutura:
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',
-                'Authorization: Bearer ' . trim($apiKey ?? ''),
+                'Authorization: Bearer ' . trim((string)$apiKey),
             ],
             CURLOPT_POSTFIELDS => json_encode([
                 'model' => 'gpt-5.2',
@@ -822,7 +822,13 @@ Exemplo de estrutura:
 
             $pdo = Database::getConnection();
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            $stmt = $pdo->prepare("SELECT id, profissional_id FROM tb_prontuario WHERE id IN ({$placeholders})");
+            $stmt = $pdo->prepare("
+                SELECT p.id, p.profissional_id,
+                       COALESCE(NULLIF(TRIM(al.Nome), ''), CONCAT('Prontuário #', p.id)) AS paciente_nome
+                FROM tb_prontuario p
+                JOIN tbAluno al ON al.IdUsuario = p.aluno_id
+                WHERE p.id IN ({$placeholders})
+            ");
             $stmt->execute($ids);
             $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             if (count($rows) !== count($ids)) {
@@ -835,6 +841,16 @@ Exemplo de estrutura:
             foreach ($rows as $row) {
                 if ((int) ($row['profissional_id'] ?? 0) !== $userId && !$isSuper && !$isProfSaude) {
                     JsonResponse::error('Acesso negado', [], 403);
+                }
+            }
+            $rowsById = [];
+            foreach ($rows as $row) {
+                $rowsById[(int) ($row['id'] ?? 0)] = $row;
+            }
+            $orderedRows = [];
+            foreach ($ids as $idItem) {
+                if (isset($rowsById[$idItem])) {
+                    $orderedRows[] = $rowsById[$idItem];
                 }
             }
 
@@ -855,6 +871,205 @@ Exemplo de estrutura:
             $incluirDataHora = !isset($_POST['incluir_data_hora']) || (string) $_POST['incluir_data_hora'] !== '0' ? '1' : '0';
             $incluirFoto = !isset($_POST['incluir_foto']) || (string) $_POST['incluir_foto'] !== '0' ? '1' : '0';
             $incluirCursosTurmas = !isset($_POST['incluir_cursos_turmas']) || (string) $_POST['incluir_cursos_turmas'] !== '0' ? '1' : '0';
+            $modoLote = (string) ($_POST['modo_lote'] ?? 'unico') === 'individual' ? 'individual' : 'unico';
+
+            if ($modoLote === 'individual') {
+                $itens = [];
+                foreach ($orderedRows as $row) {
+                    $idItem = (int) ($row['id'] ?? 0);
+                    if ($idItem <= 0) continue;
+                    $itens[] = [
+                        'id' => $idItem,
+                        'nome' => (string) ($row['paciente_nome'] ?? ('Prontuário #' . $idItem)),
+                    ];
+                }
+                if (empty($itens)) {
+                    JsonResponse::error('Nenhum prontuário válido para gerar', [], 400);
+                }
+
+                $payload = [
+                    'endpoint' => rtrim($baseUrl, '/') . '/clinica/api/prontuarios/pdf',
+                    'opcoes' => [
+                        'incluir_profissional' => $incluirProfissional === '1',
+                        'incluir_data_hora' => $incluirDataHora === '1',
+                        'incluir_foto' => $incluirFoto === '1',
+                        'incluir_cursos_turmas' => $incluirCursosTurmas === '1',
+                    ],
+                    'itens' => $itens,
+                ];
+                $payloadJson = json_encode(
+                    $payload,
+                    JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT
+                );
+                if (!is_string($payloadJson)) {
+                    JsonResponse::error('Falha ao preparar geração individual de PDFs', [], 500);
+                }
+
+                header('Content-Type: text/html; charset=utf-8');
+                echo '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Gerando PDFs</title>';
+                echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
+                echo '<style>
+                    :root { color-scheme: light; }
+                    body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #f8fafc; color: #0f172a; }
+                    .wrap { max-width: 920px; margin: 0 auto; padding: 28px 16px 36px; }
+                    h1 { margin: 0 0 8px; font-size: 1.35rem; }
+                    .subtitle { margin: 0 0 20px; color: #475569; font-size: 0.95rem; }
+                    .list { display: grid; gap: 12px; }
+                    .item { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 14px; }
+                    .item-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 9px; }
+                    .item-name { font-size: 0.95rem; font-weight: 600; color: #0f172a; }
+                    .item-status { font-size: 0.83rem; color: #64748b; }
+                    .track { width: 100%; height: 9px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+                    .bar { width: 0%; height: 100%; background: #2563eb; transition: width 180ms linear; }
+                    .bar.error { background: #dc2626; }
+                    .item-status.ok { color: #166534; }
+                    .item-status.error { color: #b91c1c; }
+                    .summary { margin-top: 18px; font-size: 0.9rem; color: #334155; }
+                </style></head><body>';
+                echo '<main class="wrap"><h1>Gerando PDFs individuais</h1>';
+                echo '<p class="subtitle">Os arquivos serão gerados sem assinatura digital. O download de cada PDF inicia automaticamente quando chegar a 100%.</p>';
+                echo '<section class="list" id="pdf-list"></section><p class="summary" id="summary"></p></main>';
+                echo '<script>';
+                echo 'const CONFIG = ' . $payloadJson . ';';
+                echo '
+                    const listEl = document.getElementById("pdf-list");
+                    const summaryEl = document.getElementById("summary");
+
+                    function esc(v) {
+                      const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" };
+                      map[String.fromCharCode(39)] = "&#39;";
+                      return String(v ?? "").replace(/[&<>"\']/g, (ch) => map[ch] || ch);
+                    }
+
+                    function stripHtml(raw) {
+                      const text = String(raw || "").replace(/<[^>]+>/g, " ").replace(/\\s+/g, " ").trim();
+                      return text.length > 180 ? text.slice(0, 180) + "..." : text;
+                    }
+
+                    function nomePacienteParaArquivo(raw) {
+                      const base = String(raw || "")
+                        .normalize("NFD")
+                        .replace(/[\\u0300-\\u036f]/g, "")
+                        .replace(/[^A-Za-z\\s]/g, "")
+                        .replace(/\\s+/g, " ")
+                        .trim()
+                        .slice(0, 30)
+                        .trim();
+                      return base || "paciente";
+                    }
+
+                    function nomeArquivoPaciente(item) {
+                      return nomePacienteParaArquivo(item.nome) + ".pdf";
+                    }
+
+                    function createRow(item, index) {
+                      const row = document.createElement("article");
+                      row.className = "item";
+                      row.innerHTML =
+                        "<div class=\\"item-head\\">" +
+                          "<span class=\\"item-name\\">" + esc(item.nome || ("Prontuário #" + item.id)) + "</span>" +
+                          "<span class=\\"item-status\\">Aguardando</span>" +
+                        "</div>" +
+                        "<div class=\\"track\\"><div class=\\"bar\\"></div></div>";
+                      return { index, item, row, status: row.querySelector(".item-status"), bar: row.querySelector(".bar") };
+                    }
+
+                    function setStatus(card, message, tone) {
+                      card.status.textContent = message;
+                      card.status.classList.remove("ok", "error");
+                      if (tone === "ok") card.status.classList.add("ok");
+                      if (tone === "error") card.status.classList.add("error");
+                    }
+
+                    function setProgress(card, pct, tone) {
+                      const value = Math.max(0, Math.min(100, Number(pct) || 0));
+                      card.bar.style.width = value + "%";
+                      card.bar.classList.toggle("error", tone === "error");
+                    }
+
+                    async function gerarPdfIndividual(item, card) {
+                      let progress = 4;
+                      setProgress(card, progress);
+                      setStatus(card, "Gerando PDF...", "running");
+                      const ticker = setInterval(() => {
+                        progress = Math.min(progress + 2, 92);
+                        setProgress(card, progress);
+                      }, 250);
+
+                      try {
+                        const form = new URLSearchParams();
+                        form.set("id", String(item.id));
+                        form.set("assinar", "0");
+                        form.set("incluir_profissional", CONFIG.opcoes.incluir_profissional ? "1" : "0");
+                        form.set("incluir_data_hora", CONFIG.opcoes.incluir_data_hora ? "1" : "0");
+                        form.set("incluir_foto", CONFIG.opcoes.incluir_foto ? "1" : "0");
+                        form.set("incluir_cursos_turmas", CONFIG.opcoes.incluir_cursos_turmas ? "1" : "0");
+
+                        const response = await fetch(CONFIG.endpoint, {
+                          method: "POST",
+                          credentials: "include",
+                          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+                          body: form.toString(),
+                          redirect: "follow"
+                        });
+
+                        if (!response.ok) {
+                          throw new Error("Falha HTTP " + response.status);
+                        }
+
+                        const contentType = String(response.headers.get("content-type") || "").toLowerCase();
+                        if (!contentType.includes("application/pdf")) {
+                          const text = await response.text();
+                          throw new Error(stripHtml(text) || "O servidor não retornou um PDF válido.");
+                        }
+
+                        const blob = await response.blob();
+                        const fileName = nomeArquivoPaciente(item);
+                        const objectUrl = URL.createObjectURL(blob);
+                        const link = document.createElement("a");
+                        link.href = objectUrl;
+                        link.download = fileName;
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        setTimeout(() => URL.revokeObjectURL(objectUrl), 3000);
+
+                        clearInterval(ticker);
+                        setProgress(card, 100);
+                        setStatus(card, "PDF gerado", "ok");
+                        return true;
+                      } catch (err) {
+                        clearInterval(ticker);
+                        setProgress(card, 100, "error");
+                        const msg = (err && err.message) ? err.message : "Erro ao gerar PDF";
+                        setStatus(card, msg, "error");
+                        return false;
+                      }
+                    }
+
+                    (async () => {
+                      const cards = Array.isArray(CONFIG.itens) ? CONFIG.itens.map(createRow) : [];
+                      cards.forEach((card) => listEl.appendChild(card.row));
+                      if (cards.length === 0) {
+                        summaryEl.textContent = "Nenhum prontuário selecionado.";
+                        return;
+                      }
+                      summaryEl.textContent = "Iniciando geração...";
+                      let okCount = 0;
+                      for (const card of cards) {
+                        const ok = await gerarPdfIndividual(card.item, card);
+                        if (ok) okCount += 1;
+                      }
+                      const total = cards.length;
+                      summaryEl.textContent = okCount === total
+                        ? ("Concluído: " + okCount + " de " + total + " PDFs gerados.")
+                        : ("Concluído com pendências: " + okCount + " de " + total + " PDFs gerados.");
+                    })();
+                ';
+                echo '</script></body></html>';
+                exit;
+            }
+
             $_SESSION['prontuario_pdf_token'] = bin2hex(random_bytes(32));
             $token = $_SESSION['prontuario_pdf_token'];
 

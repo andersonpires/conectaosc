@@ -43,6 +43,7 @@ final class PerfilService
         $hashSenha = $senha !== '' ? password_hash($senha, PASSWORD_DEFAULT) : null;
         $profissionalSaude = isset($dados['profissional_saude']) && (string)$dados['profissional_saude'] === '1' ? 1 : 0;
         $especialidadeId = $dados['especialidade_id'] ?? null;
+        $nascimento = $this->normalizarNascimento($dados['Nascimento'] ?? null);
 
         return $this->repository->update(
             $idColaborador,
@@ -52,11 +53,27 @@ final class PerfilService
             isset($dados['WhatsApp']) ? (string)$dados['WhatsApp'] : null,
             isset($dados['Email']) ? (string)$dados['Email'] : null,
             isset($dados['CidadeEstado']) ? (string)$dados['CidadeEstado'] : null,
-            isset($dados['Trabalho']) ? (string)$dados['Trabalho'] : null,
+            isset($dados['Cargo']) ? (string)$dados['Cargo'] : null,
+            $nascimento,
             $profissionalSaude,
             $especialidadeId,
             $hashSenha
         );
+    }
+
+    private function normalizarNascimento(mixed $valor): ?string
+    {
+        $raw = trim((string)$valor);
+        if ($raw === '') {
+            return null;
+        }
+
+        $dt = \DateTime::createFromFormat('Y-m-d', $raw);
+        if (!$dt || $dt->format('Y-m-d') !== $raw) {
+            return null;
+        }
+
+        return $raw;
     }
 
     private function resolveFotosDir(string $basePath): string

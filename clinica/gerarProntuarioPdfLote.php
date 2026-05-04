@@ -65,29 +65,7 @@ function resolvePacienteFotoPathProntuarioLote($fotoRaw, $basePath): string
 
 function prontuarioResolveValidacaoPublicUrlLote(string $baseUrl): string
 {
-    $configured = trim((string)(getenv('APP_PUBLIC_BASE_URL') ?: ''));
-    if ($configured === '') {
-        $projectRoot = dirname(__DIR__);
-        $envCandidates = [$projectRoot . '/.env', $projectRoot . '/temp/.env'];
-        foreach ($envCandidates as $envPath) {
-            if (!is_file($envPath) || !is_readable($envPath)) {
-                continue;
-            }
-            $lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
-            foreach ($lines as $line) {
-                $line = trim((string)$line);
-                if ($line === '' || str_starts_with($line, '#') || !str_starts_with($line, 'APP_PUBLIC_BASE_URL=')) {
-                    continue;
-                }
-                $configured = trim((string)substr($line, strlen('APP_PUBLIC_BASE_URL=')));
-                $len = strlen($configured);
-                if ($len >= 2 && (($configured[0] === '"' && $configured[$len - 1] === '"') || ($configured[0] === "'" && $configured[$len - 1] === "'"))) {
-                    $configured = substr($configured, 1, -1);
-                }
-                break 2;
-            }
-        }
-    }
+    $configured = trim(bootstrap_env('APP_PUBLIC_BASE_URL', ''));
     if ($configured !== '') {
         return rtrim($configured, '/') . '/clinica/verProntuarioPdf.php';
     }

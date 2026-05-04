@@ -1,7 +1,9 @@
+.env
 temp/*
 !temp/*.php
 !temp/*.log
 !temp/.env.example
+app/assets/img/fotos/
 zz_Suporte/
 .vscode/
 backup-versao-1.93/

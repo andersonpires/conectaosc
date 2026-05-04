@@ -6,20 +6,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
     session_start();
 }
 
-$authCookieName = 'login_v43';
-$cookieConfigPath = dirname(__DIR__, 2) . '/temp/setCookie.env';
-if (file_exists($cookieConfigPath)) {
-    $rawCookieName = trim((string) file_get_contents($cookieConfigPath));
-    if ($rawCookieName !== '') {
-        if (strpos($rawCookieName, '=') !== false) {
-            $parts = explode('=', $rawCookieName, 2);
-            $rawCookieName = trim($parts[1]);
-        }
-        if ($rawCookieName !== '') {
-            $authCookieName = $rawCookieName;
-        }
-    }
-}
+$authCookieName = bootstrap_auth_cookie_name(dirname(__DIR__, 2));
 
 session_destroy();
 

@@ -1,4 +1,5 @@
 const API_BASE = './api';
+const LEGACY_API_BASE = '../api/v1';
 
 async function handleResponse(res) {
   const text = await res.text();
@@ -308,6 +309,83 @@ export async function getAnamnesesByAluno(alunoId) {
   const res = await fetch(`${API_BASE}/anamnese?aluno_id=${alunoId}`, { credentials: 'include' });
   const j = await handleResponse(res);
   return j.data.anamneses || [];
+}
+
+async function postLegacy(path, payload = {}) {
+  const body = new URLSearchParams();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    body.append(key, String(value));
+  });
+
+  const res = await fetch(`${LEGACY_API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+    credentials: 'include',
+    body: body.toString(),
+  });
+  const j = await handleResponse(res);
+  return j.data;
+}
+
+export async function getCursosFiltroProntuarios(somenteAtivos = 1) {
+  const data = await postLegacy('/relatorios/cursos/options', { somenteAtivos });
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((item) => ({
+      value: String(item?.value ?? '').trim(),
+      label: String(item?.label ?? '').trim(),
+    }))
+    .filter((item) => {
+      const id = parseInt(item.value, 10);
+      return Number.isInteger(id) && id > 0;
+    });
+}
+
+export async function getTurmasFiltroProntuarios(cursoId, somenteAtivos = 1) {
+  const idCurso = parseInt(cursoId, 10);
+  if (!Number.isInteger(idCurso) || idCurso <= 0) return [];
+  const data = await postLegacy('/relatorios/turmas/options', {
+    IdCurso: idCurso,
+    somenteAtivos,
+    todasTurmas: 0,
+  });
+  if (!Array.isArray(data)) return [];
+  return data
+    .map((item) => ({
+      value: String(item?.value ?? '').trim(),
+      label: String(item?.label ?? '').trim(),
+    }))
+    .filter((item) => {
+      const id = parseInt(item.value, 10);
+      return Number.isInteger(id) && id > 0;
+    });
+}
+
+export async function getBeneficiariosFiltroProntuarios(cursoId, turmaId) {
+  const idCurso = parseInt(cursoId, 10);
+  const idTurma = String(turmaId || '').trim();
+  if (!Number.isInteger(idCurso) || idCurso <= 0 || idTurma === '') return [];
+
+  const data = await postLegacy('/relatorios/matriculados', {
+    curso: idCurso,
+    turma: idTurma,
+  });
+  if (!Array.isArray(data)) return [];
+
+  const vistos = new Set();
+  return data
+    .map((item) => {
+      const id = parseInt(item?.IdUsuario, 10);
+      const nome = String(item?.Nome ?? '').trim();
+      return Number.isInteger(id) && id > 0 && nome ? { id, nome } : null;
+    })
+    .filter((item) => {
+      if (!item) return false;
+      if (vistos.has(item.id)) return false;
+      vistos.add(item.id);
+      return true;
+    });
 }
 
 export async function postAnamnese(data) {

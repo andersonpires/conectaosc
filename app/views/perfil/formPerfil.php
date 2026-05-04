@@ -3,6 +3,16 @@ $runtime = require __DIR__ . '/../../../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
 $appJsVersion = @filemtime($BASE_para_PATH . '/app/assets/js/app.js') ?: time();
+$cargoPerfil = trim((string)($colaborador['Cargo'] ?? ''));
+$nascimentoIso = '';
+$nascimentoFmt = '';
+if (!empty($colaborador['Nascimento'])) {
+    $timestampNascimento = strtotime((string)$colaborador['Nascimento']);
+    if ($timestampNascimento !== false) {
+        $nascimentoIso = date('Y-m-d', $timestampNascimento);
+        $nascimentoFmt = date('d/m/Y', $timestampNascimento);
+    }
+}
 // Arquivo de view (form)
 ?>
 <!DOCTYPE html>
@@ -67,7 +77,7 @@ $appJsVersion = @filemtime($BASE_para_PATH . '/app/assets/js/app.js') ?: time();
                                 <div class="card-body text-center">
                                     <img src="<?php echo htmlspecialchars(bootstrap_foto_url((string)($colaborador['Foto'] ?? '')), ENT_QUOTES, 'UTF-8'); ?>" alt="<?php echo $NomeColaborador; ?>" class="rounded-circle img-cover mb-2" width="128" height="128" />
                                     <h5 class="card-title mb-0"><?php echo $NomeColaborador; ?></h5>
-                                    <div class="text-muted mb-2"><?php echo htmlspecialchars($colaborador['Trabalho']); ?></div>
+                                    <div class="text-muted mb-2"><?php echo htmlspecialchars($cargoPerfil); ?></div>
                                 </div>
                                 <hr class="my-0" />
                                 <div class="card-body">
@@ -84,7 +94,8 @@ $appJsVersion = @filemtime($BASE_para_PATH . '/app/assets/js/app.js') ?: time();
                                     <h5 class="h6 card-title">Sobre</h5>
                                     <ul class="list-unstyled mb-0">
                                         <li class="mb-1"><span data-feather="home" class="feather-sm me-1"></span> Mora em <a href="#"><?php echo htmlspecialchars($colaborador['CidadeEstado']); ?></a></li>
-                                        <li class="mb-1"><span data-feather="briefcase" class="feather-sm me-1"></span> Trabalha como <a href="#"><?php echo htmlspecialchars($colaborador['Trabalho']); ?></a></li>
+                                        <li class="mb-1"><span data-feather="briefcase" class="feather-sm me-1"></span> Cargo: <a href="#"><?php echo htmlspecialchars($cargoPerfil); ?></a></li>
+                                        <li class="mb-1"><span data-feather="calendar" class="feather-sm me-1"></span> Nascimento: <a href="#"><?php echo htmlspecialchars($nascimentoFmt); ?></a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -147,8 +158,14 @@ $appJsVersion = @filemtime($BASE_para_PATH . '/app/assets/js/app.js') ?: time();
                                                                 <input type="text" class="form-control" id="CidadeEstado" name='CidadeEstado' value="<?php echo htmlspecialchars($colaborador['CidadeEstado']); ?>" autocomplete="off">
                                                             </div>
                                                             <div class="col-3">
-                                                                <label for="Trabalho" class="form-label">Trabalha como</label>
-                                                                <input type="text" class="form-control" id="Trabalho" name='Trabalho' value="<?php echo htmlspecialchars($colaborador['Trabalho']); ?>" autocomplete="off">
+                                                                <label for="Cargo" class="form-label">Cargo</label>
+                                                                <input type="text" class="form-control" id="Cargo" name='Cargo' value="<?php echo htmlspecialchars($cargoPerfil); ?>" autocomplete="off">
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mb-3">
+                                                            <div class="col-4">
+                                                                <label for="Nascimento" class="form-label">Nascimento</label>
+                                                                <input type="date" class="form-control" id="Nascimento" name='Nascimento' value="<?php echo htmlspecialchars($nascimentoIso); ?>" autocomplete="off">
                                                             </div>
                                                         </div>
 
@@ -370,7 +387,6 @@ $appJsVersion = @filemtime($BASE_para_PATH . '/app/assets/js/app.js') ?: time();
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.12/jquery.mask.min.js"></script>
 <script type="text/javascript">
     $("#Telefone, #WhatsApp").mask("(00) 0.0000-0000");
-    $("#Nascimento").mask('00/00/0000');
     $('.time').mask('00:00:00');
     $('.date_time').mask('00/00/0000 00:00:00');
     $('.cep').mask('00000-000');

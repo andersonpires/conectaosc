@@ -135,29 +135,7 @@ function extrairIdProntuarioAssinado(array $assinatura): int
     return 0;
 }
 
-$configuredPublicBase = trim((string)(getenv('APP_PUBLIC_BASE_URL') ?: ''));
-if ($configuredPublicBase === '') {
-    $projectRoot = dirname(__DIR__);
-    $envCandidates = [$projectRoot . '/.env', $projectRoot . '/temp/.env'];
-    foreach ($envCandidates as $envPath) {
-        if (!is_file($envPath) || !is_readable($envPath)) {
-            continue;
-        }
-        $lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
-        foreach ($lines as $line) {
-            $line = trim((string)$line);
-            if ($line === '' || str_starts_with($line, '#') || !str_starts_with($line, 'APP_PUBLIC_BASE_URL=')) {
-                continue;
-            }
-            $configuredPublicBase = trim((string)substr($line, strlen('APP_PUBLIC_BASE_URL=')));
-            $len = strlen($configuredPublicBase);
-            if ($len >= 2 && (($configuredPublicBase[0] === '"' && $configuredPublicBase[$len - 1] === '"') || ($configuredPublicBase[0] === "'" && $configuredPublicBase[$len - 1] === "'"))) {
-                $configuredPublicBase = substr($configuredPublicBase, 1, -1);
-            }
-            break 2;
-        }
-    }
-}
+$configuredPublicBase = trim(bootstrap_env('APP_PUBLIC_BASE_URL', ''));
 
 if ($configuredPublicBase !== '') {
     $urlBase = rtrim($configuredPublicBase, '/');

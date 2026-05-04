@@ -148,6 +148,7 @@ $router->post('/eventos/inscritos/editar', [$eventoController, 'editarInscrito']
 $router->post('/eventos/inscritos/excluir', [$eventoController, 'excluirInscrito']);
 $router->get('/eventos/verifica-email', [$eventoController, 'verificarEmail']);
 $router->get('/relatorios/frequencia', [$relatorioController, 'frequencia']);
+$router->get('/relatorios/frequencia/pdf-intervalo', [$relatorioController, 'frequenciaIntervaloPdf']);
 $router->get('/relatorios/personalizado', [$relatorioController, 'personalizado']);
 $router->get('/relatorios/presenca-curso-turma', [$relatorioController, 'presencaCursoTurma']);
 $router->get('/relatorios/matriculados', [$relatorioController, 'matriculados']);

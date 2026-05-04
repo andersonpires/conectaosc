@@ -1,6 +1,13 @@
 <?php
 declare(strict_types=1);
 
+$_reduzCronLogsDir = __DIR__ . '/logs';
+if (!is_dir($_reduzCronLogsDir)) {
+    @mkdir($_reduzCronLogsDir, 0777, true);
+}
+ini_set('error_log', $_reduzCronLogsDir . '/reduzfoto_errors.log');
+unset($_reduzCronLogsDir);
+
 require_once dirname(__DIR__) . '/conectabd/conexao.php';
 
 date_default_timezone_set('America/Sao_Paulo');

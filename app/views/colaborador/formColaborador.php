@@ -89,6 +89,13 @@ $ufs = [
                     }
 
                     $colaborador = $colaboradorEdicao ?? null;
+                    $nascimentoEdicao = '';
+                    if (is_array($colaborador) && !empty($colaborador['Nascimento'])) {
+                        $timestampNascimento = strtotime((string) $colaborador['Nascimento']);
+                        if ($timestampNascimento !== false) {
+                            $nascimentoEdicao = date('Y-m-d', $timestampNascimento);
+                        }
+                    }
                     if ($colaborador) {
                     ?>
                         <div class="col-12">
@@ -125,6 +132,16 @@ $ufs = [
                                         <div class="mb-3">
                                             <label for="WhatsApp" class="form-label">WhatsApp</label>
                                             <input type="text" class="form-control" id="WhatsApp" name="WhatsApp" value="<?php echo htmlspecialchars($colaborador['WhatsApp']); ?>" autocomplete="off">
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label for="Nascimento" class="form-label">Nascimento</label>
+                                                <input type="date" class="form-control" id="Nascimento" name="Nascimento" value="<?php echo htmlspecialchars($nascimentoEdicao); ?>" autocomplete="off">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="Cargo" class="form-label">Cargo</label>
+                                                <input type="text" class="form-control" id="Cargo" name="Cargo" value="<?php echo htmlspecialchars((string) ($colaborador['Cargo'] ?? '')); ?>" maxlength="120" autocomplete="off">
+                                            </div>
                                         </div>
                                         <div class="mb-3">
                                             <div class="form-check form-switch">
@@ -265,6 +282,16 @@ $ufs = [
                                             <label for="WhatsApp" class="form-label">WhatsApp</label>
                                             <input type="text" class="form-control" id="WhatsApp" name="WhatsApp" autocomplete="off">
                                         </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label for="Nascimento" class="form-label">Nascimento</label>
+                                                <input type="date" class="form-control" id="Nascimento" name="Nascimento" autocomplete="off">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="Cargo" class="form-label">Cargo</label>
+                                                <input type="text" class="form-control" id="Cargo" name="Cargo" maxlength="120" autocomplete="off">
+                                            </div>
+                                        </div>
                                         <div class="mb-3">
                                             <div class="form-check form-switch">
                                                 <input class="form-check-input" type="checkbox" role="switch" id="profissional_saude" name="profissional_saude" value="1">
@@ -340,6 +367,8 @@ $ufs = [
                                             <th scope="col">Foto</th>
                                             <th scope="col">Nome</th>
                                             <th scope="col">Sobrenome</th>
+                                            <th scope="col">Nascimento</th>
+                                            <th scope="col">Cargo</th>
                                             <th scope="col">Permissão</th>
                                             <th scope="col">CPF</th>
                                             <th scope="col">WhatsApp</th>
@@ -368,6 +397,14 @@ $ufs = [
                                                 $Permissao = $dados['NomePermissao'] ?? '';
                                                 $WhatsApp = $dados['WhatsApp'] ?? '';
                                                 $Email = $dados['Email'] ?? '';
+                                                $Cargo = trim((string) ($dados['Cargo'] ?? ''));
+                                                $NascimentoFmt = '';
+                                                if (!empty($dados['Nascimento'])) {
+                                                    $timestampNascimento = strtotime((string) $dados['Nascimento']);
+                                                    $NascimentoFmt = $timestampNascimento !== false
+                                                        ? date('d/m/Y', $timestampNascimento)
+                                                        : (string) $dados['Nascimento'];
+                                                }
                                                 $Email_confere = $dados['Email_confere'] ?? 0;
                                                 if ($Email_confere == 0) {
                                                     $Email_confere = "alert-triangle";
@@ -385,6 +422,8 @@ $ufs = [
                                                     </td>
                                                     <td><?php echo htmlspecialchars($Nome); ?></td>
                                                     <td><?php echo htmlspecialchars($Sobrenome); ?></td>
+                                                    <td><?php echo htmlspecialchars($NascimentoFmt); ?></td>
+                                                    <td><?php echo htmlspecialchars($Cargo); ?></td>
                                                     <td><?php echo htmlspecialchars($Permissao); ?></td>
                                                     <td><?php echo htmlspecialchars($masked_CPF); ?></td>
                                                     <td><?php echo htmlspecialchars($WhatsApp); ?></td>
@@ -411,7 +450,7 @@ $ufs = [
                                             <?php endforeach; ?>
                                         <?php else: ?>
                                             <tr>
-                                                <td colspan="10">Nenhum colaborador cadastrado.</td>
+                                                <td colspan="12">Nenhum colaborador cadastrado.</td>
                                             </tr>
                                         <?php endif; ?>
                                     </tbody>
@@ -549,7 +588,6 @@ $ufs = [
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.12/jquery.mask.min.js"></script>
 <script type="text/javascript">
     $("#Telefone, #WhatsApp").mask("(00) 0.0000-0000"); //000 000 0000 eua
-    $("#Nascimento").mask('00/00/0000');
     $('.time').mask('00:00:00');
     $('.date_time').mask('00/00/0000 00:00:00');
     $('.cep').mask('00000-000');

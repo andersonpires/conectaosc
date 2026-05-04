@@ -43,19 +43,25 @@ function apiRestoreLegacyAuthFromCookie(): void
     }
 
     $rootPath = dirname(__DIR__);
-    $authCookieName = 'login_v43';
-    $cookieConfigPath = $rootPath . '/temp/setCookie.env';
-    if (is_file($cookieConfigPath)) {
-        $rawCookieName = trim((string) file_get_contents($cookieConfigPath));
-        if ($rawCookieName !== '') {
-            if (str_contains($rawCookieName, '=')) {
-                $parts = explode('=', $rawCookieName, 2);
-                $rawCookieName = trim((string) ($parts[1] ?? ''));
-            }
+    $projectRoot = dirname($rootPath);
+    $authCookieName = trim((string) (getenv('AUTH_COOKIE_NAME') ?: getenv('LOGIN_COOKIE_NAME') ?: ''));
+    if ($authCookieName === '') {
+        $cookieConfigPath = $projectRoot . '/temp/setCookie.env';
+        if (is_file($cookieConfigPath)) {
+            $rawCookieName = trim((string) file_get_contents($cookieConfigPath));
             if ($rawCookieName !== '') {
-                $authCookieName = $rawCookieName;
+                if (str_contains($rawCookieName, '=')) {
+                    $parts = explode('=', $rawCookieName, 2);
+                    $rawCookieName = trim((string) ($parts[1] ?? ''));
+                }
+                if ($rawCookieName !== '') {
+                    $authCookieName = $rawCookieName;
+                }
             }
         }
+    }
+    if ($authCookieName === '') {
+        $authCookieName = 'login_v43';
     }
 
     if (empty($_COOKIE[$authCookieName])) {

@@ -16,6 +16,11 @@ final class RelatorioController
         $this->render('/app/views/relatorio/relFrequencia.php');
     }
 
+    public function frequenciaIntervaloPdf(): void
+    {
+        $this->render('/app/views/relatorio/getPDFInterval.php');
+    }
+
     public function personalizado(): void
     {
         $this->render('/app/views/relatorio/relCustomize.php');

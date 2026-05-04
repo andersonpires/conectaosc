@@ -1,6 +1,6 @@
 import { renderPacientes } from './pages/pacientes.js?v=20260302a';
 import { renderAgenda } from './pages/agenda.js?v=20260311a';
-import { renderProntuarios } from './pages/prontuarios.js?v=20260305b';
+import { renderProntuarios } from './pages/prontuarios.js?v=20260502a';
 import { renderAtendimento } from './pages/atendimento.js?v=20260311a';
 import { getSpinnerHtml } from './utils/loading.js?v=20260302a';
 

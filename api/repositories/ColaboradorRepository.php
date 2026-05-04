@@ -24,14 +24,15 @@ class ColaboradorRepository
         }
 
         if ($search !== null && $search !== '') {
-            $conditions[] = '(Nome LIKE ? OR Sobrenome LIKE ? OR CONCAT(Nome, " ", Sobrenome) LIKE ?)';
+            $conditions[] = '(Nome LIKE ? OR Sobrenome LIKE ? OR Cargo LIKE ? OR CONCAT(Nome, " ", Sobrenome) LIKE ?)';
             $term = '%' . $search . '%';
+            $params[] = $term;
             $params[] = $term;
             $params[] = $term;
             $params[] = $term;
         }
 
-        $sql = 'SELECT IdColaborador, Nome, Sobrenome, especialidade_id, profissional_saude, COALESCE(Habilitado, 1) AS Habilitado
+        $sql = 'SELECT IdColaborador, Nome, Sobrenome, Nascimento, Cargo, especialidade_id, profissional_saude, COALESCE(Habilitado, 1) AS Habilitado
                   FROM tbUser
                  WHERE ' . implode(' AND ', $conditions) . '
               ORDER BY Nome ASC, Sobrenome ASC';
@@ -46,7 +47,7 @@ class ColaboradorRepository
     public function findById(int $idColaborador): ?array
     {
         $stmt = $this->pdo()->prepare(
-            'SELECT IdColaborador, Nome, Sobrenome, Email, especialidade_id, profissional_saude, COALESCE(Habilitado, 1) AS Habilitado
+            'SELECT IdColaborador, Nome, Sobrenome, Nascimento, Cargo, Email, especialidade_id, profissional_saude, COALESCE(Habilitado, 1) AS Habilitado
                FROM tbUser
               WHERE IdColaborador = ?'
         );

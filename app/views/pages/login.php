@@ -17,20 +17,7 @@ if ($BASE_para_URL === '' || $BASE_para_URL === '/') {
     }
 }
 
-$authCookieName = 'login_v43';
-$cookieConfigPath = $ROOT_PATH . '/temp/setCookie.env';
-if (file_exists($cookieConfigPath)) {
-    $rawCookieName = trim((string) file_get_contents($cookieConfigPath));
-    if ($rawCookieName !== '') {
-        if (strpos($rawCookieName, '=') !== false) {
-            $parts = explode('=', $rawCookieName, 2);
-            $rawCookieName = trim($parts[1]);
-        }
-        if ($rawCookieName !== '') {
-            $authCookieName = $rawCookieName;
-        }
-    }
-}
+$authCookieName = bootstrap_auth_cookie_name($ROOT_PATH);
 
 $authSessionKeys = [
     'token',

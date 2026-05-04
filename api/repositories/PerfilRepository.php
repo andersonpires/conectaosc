@@ -25,13 +25,14 @@ class PerfilRepository
         ?string $whatsApp,
         ?string $email,
         ?string $cidadeEstado,
-        ?string $trabalho,
+        ?string $cargo,
+        ?string $nascimento,
         int $profissionalSaude,
         mixed $especialidadeId,
         ?string $hashSenha
     ): bool {
-        $sql = "UPDATE tbUser SET Foto = ?, Nome = ?, Sobrenome = ?, WhatsApp = ?, Email = ?, CidadeEstado = ?, Trabalho = ?, profissional_saude = ?, especialidade_id = ?";
-        $params = [$foto, $nome, $sobrenome, $whatsApp, $email, $cidadeEstado, $trabalho, $profissionalSaude, $especialidadeId];
+        $sql = "UPDATE tbUser SET Foto = ?, Nome = ?, Sobrenome = ?, WhatsApp = ?, Email = ?, CidadeEstado = ?, Cargo = ?, Nascimento = ?, profissional_saude = ?, especialidade_id = ?";
+        $params = [$foto, $nome, $sobrenome, $whatsApp, $email, $cidadeEstado, $cargo, $nascimento, $profissionalSaude, $especialidadeId];
         if ($hashSenha !== null && $hashSenha !== '') {
             $sql .= ", Senha = ?";
             $params[] = $hashSenha;

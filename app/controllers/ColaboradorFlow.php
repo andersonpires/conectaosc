@@ -114,6 +114,8 @@ final class ColaboradorFlow
         $cpf = trim((string) ($_POST['CPF'] ?? ''));
         $idPermissao = (int) ($_POST['Permissao'] ?? 0);
         $whatsApp = trim((string) ($_POST['WhatsApp'] ?? ''));
+        $nascimento = $this->normalizarNascimento($_POST['Nascimento'] ?? null);
+        $cargo = trim((string) ($_POST['Cargo'] ?? ''));
         $email = trim((string) ($_POST['Email'] ?? ''));
         $senha = (string) ($_POST['Senha'] ?? '');
 
@@ -133,6 +135,8 @@ final class ColaboradorFlow
                 $sobrenome,
                 $idPermissao,
                 $whatsApp,
+                $nascimento,
+                $cargo,
                 $email,
                 $senha,
                 $tipo,
@@ -149,6 +153,8 @@ final class ColaboradorFlow
             $cpf,
             $idPermissao,
             $whatsApp,
+            $nascimento,
+            $cargo,
             $email,
             $senha,
             $tipo,
@@ -164,6 +170,8 @@ final class ColaboradorFlow
         string $sobrenome,
         int $idPermissao,
         string $whatsApp,
+        ?string $nascimento,
+        string $cargo,
         string $email,
         string $senha,
         string $tipo,
@@ -197,6 +205,8 @@ final class ColaboradorFlow
             'Sobrenome' => $sobrenome,
             'IdPermissao' => $idPermissao,
             'WhatsApp' => $whatsApp,
+            'Nascimento' => $nascimento,
+            'Cargo' => $cargo !== '' ? $cargo : null,
             'Email' => $email,
             'profissional_saude' => $profissionalSaude,
             'especialidade_id' => $especialidadeId,
@@ -235,6 +245,8 @@ final class ColaboradorFlow
         string $cpf,
         int $idPermissao,
         string $whatsApp,
+        ?string $nascimento,
+        string $cargo,
         string $email,
         string $senha,
         string $tipo,
@@ -262,6 +274,8 @@ final class ColaboradorFlow
             'CPF' => $cpf,
             'IdPermissao' => $idPermissao,
             'WhatsApp' => $whatsApp,
+            'Nascimento' => $nascimento,
+            'Cargo' => $cargo !== '' ? $cargo : null,
             'Email' => $email,
             'profissional_saude' => $profissionalSaude,
             'especialidade_id' => $especialidadeId,
@@ -374,6 +388,21 @@ final class ColaboradorFlow
             ];
         }
         return $itens;
+    }
+
+    private function normalizarNascimento(mixed $valor): ?string
+    {
+        $raw = trim((string) $valor);
+        if ($raw === '') {
+            return null;
+        }
+
+        $dt = \DateTime::createFromFormat('Y-m-d', $raw);
+        if (!$dt || $dt->format('Y-m-d') !== $raw) {
+            return null;
+        }
+
+        return $raw;
     }
 
     private function redirect(string $location): never

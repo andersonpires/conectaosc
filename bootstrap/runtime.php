@@ -142,6 +142,44 @@ if (!function_exists('bootstrap_runtime')) {
         return 'PHPSESSID3';
     }
 
+    function bootstrap_auth_cookie_name(?string $basePath = null): string
+    {
+        if ($basePath !== null && $basePath !== '') {
+            bootstrap_load_env_file($basePath);
+        }
+
+        $candidates = [
+            bootstrap_env('AUTH_COOKIE_NAME', ''),
+            bootstrap_env('LOGIN_COOKIE_NAME', ''),
+        ];
+
+        foreach ($candidates as $candidate) {
+            $candidate = trim((string)$candidate);
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        $resolvedBasePath = rtrim((string)($basePath ?? ''), '/\\');
+        if ($resolvedBasePath !== '') {
+            $legacyCookiePath = $resolvedBasePath . '/temp/setCookie.env';
+            if (is_file($legacyCookiePath) && is_readable($legacyCookiePath)) {
+                $rawCookieName = trim((string)file_get_contents($legacyCookiePath));
+                if ($rawCookieName !== '') {
+                    if (str_contains($rawCookieName, '=')) {
+                        $parts = explode('=', $rawCookieName, 2);
+                        $rawCookieName = trim((string)($parts[1] ?? ''));
+                    }
+                    if ($rawCookieName !== '') {
+                        return $rawCookieName;
+                    }
+                }
+            }
+        }
+
+        return 'login_v43';
+    }
+
     function bootstrap_runtime(): array
     {
         $basePath = realpath(__DIR__ . '/..') ?: dirname(__DIR__);

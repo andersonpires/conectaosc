@@ -69,14 +69,16 @@ class ColaboradorModel
         $profissionalSaude = isset($dados['profissional_saude']) ? (int) $dados['profissional_saude'] : 0;
         $especialidadeId = isset($dados['especialidade_id']) && $dados['especialidade_id'] ? (int) $dados['especialidade_id'] : null;
         $sql = "INSERT INTO tbUser
-                    (Foto, Nome, Sobrenome, CPF, IdPermissao, WhatsApp, Email, profissional_saude, especialidade_id, Senha, Habilitado, Email_confere, Tipo, IdColaboradorAlt, TimeAlterado)
+                    (Foto, Nome, Sobrenome, Nascimento, Cargo, CPF, IdPermissao, WhatsApp, Email, profissional_saude, especialidade_id, Senha, Habilitado, Email_confere, Tipo, IdColaboradorAlt, TimeAlterado)
                 VALUES
-                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
         $ok = $stmt->execute([
             $dados['Foto'],
             $dados['Nome'],
             $dados['Sobrenome'],
+            $dados['Nascimento'],
+            $dados['Cargo'],
             $dados['CPF'],
             $dados['IdPermissao'],
             $dados['WhatsApp'],
@@ -107,6 +109,8 @@ class ColaboradorModel
                    SET Foto = ?,
                        Nome = ?,
                        Sobrenome = ?,
+                       Nascimento = ?,
+                       Cargo = ?,
                        IdPermissao = ?,
                        WhatsApp = ?,
                        Email = ?,
@@ -119,6 +123,8 @@ class ColaboradorModel
             $dados['Foto'],
             $dados['Nome'],
             $dados['Sobrenome'],
+            $dados['Nascimento'],
+            $dados['Cargo'],
             $dados['IdPermissao'],
             $dados['WhatsApp'],
             $dados['Email'],
