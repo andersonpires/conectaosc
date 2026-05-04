@@ -1,6 +1,6 @@
 .env
-/*.zip
 .claude/settings.local.json
+/*.zip
 temp/*
 !temp/*.php
 !temp/*.log
@@ -14,9 +14,7 @@ clinica/zz_Suporte/
 get/
 storage/
 tools/
-vendor/
+!vendor/
 .codex_root_page.html
 .editorconfig
-Dockerfile
-docker-compose.yml
 .dockerignore

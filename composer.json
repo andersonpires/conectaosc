@@ -1,7 +1,4 @@
 {
-    "require": {
-        "google/apiclient": "2.0"
-    },
     "scripts": {
         "check:bom": "@php tools/check-bom.php"
     }
