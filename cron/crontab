@@ -1,0 +1,14 @@
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Notifica colaboradores sobre tarefas nos proximos 35 minutos
+*/30 * * * * www-data /usr/local/bin/php /var/www/html/conectaosc/api/cron/verificaTarefasCron.php >> /var/www/html/conectaosc/api/cron/logs/verificaTarefas.log 2>&1
+
+# Processa geracao de contratos PDF em lote (jobs na tabela tb_Cron_Contrato)
+*/5 * * * * www-data /usr/local/bin/php /var/www/html/conectaosc/api/cron/executaCronContrato.php >> /var/www/html/conectaosc/api/cron/logs/executaCronContrato.log 2>&1
+
+# Comprime fotos acima de 130KB para 800x800 / 75% (06h UTC = ~03h Sao Paulo)
+0 6 * * * www-data /usr/local/bin/php /var/www/html/conectaosc/api/cron/reduzFotoCron.php >> /var/www/html/conectaosc/api/cron/logs/reduzFoto.log 2>&1
+
+# Verifica se e hora de fazer backup (intervalo real controlado pela tabela tbbackupconfig)
+0 * * * * www-data /usr/local/bin/php /var/www/html/conectaosc/api/cron/executaBackupCron.php >> /var/www/html/conectaosc/api/cron/logs/backup.log 2>&1

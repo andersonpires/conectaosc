@@ -3,8 +3,9 @@ FROM php:8.2-apache
 # Enable mod_rewrite for .htaccess routing
 RUN a2enmod rewrite
 
-# Install system libraries and PHP extensions
+# Install system libraries, PHP extensions and cron
 RUN apt-get update && apt-get install -y \
+        cron \
         libfreetype6-dev \
         libicu-dev \
         libjpeg62-turbo-dev \
@@ -39,8 +40,16 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 # Copy application
 COPY . .
 
+# Register crontab and set up entrypoint
+RUN cp cron/crontab /etc/cron.d/conectaosc \
+    && chmod 0644 /etc/cron.d/conectaosc
+
+COPY docker-entrypoint.sh /usr/local/bin/conectaosc-entrypoint.sh
+RUN chmod +x /usr/local/bin/conectaosc-entrypoint.sh
+
 # Create writable directories
-RUN mkdir -p storage temp \
+RUN mkdir -p storage temp api/cron/logs \
     && chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
+CMD ["/usr/local/bin/conectaosc-entrypoint.sh"]
