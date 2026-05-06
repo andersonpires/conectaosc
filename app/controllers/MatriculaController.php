@@ -60,6 +60,11 @@ final class MatriculaController
         $this->render('/app/views/matricula/gerarContratosCurso.php');
     }
 
+    public function contratosZip(): void
+    {
+        $this->render('/app/views/matricula/finalizarZipContratos.php');
+    }
+
     private function render(string $relativePath): void
     {
         $candidate = $this->basePath . $relativePath;

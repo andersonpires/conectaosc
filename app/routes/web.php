@@ -105,7 +105,7 @@ $router->get('/matriculas/contratos/turma', [$matriculaController, 'contratosTur
 $router->post('/matriculas/contratos/turma/processar', [$matriculaController, 'contratosTurmaProcessar']);
 $router->post('/matriculas/contratos/turma/solicitar', [$matriculaController, 'contratosTurmaSolicitar']);
 $router->get('/matriculas/contratos/curso', [$matriculaController, 'contratosCurso']);
-$router->post('/matriculas/contratos/curso', [$matriculaController, 'contratosCurso']);
+$router->post('/matriculas/contratos/curso/zip', [$matriculaController, 'contratosZip']);
 $router->get('/configuracoes', [$configuracaoController, 'index']);
 $router->post('/configuracoes', [$configuracaoController, 'index']);
 $router->get('/colaboradores', [$colaboradorController, 'index']);

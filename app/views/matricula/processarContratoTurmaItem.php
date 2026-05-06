@@ -29,8 +29,21 @@ if ($idMatricula <= 0) {
     exit;
 }
 
+$assinar = isset($_POST['assinar']) && (string)$_POST['assinar'] === '1';
+
 try {
-    $sql = $pdo->prepare("\n        SELECT a.*, c.NomeCurso, t.NomeTurma, m.IdMatricula, m.vData, p.LogoProjeto, p.TermosContrato\n          FROM tbMatricula m\n          JOIN tbAluno a ON m.IdUsuario = a.IdUsuario\n          JOIN tbCurso c ON m.IdCurso = c.IdCurso\n          JOIN tbTurma t ON m.IdTurma = t.IdTurma\n     LEFT JOIN tbProjeto p ON c.IdProjeto = p.IdProjeto\n         WHERE m.IdMatricula = ?\n           AND m.Habilitado = 1\n           AND a.Habilitado = 1\n         LIMIT 1\n    ");
+    $sql = $pdo->prepare("
+        SELECT a.*, c.NomeCurso, t.NomeTurma, m.IdMatricula, m.vData, p.LogoProjeto, p.TermosContrato
+          FROM tbMatricula m
+          JOIN tbAluno a ON m.IdUsuario = a.IdUsuario
+          JOIN tbCurso c ON m.IdCurso = c.IdCurso
+          JOIN tbTurma t ON m.IdTurma = t.IdTurma
+     LEFT JOIN tbProjeto p ON c.IdProjeto = p.IdProjeto
+         WHERE m.IdMatricula = ?
+           AND m.Habilitado = 1
+           AND a.Habilitado = 1
+         LIMIT 1
+    ");
     $sql->execute([$idMatricula]);
     $dados = $sql->fetch(PDO::FETCH_ASSOC);
 
@@ -41,22 +54,31 @@ try {
     }
 
     $configAssinatura = loteContratoCarregarConfig($pdo, $BASE_para_PATH);
-    $idSessao = (int)($_SESSION['Cod'] ?? 0);
-    $nomeSessao = trim((string)(($_SESSION['Nome'] ?? '') . ' ' . ($_SESSION['Sobrenome'] ?? '')));
 
-    $resultado = loteContratoGerarContratoAssinadoPorMatricula(
-        $pdo,
-        $BASE_para_PATH,
-        $BASE_para_URL,
-        $dados,
-        $configAssinatura,
-        $idSessao,
-        $nomeSessao
-    );
+    if ($assinar) {
+        $idSessao = (int)($_SESSION['Cod'] ?? 0);
+        $nomeSessao = trim((string)(($_SESSION['Nome'] ?? '') . ' ' . ($_SESSION['Sobrenome'] ?? '')));
+
+        $resultado = loteContratoGerarContratoAssinadoPorMatricula(
+            $pdo,
+            $BASE_para_PATH,
+            $BASE_para_URL,
+            $dados,
+            $configAssinatura,
+            $idSessao,
+            $nomeSessao
+        );
+    } else {
+        $resultado = loteContratoGerarContratoPdfSemAssinatura(
+            $BASE_para_PATH,
+            $dados,
+            $configAssinatura
+        );
+    }
 
     if (empty($resultado['ok'])) {
         http_response_code(500);
-        echo json_encode(['ok' => false, 'erro' => (string)($resultado['erro'] ?? 'Erro ao assinar contrato.')], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['ok' => false, 'erro' => (string)($resultado['erro'] ?? 'Erro ao gerar contrato.')], JSON_UNESCAPED_UNICODE);
         exit;
     }
 

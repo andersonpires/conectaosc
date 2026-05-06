@@ -130,6 +130,58 @@ if (!function_exists('loteContratoGerarHtml')) {
     }
 }
 
+if (!function_exists('loteContratoGerarContratoPdfSemAssinatura')) {
+    function loteContratoGerarContratoPdfSemAssinatura(
+        string $basePath,
+        array $dados,
+        array $configAssinatura
+    ): array {
+        try {
+            $logoProjetoPath = loteContratoResolveProjectLogoPath((string)($dados['LogoProjeto'] ?? ''), $basePath);
+
+            $pdf = new LoteContratoPDF();
+            $pdf->logoPath = $logoProjetoPath;
+            $pdf->logoSistemaPath = (string)($configAssinatura['logoSistemaPath'] ?? '');
+            $pdf->SetCreator('Conecta OSC');
+            $pdf->SetAuthor('Conecta OSC');
+            $pdf->SetTitle('Contrato - ' . (string)($dados['Nome'] ?? ''));
+            $pdf->SetMargins(15, 40, 15);
+            $pdf->SetHeaderMargin(0);
+            $pdf->AddPage();
+            $pdf->SetFont('helvetica', '', 11);
+
+            $html = loteContratoGerarHtml(
+                $dados,
+                (string)($configAssinatura['responsavelSistema'] ?? 'Instituto Tecnológico e Vocacional Avançado - ITEVA'),
+                (string)($configAssinatura['linhaDirigenteCargo'] ?? '')
+            );
+            $pdf->writeHTML($html, true, false, true, false, '');
+
+            $pathBase = rtrim($basePath, '/\\') . '/app/storage/assinatura/';
+            $pathAssinados = $pathBase . 'assinados/';
+            if (!is_dir($pathAssinados)) {
+                @mkdir($pathAssinados, 0775, true);
+            }
+
+            $nomeArquivoFinal = 'contrato_semass_' . time() . '_' . substr(md5(uniqid('', true)), 0, 8) . '.pdf';
+            $pathFinal = $pathAssinados . $nomeArquivoFinal;
+
+            $pdf->Output($pathFinal, 'F');
+
+            return [
+                'ok' => true,
+                'path' => $pathFinal,
+                'nomeArquivo' => $nomeArquivoFinal,
+            ];
+        } catch (Throwable $e) {
+            return [
+                'ok' => false,
+                'erro' => $e->getMessage(),
+            ];
+        }
+    }
+}
+
 if (!function_exists('loteContratoGerarContratoAssinadoPorMatricula')) {
     function loteContratoGerarContratoAssinadoPorMatricula(
         PDO $pdo,

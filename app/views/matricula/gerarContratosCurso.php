@@ -2,7 +2,6 @@
 $runtime = require __DIR__ . '/../../../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
-$appJsVersion = @filemtime($BASE_para_PATH . '/app/assets/js/app.js') ?: time();
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     ini_set('session.gc_maxlifetime', '86400');
@@ -17,377 +16,287 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
 require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
 
-function contratosCursoStatusLabel(int $status): string
-{
-    if ($status === 0) {
-        return 'Concluído';
-    }
-    if ($status === 1) {
-        return 'Pendente';
-    }
-    if ($status === 2) {
-        return 'Processando';
-    }
-    if ($status === 9) {
-        return 'Erro';
-    }
-
-    return 'Desconhecido';
-}
-
-function contratosCursoZipPublicUrl(string $baseUrl, string $zipName, string $storedUrl = ''): string
-{
-    $zipName = trim($zipName);
-    if ($zipName !== '') {
-        return rtrim($baseUrl, '/') . '/app/storage/assinatura/lotes/' . rawurlencode($zipName);
-    }
-
-    $storedUrl = trim($storedUrl);
-    if ($storedUrl === '') {
-        return '';
-    }
-
-    $path = (string) (parse_url($storedUrl, PHP_URL_PATH) ?? '');
-    if ($path === '') {
-        return '';
-    }
-
-    $zipBaseName = basename($path);
-    if ($zipBaseName === '' || $zipBaseName === '.' || $zipBaseName === '..') {
-        return '';
-    }
-
-    return rtrim($baseUrl, '/') . '/app/storage/assinatura/lotes/' . rawurlencode($zipBaseName);
-}
-
-$idCurso = isset($_REQUEST['curso']) ? (int) $_REQUEST['curso'] : 0;
+$idCurso = isset($_GET['curso']) ? (int)$_GET['curso'] : 0;
 if ($idCurso <= 0) {
-    die("<div class='alert alert-danger'>Parâmetros inválidos.</div>");
-}
-
-$sqlCurso = $pdo->prepare('SELECT IdCurso, NomeCurso FROM tbCurso WHERE IdCurso = ? LIMIT 1');
-$sqlCurso->execute([$idCurso]);
-$curso = $sqlCurso->fetch(PDO::FETCH_ASSOC);
-if (!$curso) {
-    die("<div class='alert alert-danger'>Curso não encontrado.</div>");
-}
-
-if (isset($_GET['ajax']) && $_GET['ajax'] === 'status') {
-    header('Content-Type: application/json; charset=UTF-8');
-
-    try {
-        $stmtHistAjax = $pdo->prepare("
-            SELECT IdCronContrato, Status, NomeZip, UrlZip, MensagemErro, DataSolicitacao, DataAtualizacao, EmailDestino
-              FROM tb_Cron_Contrato
-             WHERE TipoReferencia = 'CURSO'
-               AND IdCurso = ?
-          ORDER BY IdCronContrato DESC
-             LIMIT 10
-        ");
-        $stmtHistAjax->execute([$idCurso]);
-        $historicoAjax = $stmtHistAjax->fetchAll(PDO::FETCH_ASSOC) ?: [];
-
-        $items = array_map(static function (array $row) use ($BASE_para_URL): array {
-            $status = (int) ($row['Status'] ?? -1);
-
-            return [
-                'id' => (int) ($row['IdCronContrato'] ?? 0),
-                'status' => $status,
-                'statusLabel' => contratosCursoStatusLabel($status),
-                'dataSolicitacao' => (string) ($row['DataSolicitacao'] ?? ''),
-                'dataAtualizacao' => (string) ($row['DataAtualizacao'] ?? ''),
-                'emailDestino' => (string) ($row['EmailDestino'] ?? ''),
-                'mensagemErro' => (string) ($row['MensagemErro'] ?? ''),
-                'urlZip' => contratosCursoZipPublicUrl(
-                    (string) $BASE_para_URL,
-                    (string) ($row['NomeZip'] ?? ''),
-                    (string) ($row['UrlZip'] ?? '')
-                ),
-            ];
-        }, $historicoAjax);
-
-        echo json_encode(['items' => $items], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    } catch (Throwable $e) {
-        http_response_code(500);
-        echo json_encode(['erro' => 'Falha ao consultar o status dos lotes.'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    }
-
+    http_response_code(400);
+    echo '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Erro</title></head><body><p style="color:red;font-family:sans-serif;padding:2rem;">Parâmetro de curso inválido.</p></body></html>';
     exit;
 }
 
-$idSolicitante = (int) ($_SESSION['Cod'] ?? 0);
-$sqlUser = $pdo->prepare('SELECT Email FROM tbUser WHERE IdColaborador = ? LIMIT 1');
-$sqlUser->execute([$idSolicitante]);
-$user = $sqlUser->fetch(PDO::FETCH_ASSOC) ?: [];
+$modo = (isset($_GET['modo']) && $_GET['modo'] === 'zip') ? 'zip' : 'individual';
+$assinar = isset($_GET['assinar']) && (string)$_GET['assinar'] === '1' ? 1 : 0;
 
-$emailPadrao = trim((string) ($user['Email'] ?? ''));
-$emailDestino = $emailPadrao;
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $emailDestino = trim((string) ($_POST['email_destino'] ?? ''));
-
-    if ($emailDestino === '' || !filter_var($emailDestino, FILTER_VALIDATE_EMAIL)) {
-        $target = rtrim((string) $BASE_para_URL, '/') . '/matriculas/contratos/curso?curso=' . $idCurso . '&erro=' . urlencode('Informe um e-mail válido para receber os contratos.');
-        header('Location: ' . $target);
-        exit;
-    }
-
-    try {
-        $tokenDownload = bin2hex(random_bytes(20));
-        $stmt = $pdo->prepare("
-            INSERT INTO tb_Cron_Contrato
-                (TipoReferencia, IdCurso, NomeCurso, NomeTurma, EmailDestino, Status, IdColaboradorSolicitante, TokenDownload, DataSolicitacao, DataAtualizacao)
-            VALUES
-                ('CURSO', ?, ?, ?, ?, 1, ?, ?, NOW(), NOW())
-        ");
-        $stmt->execute([
-            $idCurso,
-            (string) $curso['NomeCurso'],
-            'Todas as turmas',
-            $emailDestino,
-            $idSolicitante > 0 ? $idSolicitante : null,
-            $tokenDownload,
-        ]);
-
-        $target = rtrim((string) $BASE_para_URL, '/') . '/matriculas/contratos/curso?curso=' . $idCurso . '&msg=' . urlencode('Solicitação registrada com sucesso. O processamento será realizado pelo cron e o envio será feito para ' . $emailDestino . '.');
-        header('Location: ' . $target);
-        exit;
-    } catch (Throwable $e) {
-        $target = rtrim((string) $BASE_para_URL, '/') . '/matriculas/contratos/curso?curso=' . $idCurso . '&erro=' . urlencode('Erro ao registrar solicitação: ' . $e->getMessage());
-        header('Location: ' . $target);
-        exit;
-    }
+$sqlCurso = $pdo->prepare('SELECT IdCurso, NomeCurso FROM tbCurso WHERE IdCurso = ? AND Habilitado = 1 LIMIT 1');
+$sqlCurso->execute([$idCurso]);
+$curso = $sqlCurso->fetch(PDO::FETCH_ASSOC);
+if (!$curso) {
+    http_response_code(404);
+    echo '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Erro</title></head><body><p style="color:red;font-family:sans-serif;padding:2rem;">Curso não encontrado.</p></body></html>';
+    exit;
 }
 
-$historico = [];
-try {
-    $stmtHist = $pdo->prepare("
-        SELECT IdCronContrato, Status, NomeZip, UrlZip, MensagemErro, DataSolicitacao, DataAtualizacao, EmailDestino
-          FROM tb_Cron_Contrato
-         WHERE TipoReferencia = 'CURSO'
-           AND IdCurso = ?
-      ORDER BY IdCronContrato DESC
-         LIMIT 10
-    ");
-    $stmtHist->execute([$idCurso]);
-    $historico = $stmtHist->fetchAll(PDO::FETCH_ASSOC) ?: [];
-} catch (Throwable $e) {
-    $historico = [];
-}
+$stmtLista = $pdo->prepare("
+    SELECT m.IdMatricula, a.Nome
+      FROM tbMatricula m
+      JOIN (
+            SELECT MAX(IdMatricula) AS IdMatricula
+              FROM tbMatricula
+             WHERE IdCurso = ?
+               AND Habilitado = 1
+             GROUP BY IdUsuario
+           ) ult ON ult.IdMatricula = m.IdMatricula
+      JOIN tbAluno a ON m.IdUsuario = a.IdUsuario
+      JOIN tbCurso c ON m.IdCurso = c.IdCurso
+      JOIN tbTurma t ON m.IdTurma = t.IdTurma
+     WHERE c.IdCurso = ?
+       AND c.Habilitado = 1
+       AND t.Habilitado = 1
+       AND a.Habilitado = 1
+       AND m.Habilitado = 1
+  ORDER BY t.NomeTurma, a.Nome
+");
+$stmtLista->execute([$idCurso, $idCurso]);
+$lista = $stmtLista->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+$processUrl = rtrim((string)$BASE_para_URL, '/') . '/matriculas/contratos/turma/processar';
+$zipUrl     = rtrim((string)$BASE_para_URL, '/') . '/matriculas/contratos/curso/zip';
+
+$itens = array_map(static fn(array $row): array => [
+    'id_matricula' => (int)$row['IdMatricula'],
+    'nome'         => (string)$row['Nome'],
+], $lista);
+
+$configJson = json_encode([
+    'modo'       => $modo,
+    'assinar'    => $assinar,
+    'processUrl' => $processUrl,
+    'zipUrl'     => $zipUrl,
+    'itens'      => $itens,
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
+
+$nomeCurso    = htmlspecialchars((string)$curso['NomeCurso'], ENT_QUOTES, 'UTF-8');
+$modoLabel    = $modo === 'zip' ? 'ZIP com todos os contratos' : 'um PDF por aluno';
+$assinarLabel = $assinar ? 'com assinatura digital' : 'sem assinatura digital';
+$subtitulo    = $modo === 'zip'
+    ? 'Os contratos serão gerados ' . $assinarLabel . ' e compactados em um único arquivo ZIP para download ao final.'
+    : 'Os contratos serão gerados ' . $assinarLabel . '. O download de cada PDF inicia automaticamente quando chegar a 100%.';
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-    <?php require_once $BASE_para_PATH . '/app/views/partials/header.php'; ?>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gerando contratos — <?= $nomeCurso ?></title>
     <style>
-        .contrato-zip-loading {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+        :root { color-scheme: light; }
+        body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #f8fafc; color: #0f172a; }
+        .wrap { max-width: 960px; margin: 0 auto; padding: 32px 16px 48px; }
+        h1 { margin: 0 0 4px; font-size: 1.4rem; }
+        .curso-nome { margin: 0 0 6px; font-size: 1rem; color: #334155; }
+        .subtitulo { margin: 0 0 28px; color: #64748b; font-size: 0.9rem; }
+        .list { display: grid; gap: 12px; }
+        .item { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 16px; }
+        .item-head { display: flex; justify-content: space-between; gap: 10px; align-items: center; margin-bottom: 9px; }
+        .item-name { font-size: 0.95rem; font-weight: 600; color: #0f172a; }
+        .item-status { font-size: 0.83rem; color: #64748b; }
+        .item-status.ok { color: #166534; }
+        .item-status.error { color: #b91c1c; }
+        .track { width: 100%; height: 9px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+        .bar { width: 0%; height: 100%; background: #2563eb; border-radius: 999px; transition: width 180ms linear; }
+        .bar.error { background: #dc2626; }
+        .summary { margin-top: 22px; font-size: 0.92rem; color: #334155; }
+        .btn-download {
+            display: inline-block; margin-top: 20px; padding: 12px 28px;
+            background: #2563eb; color: #fff; border-radius: 10px;
+            text-decoration: none; font-weight: 600; font-size: 0.95rem;
         }
+        .btn-download:hover { background: #1d4ed8; }
+        .aviso-vazio { padding: 2rem; color: #92400e; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 12px; }
     </style>
 </head>
-
 <body>
-    <div class="wrapper">
-        <?php require_once $BASE_para_PATH . '/app/views/partials/menu.php'; ?>
+<main class="wrap">
+    <h1>Gerando contratos</h1>
+    <p class="curso-nome">Curso: <strong><?= $nomeCurso ?></strong></p>
+    <p class="subtitulo"><?= htmlspecialchars($subtitulo, ENT_QUOTES, 'UTF-8') ?></p>
 
-        <div class="main">
-            <?php require_once $BASE_para_PATH . '/app/views/partials/topo.php'; ?>
-            <script src="<?php echo $BASE_para_URL; ?>/assets/js/app.js?v=<?php echo $appJsVersion; ?>"></script>
+    <?php if (empty($lista)): ?>
+        <div class="aviso-vazio">Nenhum aluno ativo com matrícula ativa foi encontrado neste curso.</div>
+    <?php else: ?>
+        <section class="list" id="contrato-list"></section>
+        <p class="summary" id="summary"></p>
+    <?php endif; ?>
+</main>
 
-            <main class="content">
-                <div class="container mt-4">
-                    <h2>Gerar contratos do curso</h2>
-                    <p class="mb-4">Curso: <b><?= htmlspecialchars((string) $curso['NomeCurso'], ENT_QUOTES, 'UTF-8') ?></b></p>
+<?php if (!empty($lista)): ?>
+<script>
+const CONFIG = <?= $configJson ?>;
 
-                    <?php if (isset($_GET['msg']) && trim((string) $_GET['msg']) !== '') { ?>
-                        <div class="alert alert-success"><?= htmlspecialchars(trim((string) $_GET['msg']), ENT_QUOTES, 'UTF-8') ?></div>
-                    <?php } ?>
+const listEl     = document.getElementById('contrato-list');
+const summaryEl  = document.getElementById('summary');
 
-                    <?php if (isset($_GET['erro']) && trim((string) $_GET['erro']) !== '') { ?>
-                        <div class="alert alert-danger"><?= htmlspecialchars(trim((string) $_GET['erro']), ENT_QUOTES, 'UTF-8') ?></div>
-                    <?php } ?>
+function esc(v) {
+    return String(v ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c] || c));
+}
 
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <p class="mb-3">Todos os contratos gerados serão enviados por e-mail após o processamento. Confirme o e-mail de recebimento:</p>
+function nomeParaArquivo(raw) {
+    return String(raw || '')
+        .normalize('NFD').replace(/[̀-ͯ]/g, '')
+        .replace(/[^A-Za-z\s]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40).trim() || 'beneficiario';
+}
 
-                            <form method="POST" class="row g-3">
-                                <input type="hidden" name="curso" value="<?= $idCurso ?>">
+function criarCard(item) {
+    const el = document.createElement('article');
+    el.className = 'item';
+    el.innerHTML =
+        '<div class="item-head">' +
+            '<span class="item-name">' + esc(item.nome || ('Matrícula #' + item.id_matricula)) + '</span>' +
+            '<span class="item-status">Aguardando</span>' +
+        '</div>' +
+        '<div class="track"><div class="bar"></div></div>';
+    return {
+        el,
+        statusEl: el.querySelector('.item-status'),
+        barEl:    el.querySelector('.bar'),
+    };
+}
 
-                                <div class="col-12 col-md-8">
-                                    <label for="email_destino" class="form-label">E-mail para recebimento</label>
-                                    <input type="email" id="email_destino" name="email_destino" class="form-control" required value="<?= htmlspecialchars($emailDestino, ENT_QUOTES, 'UTF-8') ?>">
-                                </div>
+function setStatus(card, msg, tom) {
+    card.statusEl.textContent = msg;
+    card.statusEl.className = 'item-status' + (tom ? ' ' + tom : '');
+}
 
-                                <div class="col-12 col-md-4 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary w-100">Solicitar geração em lote</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
+function setProgress(card, pct, tom) {
+    card.barEl.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    card.barEl.classList.toggle('error', tom === 'error');
+}
 
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Últimas solicitações deste curso</h5>
+function triggerDownload(url, nome) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nomeParaArquivo(nome) + '.pdf';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
 
-                            <?php if (empty($historico)) { ?>
-                                <div class="alert alert-light border mb-0">Nenhuma solicitação registrada para este curso.</div>
-                            <?php } else { ?>
-                                <div class="table-responsive">
-                                    <table class="table table-striped table-hover align-middle mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Status</th>
-                                                <th>Data da solicitação</th>
-                                                <th>Última atualização</th>
-                                                <th>E-mail</th>
-                                                <th>Arquivo ZIP</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($historico as $row) {
-                                                $status = (int) ($row['Status'] ?? -1);
-                                                $urlZip = contratosCursoZipPublicUrl((string) $BASE_para_URL, (string) ($row['NomeZip'] ?? ''), (string) ($row['UrlZip'] ?? ''));
-                                            ?>
-                                                <tr data-job-id="<?= (int) $row['IdCronContrato'] ?>">
-                                                    <td><?= (int) $row['IdCronContrato'] ?></td>
-                                                    <td class="js-status"><?= htmlspecialchars(contratosCursoStatusLabel($status), ENT_QUOTES, 'UTF-8') ?></td>
-                                                    <td><?= htmlspecialchars((string) $row['DataSolicitacao'], ENT_QUOTES, 'UTF-8') ?></td>
-                                                    <td class="js-atualizacao"><?= htmlspecialchars((string) $row['DataAtualizacao'], ENT_QUOTES, 'UTF-8') ?></td>
-                                                    <td><?= htmlspecialchars((string) $row['EmailDestino'], ENT_QUOTES, 'UTF-8') ?></td>
-                                                    <td class="js-zip-cell">
-                                                        <?php if ($status === 0 && $urlZip !== '') { ?>
-                                                            <a href="<?= htmlspecialchars($urlZip, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer">Baixar ZIP</a>
-                                                        <?php } elseif ($status === 9) { ?>
-                                                            <span class="text-danger"><?= htmlspecialchars((string) ($row['MensagemErro'] ?? 'Falha ao processar.'), ENT_QUOTES, 'UTF-8') ?></span>
-                                                        <?php } elseif ($status === 1 || $status === 2) { ?>
-                                                            <span class="contrato-zip-loading">
-                                                                <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
-                                                                <span>Aguardando arquivo</span>
-                                                            </span>
-                                                        <?php } else { ?>
-                                                            <span>-</span>
-                                                        <?php } ?>
-                                                    </td>
-                                                </tr>
-                                            <?php } ?>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            <?php } ?>
-                        </div>
-                    </div>
-                </div>
-            </main>
+async function processarItem(item, card) {
+    let pct = 5;
+    setProgress(card, pct);
+    setStatus(card, 'Gerando PDF…');
 
-            <footer class="footer">
-                <?php require_once $BASE_para_PATH . '/app/views/partials/footer.php'; ?>
-            </footer>
-        </div>
-    </div>
-    <script>
-        (function() {
-            const endpoint = <?php echo json_encode(rtrim((string) $BASE_para_URL, '/') . '/matriculas/contratos/curso?curso=' . $idCurso . '&ajax=status', JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
-            let pollingHandle = null;
+    const ticker = setInterval(() => {
+        pct = Math.min(pct + 3, 90);
+        setProgress(card, pct);
+    }, 300);
 
-            function escapeHtml(value) {
-                return String(value ?? '')
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;')
-                    .replace(/'/g, '&#039;');
+    try {
+        const body = new URLSearchParams();
+        body.set('id_matricula', String(item.id_matricula));
+        body.set('assinar', String(CONFIG.assinar));
+
+        const resp = await fetch(CONFIG.processUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: body.toString(),
+        });
+
+        clearInterval(ticker);
+        const data = await resp.json();
+
+        if (!resp.ok || !data.ok) {
+            throw new Error(data.erro || ('Falha HTTP ' + resp.status));
+        }
+
+        setProgress(card, 100);
+        setStatus(card, 'Concluído', 'ok');
+
+        if (CONFIG.modo === 'individual' && data.url_download) {
+            triggerDownload(data.url_download, item.nome);
+        }
+
+        return { ok: true, nomeArquivo: data.nome_arquivo || '' };
+    } catch (err) {
+        clearInterval(ticker);
+        setProgress(card, 100, 'error');
+        setStatus(card, 'Erro: ' + (err.message || 'falha desconhecida'), 'error');
+        return { ok: false };
+    }
+}
+
+async function criarZip(nomeArquivos) {
+    summaryEl.textContent = 'Compactando arquivos em ZIP…';
+    try {
+        const body = new URLSearchParams();
+        nomeArquivos.forEach((n) => body.append('arquivos[]', n));
+
+        const resp = await fetch(CONFIG.zipUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: body.toString(),
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.ok) throw new Error(data.erro || 'Falha ao criar ZIP.');
+        return data.url_download || '';
+    } catch (err) {
+        summaryEl.textContent = 'Erro ao criar ZIP: ' + (err.message || 'falha desconhecida');
+        return '';
+    }
+}
+
+(async function run() {
+    const itens = CONFIG.itens;
+    if (!itens || itens.length === 0) return;
+
+    const cards = itens.map((item) => {
+        const card = criarCard(item);
+        listEl.appendChild(card.el);
+        return { item, card };
+    });
+
+    let sucesso = 0;
+    const nomesArquivos = [];
+
+    for (const { item, card } of cards) {
+        const res = await processarItem(item, card);
+        if (res.ok) {
+            sucesso++;
+            if (res.nomeArquivo) nomesArquivos.push(res.nomeArquivo);
+        }
+    }
+
+    if (CONFIG.modo === 'zip') {
+        if (nomesArquivos.length > 0) {
+            const urlZip = await criarZip(nomesArquivos);
+            if (urlZip) {
+                summaryEl.innerHTML =
+                    'Concluído: ' + sucesso + '/' + itens.length + ' contrato(s) gerado(s). ' +
+                    '<a class="btn-download" href="' + esc(urlZip) + '" download>Baixar ZIP</a>';
+                const a = document.createElement('a');
+                a.href = urlZip;
+                a.download = 'contratos.zip';
+                a.rel = 'noopener noreferrer';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            } else {
+                summaryEl.textContent = 'Concluído: ' + sucesso + '/' + itens.length + ' contrato(s), mas falhou ao criar o ZIP.';
             }
-
-            function renderZipCell(item) {
-                if (item.status === 0 && item.urlZip) {
-                    return `<a href="${escapeHtml(item.urlZip)}" target="_blank" rel="noopener noreferrer">Baixar ZIP</a>`;
-                }
-
-                if (item.status === 9) {
-                    return `<span class="text-danger">${escapeHtml(item.mensagemErro || 'Falha ao processar.')}</span>`;
-                }
-
-                if (item.status === 1 || item.status === 2) {
-                    return `
-                        <span class="contrato-zip-loading">
-                            <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
-                            <span>Aguardando arquivo</span>
-                        </span>
-                    `;
-                }
-
-                return '<span>-</span>';
-            }
-
-            function updateTable(items) {
-                let hasPending = false;
-
-                items.forEach((item) => {
-                    const row = document.querySelector(`tr[data-job-id="${item.id}"]`);
-                    if (!row) {
-                        return;
-                    }
-
-                    const statusCell = row.querySelector('.js-status');
-                    const atualizacaoCell = row.querySelector('.js-atualizacao');
-                    const zipCell = row.querySelector('.js-zip-cell');
-
-                    if (statusCell) {
-                        statusCell.textContent = item.statusLabel || '';
-                    }
-                    if (atualizacaoCell) {
-                        atualizacaoCell.textContent = item.dataAtualizacao || '';
-                    }
-                    if (zipCell) {
-                        zipCell.innerHTML = renderZipCell(item);
-                    }
-
-                    if (item.status === 1 || item.status === 2) {
-                        hasPending = true;
-                    }
-                });
-
-                if (!hasPending && pollingHandle) {
-                    window.clearInterval(pollingHandle);
-                    pollingHandle = null;
-                }
-            }
-
-            async function pollStatus() {
-                try {
-                    const response = await fetch(endpoint, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        cache: 'no-store'
-                    });
-
-                    if (!response.ok) {
-                        return;
-                    }
-
-                    const data = await response.json();
-                    if (!data || !Array.isArray(data.items)) {
-                        return;
-                    }
-
-                    updateTable(data.items);
-                } catch (error) {
-                    console.error('Erro ao atualizar o status dos lotes de contrato.', error);
-                }
-            }
-
-            if (document.querySelector('tr[data-job-id]')) {
-                pollStatus();
-                pollingHandle = window.setInterval(pollStatus, 30000);
-            }
-        })();
-    </script>
+        } else {
+            summaryEl.textContent = 'Nenhum contrato foi gerado com sucesso.';
+        }
+    } else {
+        summaryEl.textContent = 'Concluído: ' + sucesso + '/' + itens.length + ' contrato(s) gerado(s) e enviado(s) para download.';
+    }
+})();
+</script>
+<?php endif; ?>
 </body>
-
 </html>

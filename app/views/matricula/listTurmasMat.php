@@ -62,9 +62,11 @@ if (isset($_GET['IdMatricula'])) {
                                 <?php echo ($Habilitado == 0) ? 'Mostrar somente matrículas ativas' : 'Mostrar matrículas ativas e inativas'; ?>
                             </a>
                             <?php if ((string)($_SESSION['Tipo'] ?? '') !== "Visitante") { ?>
-                                <a class="btn btn-info mb-3" href="<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/matriculas/contratos/curso/?curso=<?php echo (int)$IdCursoTurma; ?>" title="Gerar contratos do curso" target="_blank">
+                                <button type="button" class="btn btn-info mb-3" id="btnGerarContratosCurso"
+                                    data-curso="<?php echo (int)$IdCursoTurma; ?>"
+                                    title="Gerar contratos do curso">
                                     <i class="fa-solid fa-file-signature"></i> Gerar contratos (ativos)
-                                </a>
+                                </button>
                             <?php } ?>
                             <div class="table-responsive">
                                 <table id="minhaTabela" class="table table-striped table-hover">
@@ -172,6 +174,55 @@ if (isset($_GET['IdMatricula'])) {
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                                 <button type="button" class="btn btn-primary" id="btnCriarNovoContrato">Desejo criar um novo</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="modalGerarContratosCurso" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Gerar contratos do curso</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-3">Selecione o formato de download:</p>
+                                <div class="mb-4">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="contratos-curso-modo" id="contratos-modo-individual" value="individual" checked>
+                                        <label class="form-check-label" for="contratos-modo-individual">
+                                            Um PDF por aluno (download automático um a um)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="contratos-curso-modo" id="contratos-modo-zip" value="zip">
+                                        <label class="form-check-label" for="contratos-modo-zip">
+                                            ZIP com todos os contratos (download ao final)
+                                        </label>
+                                    </div>
+                                </div>
+                                <p class="mb-3">Deseja assinar digitalmente os contratos?</p>
+                                <div class="mb-2">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="contratos-curso-assinar" id="contratos-assinar-sim" value="1" checked>
+                                        <label class="form-check-label" for="contratos-assinar-sim">
+                                            Sim, assinar digitalmente
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="contratos-curso-assinar" id="contratos-assinar-nao" value="0">
+                                        <label class="form-check-label" for="contratos-assinar-nao">
+                                            Não, gerar sem assinatura digital
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn btn-primary" id="btnConfirmarGerarContratosCurso">
+                                    <i class="fa-solid fa-file-signature"></i> Gerar contratos
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -464,6 +515,35 @@ if (isset($_GET['IdMatricula'])) {
             </table>
         `;
     }
+
+    const CONTRATOS_CURSO_BASE_URL = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/matriculas/contratos/curso";
+
+    (function iniciarModalContratosCurso() {
+        const btnGerar = document.getElementById('btnGerarContratosCurso');
+        const modalEl  = document.getElementById('modalGerarContratosCurso');
+        const btnConf  = document.getElementById('btnConfirmarGerarContratosCurso');
+        if (!btnGerar || !modalEl || !btnConf) return;
+
+        btnGerar.addEventListener('click', function () {
+            new bootstrap.Modal(modalEl).show();
+        });
+
+        btnConf.addEventListener('click', function () {
+            const modo    = (modalEl.querySelector('input[name="contratos-curso-modo"]:checked') || {}).value || 'individual';
+            const assinar = (modalEl.querySelector('input[name="contratos-curso-assinar"]:checked') || {}).value || '1';
+            const curso   = btnGerar.getAttribute('data-curso') || '0';
+
+            const url = CONTRATOS_CURSO_BASE_URL +
+                '?curso='   + encodeURIComponent(curso) +
+                '&modo='    + encodeURIComponent(modo) +
+                '&assinar=' + encodeURIComponent(assinar);
+
+            window.open(url, '_blank', 'noopener');
+
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        });
+    })();
 
     document.addEventListener('DOMContentLoaded', async function() {
         let carregamentoComErro = false;
