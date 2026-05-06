@@ -343,6 +343,21 @@ class RelatorioFrequenciaIntervaloPdf extends TCPDF
     public float $wNome = 70.0;
     public float $wDia = 6.0;
     public float $bodyStartY = 0.0;
+    public bool $skipTableHeaderRow = false;
+
+    private function drawRotatedHeaderCell(float $w, float $h, string $label): void
+    {
+        $x = $this->GetX();
+        $y = $this->GetY();
+        $this->Rect($x, $y, $w, $h);
+        $this->SetFont('helvetica', 'B', 6.5);
+        $this->StartTransform();
+        $this->Rotate(-90, $x + ($w / 2), $y + ($h / 2));
+        $this->SetXY($x - (($h - $w) / 2), $y + (($h - $w) / 2));
+        $this->Cell($h, $w, $label, 0, 0, 'C');
+        $this->StopTransform();
+        $this->SetXY($x + $w, $y);
+    }
 
     private function splitTextoCurso(string $texto, int $limite): array
     {
@@ -411,7 +426,7 @@ class RelatorioFrequenciaIntervaloPdf extends TCPDF
             $this->Rect($x, $y, $width, $rowHeight);
             $this->SetXY($x + 2, $y + 2.2);
             $this->SetFont('helvetica', 'B', 7);
-            $this->Cell($width - 4, 3, strtoupper($label), 0, 1, 'L');
+            $this->Cell($width - 4, 3, mb_strtoupper($label, 'UTF-8'), 0, 1, 'L');
             $this->SetFont('helvetica', '', 8.5);
             if ($multiLine) {
                 $linha1 = (string)($cursoLinhas[0] ?? '');
@@ -442,14 +457,18 @@ class RelatorioFrequenciaIntervaloPdf extends TCPDF
         $this->SetY($startY + $rowHeightBase);
 
         $this->Ln(3);
-        $this->SetFont('helvetica', 'B', 8);
-        $this->Cell($this->wNum, 6, 'No', 1, 0, 'C');
-        $this->Cell($this->wNome, 6, ' Nome do beneficiário(a)', 1, 0, 'L');
-        $this->SetFont('helvetica', 'B', 7);
-        foreach ($this->dias as $dia) {
-            $this->Cell($this->wDia, 6, $dia, 1, 0, 'C');
+        $headerRowH = 14.0;
+        $headerRowStartX = $this->GetX();
+        $headerRowStartY = $this->GetY();
+        if (!$this->skipTableHeaderRow) {
+            $this->SetFont('helvetica', 'B', 8);
+            $this->Cell($this->wNum, $headerRowH, 'No', 1, 0, 'C');
+            $this->Cell($this->wNome, $headerRowH, ' Nome do beneficiário(a)', 1, 0, 'L');
+            foreach ($this->dias as $dia) {
+                $this->drawRotatedHeaderCell($this->wDia, $headerRowH, $dia);
+            }
+            $this->SetXY($headerRowStartX, $headerRowStartY + $headerRowH);
         }
-        $this->Ln();
         $this->bodyStartY = $this->GetY();
     }
 
@@ -520,6 +539,10 @@ foreach ($alunos as $idAluno) {
     $indice++;
 }
 
+// Se o auto-break do TCPDF moveu o cursor para dentro do cabeçalho, reposiciona abaixo dele
+if ($pdf->GetY() < $pdf->bodyStartY) {
+    $pdf->SetY($pdf->bodyStartY);
+}
 $pdf->Ln(2);
 $pdf->SetFont('helvetica', 'I', 8);
 $pdf->MultiCell(0, 5, 'Obs.: P = Presenca; F = Falta; FJ = Falta Justificada; NA = Nao se Aplica.', 0, 'L');
@@ -596,13 +619,14 @@ $pdf->setPage($lastPage);
 $pageWidthSigned = $pdf->getPageWidth();
 $pageHeightSigned = $pdf->getPageHeight();
 $neededHeight = 22.0;
-$startY = $pdf->GetY() + 4.0;
+$startY = max($pdf->GetY(), $pdf->bodyStartY) + 4.0;
 if (($startY + $neededHeight) > ($pageHeightSigned - 20.0)) {
+    $pdf->skipTableHeaderRow = true;
     $pdf->AddPage();
     $lastPage = $pdf->getNumPages();
     $pdf->setPage($lastPage);
     $pageWidthSigned = $pdf->getPageWidth();
-    $startY = $pdf->GetY() + 2.0;
+    $startY = $pdf->bodyStartY;
 }
 
 $qrSize = 18.0;

@@ -81,12 +81,8 @@ class RelatorioRepository
             'Bairro' => 'a.Bairro',
             'Telefone' => 'a.Telefone',
             'WhatsApp' => 'a.WhatsApp',
-            'NomeCurso' => $cursoGeral
-                ? "GROUP_CONCAT(DISTINCT cu.NomeCurso ORDER BY cu.NomeCurso SEPARATOR ', ')"
-                : 'cu.NomeCurso',
-            'NomeTurma' => $cursoGeral
-                ? "GROUP_CONCAT(DISTINCT t.NomeTurma ORDER BY t.NomeTurma SEPARATOR ', ')"
-                : 't.NomeTurma',
+            'NomeCurso' => "GROUP_CONCAT(DISTINCT cu.NomeCurso ORDER BY cu.NomeCurso SEPARATOR ', ')",
+            'NomeTurma' => "GROUP_CONCAT(DISTINCT t.NomeTurma ORDER BY t.NomeTurma SEPARATOR ', ')",
         ];
 
         $colunasSQL = [];

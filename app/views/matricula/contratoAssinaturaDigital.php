@@ -266,12 +266,13 @@ if (!function_exists('contratoAssinarPdfComDirigente')) {
 
             $sql = $pdo->prepare("
                 INSERT INTO tbpdf_assinado
-                    (IdColaborador, NomeDocumento, NomeArquivo, AssinaturaBase64, TimestampAssinatura, Xpos, Ypos, urlValidacao)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    (IdColaborador, NomeOriginal, NomeDocumento, NomeArquivo, AssinaturaBase64, TimestampAssinatura, Xpos, Ypos, urlValidacao)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             $sql->execute([
                 $idColaborador,
+                'contrato:' . $nomeDocumento,
                 $nomeDocumento,
                 $nomeArquivoFinal,
                 $codigoBase,
