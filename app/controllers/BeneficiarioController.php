@@ -58,8 +58,9 @@ final class BeneficiarioController
             $runtime = require $this->basePath . '/bootstrap/runtime.php';
             header('Content-Type: application/json; charset=utf-8');
 
-            $assetsImgUrl = rtrim((string)($runtime['assets_img_url'] ?? (rtrim($this->baseUrl, '/') . '/assets/img')), '/');
-            $fotoPadraoUrl = $assetsImgUrl . '/fotos/padrao.jpg';
+            $assetsImgUrl  = rtrim((string)($runtime['assets_img_url']  ?? (rtrim($this->baseUrl, '/') . '/assets/img')), '/');
+            $assetsImgPath = rtrim((string)($runtime['assets_img_path'] ?? ''), '/\\');
+            $fotoPadraoUrl = $assetsImgUrl . '/fotos/padrao.jfif';
             $idsRaw = (string)($_GET['ids'] ?? '');
 
             if ($idsRaw === '') {
@@ -106,7 +107,14 @@ final class BeneficiarioController
                     continue;
                 }
 
-                $fotos[$id] = $assetsImgUrl . '/fotos/' . rawurlencode(basename($fotoRaw));
+                $filename = basename($fotoRaw);
+                $filePath = $assetsImgPath !== ''
+                    ? $assetsImgPath . DIRECTORY_SEPARATOR . 'fotos' . DIRECTORY_SEPARATOR . $filename
+                    : '';
+                if ($filePath === '' || is_file($filePath)) {
+                    $fotos[$id] = $assetsImgUrl . '/fotos/' . rawurlencode($filename);
+                }
+                // se o arquivo não existe no disco, mantém $fotoPadraoUrl já definido
             }
 
             echo json_encode(['fotos' => $fotos], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);

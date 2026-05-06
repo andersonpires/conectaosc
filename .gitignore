@@ -5,7 +5,9 @@ temp/*
 !temp/*.php
 !temp/*.log
 !temp/.env.example
-/app/assets/img/fotos/
+/app/assets/img/fotos/*
+!/app/assets/img/fotos/padrao.jfif
+!/app/assets/img/fotos/padrao.jpg
 zz_Suporte/
 /.vscode/
 /backup-versao-1.93/
