@@ -65,11 +65,13 @@ class BeneficiarioModel
         }
 
 
-        // Obtem os nomes das colunas da tabela tbAluno
+        // Obtem os nomes e tipos das colunas da tabela tbAluno
         $colunasValidas = [];
+        $tiposColunas = [];
         $stmt = $pdo->query("DESCRIBE tbAluno");
         while ($linha = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $colunasValidas[] = $linha['Field'];
+            $tiposColunas[$linha['Field']] = $linha['Type'];
         }
 
         // Filtra apenas os campos existentes na tabela
@@ -81,8 +83,14 @@ class BeneficiarioModel
         $campos = array_keys($dadosFiltrados);
         $valores = [];
 
-        foreach ($dadosFiltrados as $valor) {
-            $valores[] = is_array($valor) ? implode(',', $valor) : $valor;
+        foreach ($dadosFiltrados as $campo => $valor) {
+            if (is_array($valor)) {
+                $valores[] = implode(',', $valor);
+            } elseif ($valor === '' && preg_match('/^(tinyint|smallint|mediumint|int|bigint)/i', $tiposColunas[$campo] ?? '')) {
+                $valores[] = null;
+            } else {
+                $valores[] = $valor;
+            }
         }
 
         $colunas = implode(',', array_map(fn($campo) => "`$campo`", $campos));
@@ -184,11 +192,13 @@ class BeneficiarioModel
     {
         global $pdo;
 
-        // Obtem as colunas validas da tabela
+        // Obtem as colunas validas e seus tipos da tabela
         $colunasValidas = [];
+        $tiposColunas = [];
         $stmt = $pdo->query("DESCRIBE tbAluno");
         while ($linha = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $colunasValidas[] = $linha['Field'];
+            $tiposColunas[$linha['Field']] = $linha['Type'];
         }
 
         $camposAtualizar = [];
@@ -206,7 +216,13 @@ class BeneficiarioModel
         foreach ($dados as $coluna => $valor) {
             if ($coluna !== 'IdUsuario' && in_array($coluna, $colunasValidas)) {
                 $camposAtualizar[] = "`$coluna` = ?";
-                $valores[] = is_array($valor) ? implode(',', $valor) : $valor;
+                if (is_array($valor)) {
+                    $valores[] = implode(',', $valor);
+                } elseif ($valor === '' && preg_match('/^(tinyint|smallint|mediumint|int|bigint)/i', $tiposColunas[$coluna] ?? '')) {
+                    $valores[] = null;
+                } else {
+                    $valores[] = $valor;
+                }
             }
         }
 
