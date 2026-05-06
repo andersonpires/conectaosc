@@ -47,8 +47,8 @@ RUN cp cron/crontab /etc/cron.d/conectaosc \
 COPY docker-entrypoint.sh /usr/local/bin/conectaosc-entrypoint.sh
 RUN chmod +x /usr/local/bin/conectaosc-entrypoint.sh
 
-# Create writable directories
-RUN mkdir -p storage temp api/cron/logs \
+# Create writable directories (fotos is mounted as a volume at runtime)
+RUN mkdir -p storage temp api/cron/logs app/assets/img/fotos \
     && chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
