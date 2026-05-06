@@ -4,28 +4,25 @@ set -e
 mkdir -p /var/www/html/conectaosc/api/cron/logs
 chown -R www-data:www-data /var/www/html/conectaosc/api/cron/logs
 
-# Garante que o diretório de fotos existe e tem permissão correta,
+# Garante que o diretório de assets existe e tem permissão correta,
 # mesmo quando montado como volume vazio pelo orquestrador.
-FOTOS_DIR=/var/www/html/conectaosc/app/assets/img/fotos
-BACKUP_DIR=/var/lib/conectaosc/fotos-backup
+ASSETS_IMG_DIR=/var/www/html/conectaosc/app/assets/img
+IMG_BACKUP=/var/lib/conectaosc/img-backup
 
-mkdir -p "$FOTOS_DIR"
+mkdir -p "$ASSETS_IMG_DIR"
 
-if [ -d "$BACKUP_DIR" ]; then
-    if [ -z "$(ls -A "$FOTOS_DIR" 2>/dev/null)" ]; then
-        # Volume vazio (primeira montagem): restaura todas as fotos da imagem
-        cp -r "$BACKUP_DIR/." "$FOTOS_DIR/"
+if [ -d "$IMG_BACKUP" ]; then
+    if [ -z "$(ls -A "$ASSETS_IMG_DIR" 2>/dev/null)" ]; then
+        # Volume vazio (primeira montagem): copia tudo da imagem
+        cp -r "$IMG_BACKUP/." "$ASSETS_IMG_DIR/"
     else
-        # Volume já tem conteúdo: garante apenas as fotos padrão
-        for f in padrao.jfif padrao.jpg; do
-            if [ ! -f "${FOTOS_DIR}/${f}" ] && [ -f "${BACKUP_DIR}/${f}" ]; then
-                cp "${BACKUP_DIR}/${f}" "${FOTOS_DIR}/${f}"
-            fi
-        done
+        # Volume já tem conteúdo: mescla apenas arquivos novos do deploy
+        # sem sobrescrever uploads já existentes no volume (-n = no-clobber)
+        cp -rn "$IMG_BACKUP/." "$ASSETS_IMG_DIR/"
     fi
 fi
 
-chown -R www-data:www-data "$FOTOS_DIR"
+chown -R www-data:www-data "$ASSETS_IMG_DIR"
 
 service cron start
 

@@ -47,10 +47,11 @@ RUN cp cron/crontab /etc/cron.d/conectaosc \
 COPY docker-entrypoint.sh /usr/local/bin/conectaosc-entrypoint.sh
 RUN chmod +x /usr/local/bin/conectaosc-entrypoint.sh
 
-# Salva TODAS as fotos fora do ponto de montagem do volume para o entrypoint
-# restaurar quando o volume for montado vazio (primeiro deploy com volume).
-RUN mkdir -p /var/lib/conectaosc/fotos-backup \
-    && cp -r app/assets/img/fotos/. /var/lib/conectaosc/fotos-backup/
+# Salva TODOS os assets de img fora do ponto de montagem do volume.
+# O entrypoint usa esse backup para mesclar arquivos novos do deploy
+# no volume sem sobrescrever uploads feitos em produção.
+RUN mkdir -p /var/lib/conectaosc/img-backup \
+    && cp -r app/assets/img/. /var/lib/conectaosc/img-backup/
 
 # Create writable directories (fotos is mounted as a volume at runtime)
 RUN mkdir -p storage temp api/cron/logs app/assets/img/fotos \
