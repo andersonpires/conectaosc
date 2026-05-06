@@ -55,4 +55,16 @@ if (!preg_match('#^https?://#i', $canonicalUrl)) {
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
+<script>
+(function () {
+    var AVATAR = <?php echo json_encode(bootstrap_avatar_data_uri(), JSON_UNESCAPED_SLASHES); ?>;
+    document.addEventListener('error', function (e) {
+        var el = e.target;
+        if (el.tagName === 'IMG' && el.getAttribute('src') && el.src !== AVATAR) {
+            el.onerror = null;
+            el.src = AVATAR;
+        }
+    }, true);
+}());
+</script>
 
