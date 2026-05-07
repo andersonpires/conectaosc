@@ -4,6 +4,15 @@ set -e
 mkdir -p /var/www/html/conectaosc/api/cron/logs
 chown -R www-data:www-data /var/www/html/conectaosc/api/cron/logs
 
+# Garante subdiretórios do storage (volume externo, nunca vem da imagem)
+STORAGE_DIR=/var/www/html/conectaosc/storage
+mkdir -p \
+    "$STORAGE_DIR/assinatura/assinados" \
+    "$STORAGE_DIR/assinatura/originais" \
+    "$STORAGE_DIR/uploads" \
+    "$STORAGE_DIR/temp"
+chown -R www-data:www-data "$STORAGE_DIR"
+
 # Garante que o diretório de assets existe e tem permissão correta,
 # mesmo quando montado como volume vazio pelo orquestrador.
 ASSETS_IMG_DIR=/var/www/html/conectaosc/app/assets/img

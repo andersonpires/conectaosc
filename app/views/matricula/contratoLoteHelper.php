@@ -63,8 +63,8 @@ if (!function_exists('loteContratoCarregarConfig')) {
     }
 }
 
-if (!function_exists('loteContratoGerarHtml')) {
-    function loteContratoGerarHtml(array $dados, string $responsavelSistema, string $linhaDirigenteCargo): string
+if (!function_exists('loteContratoGerarHtmlCorpo')) {
+    function loteContratoGerarHtmlCorpo(array $dados): string
     {
         $nome = (string)($dados['Nome'] ?? '');
         $cpf = (string)($dados['CPF'] ?? '');
@@ -98,22 +98,6 @@ if (!function_exists('loteContratoGerarHtml')) {
 
         $termosHtml = $termosContrato !== '' ? ('<h4>Termos do Contrato</h4>' . html_entity_decode($termosContrato)) : '';
 
-        $temDadosResponsavel = trim($responsavel) !== '' || trim($cpfResp) !== '' || trim($telefoneResp) !== '';
-        $nomeAssinaturaBeneficiarioOuResponsavel = $temDadosResponsavel
-            ? (trim($responsavel) !== '' ? $responsavel : 'Responsável')
-            : $nome;
-
-        $assinaturaHtml = '';
-        if (trim($responsavelSistema) !== '') {
-            $assinaturaHtml .= '<div style="clear:both; page-break-inside:avoid;"><table cellpadding="0" cellspacing="0" border="0"><tr><td style="height:42mm;"></td></tr></table><p style="text-align:center;">______________________________________________<br>';
-            if ($linhaDirigenteCargo !== '') {
-                $assinaturaHtml .= '<b>' . htmlspecialchars($linhaDirigenteCargo, ENT_QUOTES, 'UTF-8') . '</b><br>';
-            }
-            $assinaturaHtml .= htmlspecialchars($responsavelSistema, ENT_QUOTES, 'UTF-8');
-            $assinaturaHtml .= '</p>';
-        }
-        $assinaturaHtml .= '<table cellpadding="0" cellspacing="0" border="0"><tr><td style="height:12mm;"></td></tr></table><p style="text-align:center;">______________________________________________<br>' . htmlspecialchars($nomeAssinaturaBeneficiarioOuResponsavel, ENT_QUOTES, 'UTF-8') . '</p></div>';
-
         return '
 <h2 style="text-align:center;"><b>TERMO DE RESPONSABILIDADE E COMPROMISSO</b></h2>
 <h4>Dados do Beneficiário</h4>
@@ -126,7 +110,43 @@ if (!function_exists('loteContratoGerarHtml')) {
     <tr><td><b>Cidade/UF</b></td><td>' . htmlspecialchars(trim($cidade . ' / ' . $uf), ENT_QUOTES, 'UTF-8') . '</td></tr>
     <tr><td><b>Telefone</b></td><td>' . htmlspecialchars($telefone, ENT_QUOTES, 'UTF-8') . '</td></tr>
     <tr><td><b>WhatsApp</b></td><td>' . htmlspecialchars($whatsapp, ENT_QUOTES, 'UTF-8') . '</td></tr>
-</table>' . $responsavelHtml . $termosHtml . $assinaturaHtml;
+</table>' . $responsavelHtml . $termosHtml;
+    }
+}
+
+if (!function_exists('loteContratoGerarHtmlAssinatura')) {
+    function loteContratoGerarHtmlAssinatura(array $dados, string $responsavelSistema, string $linhaDirigenteCargo): string
+    {
+        $nome = (string)($dados['Nome'] ?? '');
+        $responsavel = (string)($dados['NomeResp1'] ?? '');
+        $cpfResp = (string)($dados['CpfResp1'] ?? '');
+        $telefoneResp = (string)($dados['TelefoneResp1'] ?? ($dados['WhatsAppResp1'] ?? ''));
+
+        $temDadosResponsavel = trim($responsavel) !== '' || trim($cpfResp) !== '' || trim($telefoneResp) !== '';
+        $nomeAssinatura = $temDadosResponsavel
+            ? (trim($responsavel) !== '' ? $responsavel : 'Responsável')
+            : $nome;
+
+        $assinaturaHtml = '';
+        if (trim($responsavelSistema) !== '') {
+            $assinaturaHtml .= '<div style="clear:both; page-break-inside:avoid;"><table cellpadding="0" cellspacing="0" border="0"><tr><td style="height:42mm;"></td></tr></table><p style="text-align:center;">______________________________________________<br>';
+            if ($linhaDirigenteCargo !== '') {
+                $assinaturaHtml .= '<b>' . htmlspecialchars($linhaDirigenteCargo, ENT_QUOTES, 'UTF-8') . '</b><br>';
+            }
+            $assinaturaHtml .= htmlspecialchars($responsavelSistema, ENT_QUOTES, 'UTF-8');
+            $assinaturaHtml .= '</p>';
+        }
+        $assinaturaHtml .= '<table cellpadding="0" cellspacing="0" border="0"><tr><td style="height:12mm;"></td></tr></table><p style="text-align:center;">______________________________________________<br>' . htmlspecialchars($nomeAssinatura, ENT_QUOTES, 'UTF-8') . '</p></div>';
+
+        return $assinaturaHtml;
+    }
+}
+
+if (!function_exists('loteContratoGerarHtml')) {
+    function loteContratoGerarHtml(array $dados, string $responsavelSistema, string $linhaDirigenteCargo): string
+    {
+        return loteContratoGerarHtmlCorpo($dados)
+            . loteContratoGerarHtmlAssinatura($dados, $responsavelSistema, $linhaDirigenteCargo);
     }
 }
 
@@ -205,13 +225,22 @@ if (!function_exists('loteContratoGerarContratoAssinadoPorMatricula')) {
         $pdf->AddPage();
         $pdf->SetFont('helvetica', '', 11);
 
-        $html = loteContratoGerarHtml(
+        $htmlCorpo = loteContratoGerarHtmlCorpo($dados);
+        $pdf->writeHTML($htmlCorpo, true, false, true, false, '');
+        $yBodyEnd = (float)$pdf->GetY();
+        $pageBodyEnd = (int)$pdf->getPage();
+
+        $htmlAssinatura = loteContratoGerarHtmlAssinatura(
             $dados,
             (string)($configAssinatura['responsavelSistema'] ?? 'Instituto Tecnológico e Vocacional Avançado - ITEVA'),
             (string)($configAssinatura['linhaDirigenteCargo'] ?? '')
         );
+        $pdf->writeHTML($htmlAssinatura, true, false, true, false, '');
 
-        $pdf->writeHTML($html, true, false, true, false, '');
+        $pageSignature = (int)$pdf->getPage();
+        $ySignaturaStart = ($pageSignature > $pageBodyEnd)
+            ? (float)$pdf->GetTopMargin()
+            : $yBodyEnd;
 
         $pathBaseAssinatura = rtrim($basePath, '/\\') . '/app/storage/assinatura/';
         $pathOriginais = $pathBaseAssinatura . 'originais/';
@@ -255,7 +284,8 @@ if (!function_exists('loteContratoGerarContratoAssinadoPorMatricula')) {
             $nomeDocumento,
             $idAssinante,
             $nomeAssinante,
-            (string)($configAssinatura['responsavelSistema'] ?? 'Instituto Tecnológico e Vocacional Avançado - ITEVA')
+            (string)($configAssinatura['responsavelSistema'] ?? 'Instituto Tecnológico e Vocacional Avançado - ITEVA'),
+            $ySignaturaStart
         );
 
         return $assinado;

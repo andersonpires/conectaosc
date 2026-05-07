@@ -133,7 +133,8 @@ if (!function_exists('contratoAssinarPdfComDirigente')) {
         string $nomeDocumento,
         int $idColaborador,
         string $nomeCompleto,
-        string $rotuloAssinatura = 'Instituto Tecnológico e Vocacional Avançado - ITEVA'
+        string $rotuloAssinatura = 'Instituto Tecnológico e Vocacional Avançado - ITEVA',
+        ?float $ySignaturaStart = null
     ): array {
         try {
             $pathBase = rtrim($basePath, '/\\') . '/app/storage/assinatura/';
@@ -206,17 +207,20 @@ if (!function_exists('contratoAssinarPdfComDirigente')) {
 
                 if ($i === $pageCount) {
                     // Bloco unico no estilo original: QR a esquerda, dados a direita.
-                    // Mantemos o conjunto centralizado e com folga suficiente para nao
-                    // encostar na assinatura institucional do contrato.
                     $qrSize = 18.0;
                     $gap = 3.0;
                     $textWidth = 98.0;
                     $groupWidth = $qrSize + $gap + $textWidth;
                     $groupHeight = 19.0;
 
-                    $lineYInstitucional = max(40.0, $size['height'] - 78.0);
                     $groupX = max(8.0, ($size['width'] - $groupWidth) / 2);
-                    $groupY = max(12.0, $lineYInstitucional - $groupHeight - 8.0);
+                    if ($ySignaturaStart !== null) {
+                        // Centraliza verticalmente nos 42mm de espaço reservado para assinatura manuscrita.
+                        $groupY = $ySignaturaStart + (42.0 - $groupHeight) / 2;
+                    } else {
+                        $lineYInstitucional = max(40.0, $size['height'] - 78.0);
+                        $groupY = max(12.0, $lineYInstitucional - $groupHeight - 8.0);
+                    }
 
                     $realX = $groupX;
                     $realY = $groupY;

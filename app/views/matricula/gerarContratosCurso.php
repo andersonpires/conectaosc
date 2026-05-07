@@ -26,6 +26,17 @@ if ($idCurso <= 0) {
 $modo = (isset($_GET['modo']) && $_GET['modo'] === 'zip') ? 'zip' : 'individual';
 $assinar = isset($_GET['assinar']) && (string)$_GET['assinar'] === '1' ? 1 : 0;
 
+$idTurma = isset($_GET['turma']) ? (int)$_GET['turma'] : 0;
+$nomeTurma = '';
+if ($idTurma > 0) {
+    $stmtTurma = $pdo->prepare('SELECT NomeTurma FROM tbTurma WHERE IdTurma = ? AND Habilitado = 1 LIMIT 1');
+    $stmtTurma->execute([$idTurma]);
+    $nomeTurma = (string)($stmtTurma->fetchColumn() ?: '');
+    if ($nomeTurma === '') {
+        $idTurma = 0;
+    }
+}
+
 $sqlCurso = $pdo->prepare('SELECT IdCurso, NomeCurso FROM tbCurso WHERE IdCurso = ? AND Habilitado = 1 LIMIT 1');
 $sqlCurso->execute([$idCurso]);
 $curso = $sqlCurso->fetch(PDO::FETCH_ASSOC);
@@ -35,27 +46,53 @@ if (!$curso) {
     exit;
 }
 
-$stmtLista = $pdo->prepare("
-    SELECT m.IdMatricula, a.Nome
-      FROM tbMatricula m
-      JOIN (
-            SELECT MAX(IdMatricula) AS IdMatricula
-              FROM tbMatricula
-             WHERE IdCurso = ?
-               AND Habilitado = 1
-             GROUP BY IdUsuario
-           ) ult ON ult.IdMatricula = m.IdMatricula
-      JOIN tbAluno a ON m.IdUsuario = a.IdUsuario
-      JOIN tbCurso c ON m.IdCurso = c.IdCurso
-      JOIN tbTurma t ON m.IdTurma = t.IdTurma
-     WHERE c.IdCurso = ?
-       AND c.Habilitado = 1
-       AND t.Habilitado = 1
-       AND a.Habilitado = 1
-       AND m.Habilitado = 1
-  ORDER BY t.NomeTurma, a.Nome
-");
-$stmtLista->execute([$idCurso, $idCurso]);
+if ($idTurma > 0) {
+    $stmtLista = $pdo->prepare("
+        SELECT m.IdMatricula, a.Nome
+          FROM tbMatricula m
+          JOIN (
+                SELECT MAX(IdMatricula) AS IdMatricula
+                  FROM tbMatricula
+                 WHERE IdCurso = ?
+                   AND IdTurma = ?
+                   AND Habilitado = 1
+                 GROUP BY IdUsuario
+               ) ult ON ult.IdMatricula = m.IdMatricula
+          JOIN tbAluno a ON m.IdUsuario = a.IdUsuario
+          JOIN tbCurso c ON m.IdCurso = c.IdCurso
+          JOIN tbTurma t ON m.IdTurma = t.IdTurma
+         WHERE c.IdCurso = ?
+           AND c.Habilitado = 1
+           AND t.IdTurma = ?
+           AND t.Habilitado = 1
+           AND a.Habilitado = 1
+           AND m.Habilitado = 1
+      ORDER BY a.Nome
+    ");
+    $stmtLista->execute([$idCurso, $idTurma, $idCurso, $idTurma]);
+} else {
+    $stmtLista = $pdo->prepare("
+        SELECT m.IdMatricula, a.Nome
+          FROM tbMatricula m
+          JOIN (
+                SELECT MAX(IdMatricula) AS IdMatricula
+                  FROM tbMatricula
+                 WHERE IdCurso = ?
+                   AND Habilitado = 1
+                 GROUP BY IdUsuario
+               ) ult ON ult.IdMatricula = m.IdMatricula
+          JOIN tbAluno a ON m.IdUsuario = a.IdUsuario
+          JOIN tbCurso c ON m.IdCurso = c.IdCurso
+          JOIN tbTurma t ON m.IdTurma = t.IdTurma
+         WHERE c.IdCurso = ?
+           AND c.Habilitado = 1
+           AND t.Habilitado = 1
+           AND a.Habilitado = 1
+           AND m.Habilitado = 1
+      ORDER BY t.NomeTurma, a.Nome
+    ");
+    $stmtLista->execute([$idCurso, $idCurso]);
+}
 $lista = $stmtLista->fetchAll(PDO::FETCH_ASSOC) ?: [];
 
 $processUrl = rtrim((string)$BASE_para_URL, '/') . '/matriculas/contratos/turma/processar';
@@ -75,6 +112,10 @@ $configJson = json_encode([
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 
 $nomeCurso    = htmlspecialchars((string)$curso['NomeCurso'], ENT_QUOTES, 'UTF-8');
+$nomeContexto = $idTurma > 0
+    ? htmlspecialchars($nomeTurma, ENT_QUOTES, 'UTF-8')
+    : $nomeCurso;
+$labelContexto = $idTurma > 0 ? 'Turma' : 'Curso';
 $modoLabel    = $modo === 'zip' ? 'ZIP com todos os contratos' : 'um PDF por aluno';
 $assinarLabel = $assinar ? 'com assinatura digital' : 'sem assinatura digital';
 $subtitulo    = $modo === 'zip'
@@ -117,7 +158,7 @@ $subtitulo    = $modo === 'zip'
 <body>
 <main class="wrap">
     <h1>Gerando contratos</h1>
-    <p class="curso-nome">Curso: <strong><?= $nomeCurso ?></strong></p>
+    <p class="curso-nome"><?= $labelContexto ?>: <strong><?= $nomeContexto ?></strong></p>
     <p class="subtitulo"><?= htmlspecialchars($subtitulo, ENT_QUOTES, 'UTF-8') ?></p>
 
     <?php if (empty($lista)): ?>

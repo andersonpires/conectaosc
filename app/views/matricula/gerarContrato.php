@@ -251,7 +251,13 @@ $nomeArquivoFinal = 'contrato_' . $timestampArquivo . '_' . $idAssinante . '.pdf
 $pathOriginalTemp = $pathOriginais . 'contrato_orig_' . $timestampArquivo . '_' . $idAssinante . '_' . substr(md5(uniqid('', true)), 0, 6) . '.pdf';
 
 $pdf->writeHTML($htmlConteudo, true, false, true, false, '');
+$yBodyEnd = (float)$pdf->GetY();
+$pageBodyEnd = (int)$pdf->getPage();
 $pdf->writeHTML($assinaturaHtml, true, false, true, false, '');
+$pageSignature = (int)$pdf->getPage();
+$ySignaturaStart = ($pageSignature > $pageBodyEnd)
+    ? (float)$pdf->GetTopMargin()
+    : $yBodyEnd;
 $pdf->Output($pathOriginalTemp, 'F');
 
 $assinado = contratoAssinarPdfComDirigente(
@@ -263,7 +269,8 @@ $assinado = contratoAssinarPdfComDirigente(
     $nomeDocumentoContrato,
     $idAssinante,
     $nomeAssinante,
-    $responsavelSistema
+    $responsavelSistema,
+    $ySignaturaStart
 );
 
 $pathSaida = $assinado['ok'] ? (string)$assinado['path'] : $pathOriginalTemp;

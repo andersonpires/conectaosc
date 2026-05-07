@@ -64,7 +64,8 @@ if (isset($_GET['IdMatricula'])) {
                             <?php if ((string)($_SESSION['Tipo'] ?? '') !== "Visitante") { ?>
                                 <button type="button" class="btn btn-info mb-3" id="btnGerarContratosCurso"
                                     data-curso="<?php echo (int)$IdCursoTurma; ?>"
-                                    title="Gerar contratos do curso">
+                                    data-turma="<?php echo $IdTurma; ?>"
+                                    title="Gerar contratos da turma">
                                     <i class="fa-solid fa-file-signature"></i> Gerar contratos (ativos)
                                 </button>
                             <?php } ?>
@@ -532,9 +533,11 @@ if (isset($_GET['IdMatricula'])) {
             const modo    = (modalEl.querySelector('input[name="contratos-curso-modo"]:checked') || {}).value || 'individual';
             const assinar = (modalEl.querySelector('input[name="contratos-curso-assinar"]:checked') || {}).value || '1';
             const curso   = btnGerar.getAttribute('data-curso') || '0';
+            const turma   = btnGerar.getAttribute('data-turma') || '0';
 
             const url = CONTRATOS_CURSO_BASE_URL +
                 '?curso='   + encodeURIComponent(curso) +
+                '&turma='   + encodeURIComponent(turma) +
                 '&modo='    + encodeURIComponent(modo) +
                 '&assinar=' + encodeURIComponent(assinar);
 
