@@ -114,8 +114,15 @@ if (!function_exists('loteContratoGerarHtmlCorpo')) {
     }
 }
 
-if (!function_exists('loteContratoGerarHtmlAssinatura')) {
-    function loteContratoGerarHtmlAssinatura(array $dados, string $responsavelSistema, string $linhaDirigenteCargo): string
+if (!function_exists('loteContratoGerarHtmlEspacadorAssinatura')) {
+    function loteContratoGerarHtmlEspacadorAssinatura(): string
+    {
+        return '<table cellpadding="0" cellspacing="0" border="0"><tr><td style="height:24mm;"></td></tr></table>';
+    }
+}
+
+if (!function_exists('loteContratoGerarHtmlLinhasAssinatura')) {
+    function loteContratoGerarHtmlLinhasAssinatura(array $dados, string $responsavelSistema, string $linhaDirigenteCargo): string
     {
         $nome = (string)($dados['Nome'] ?? '');
         $responsavel = (string)($dados['NomeResp1'] ?? '');
@@ -127,18 +134,26 @@ if (!function_exists('loteContratoGerarHtmlAssinatura')) {
             ? (trim($responsavel) !== '' ? $responsavel : 'Responsável')
             : $nome;
 
-        $assinaturaHtml = '';
+        $html = '<div style="page-break-inside:avoid;">';
         if (trim($responsavelSistema) !== '') {
-            $assinaturaHtml .= '<div style="clear:both; page-break-inside:avoid;"><table cellpadding="0" cellspacing="0" border="0"><tr><td style="height:42mm;"></td></tr></table><p style="text-align:center;">______________________________________________<br>';
+            $html .= '<p style="text-align:center;">______________________________________________<br>';
             if ($linhaDirigenteCargo !== '') {
-                $assinaturaHtml .= '<b>' . htmlspecialchars($linhaDirigenteCargo, ENT_QUOTES, 'UTF-8') . '</b><br>';
+                $html .= '<b>' . htmlspecialchars($linhaDirigenteCargo, ENT_QUOTES, 'UTF-8') . '</b><br>';
             }
-            $assinaturaHtml .= htmlspecialchars($responsavelSistema, ENT_QUOTES, 'UTF-8');
-            $assinaturaHtml .= '</p>';
+            $html .= htmlspecialchars($responsavelSistema, ENT_QUOTES, 'UTF-8') . '</p>';
         }
-        $assinaturaHtml .= '<table cellpadding="0" cellspacing="0" border="0"><tr><td style="height:12mm;"></td></tr></table><p style="text-align:center;">______________________________________________<br>' . htmlspecialchars($nomeAssinatura, ENT_QUOTES, 'UTF-8') . '</p></div>';
+        $html .= '<table cellpadding="0" cellspacing="0" border="0"><tr><td style="height:12mm;"></td></tr></table>';
+        $html .= '<p style="text-align:center;">______________________________________________<br>' . htmlspecialchars($nomeAssinatura, ENT_QUOTES, 'UTF-8') . '</p>';
+        $html .= '</div>';
+        return $html;
+    }
+}
 
-        return $assinaturaHtml;
+if (!function_exists('loteContratoGerarHtmlAssinatura')) {
+    function loteContratoGerarHtmlAssinatura(array $dados, string $responsavelSistema, string $linhaDirigenteCargo): string
+    {
+        return loteContratoGerarHtmlEspacadorAssinatura()
+            . loteContratoGerarHtmlLinhasAssinatura($dados, $responsavelSistema, $linhaDirigenteCargo);
     }
 }
 
@@ -202,6 +217,51 @@ if (!function_exists('loteContratoGerarContratoPdfSemAssinatura')) {
     }
 }
 
+if (!function_exists('loteContratoDesenharLinhasAssinatura')) {
+    function loteContratoDesenharLinhasAssinatura(
+        TCPDF $pdf,
+        array $dados,
+        string $responsavelSistema,
+        string $linhaDirigenteCargo,
+        float $yStart
+    ): void {
+        $nome         = (string)($dados['Nome']         ?? '');
+        $responsavel  = (string)($dados['NomeResp1']    ?? '');
+        $cpfResp      = (string)($dados['CpfResp1']     ?? '');
+        $telefoneResp = (string)($dados['TelefoneResp1'] ?? ($dados['WhatsAppResp1'] ?? ''));
+        $temResp      = trim($responsavel) !== '' || trim($cpfResp) !== '' || trim($telefoneResp) !== '';
+        $nomeAssinatura = $temResp
+            ? (trim($responsavel) !== '' ? $responsavel : 'Responsável')
+            : $nome;
+
+        $xL    = 15.0;
+        $lineW = $pdf->getPageWidth() - 30.0;
+        $h     = 5.0;
+
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->SetTextColor(0, 0, 0);
+        $pdf->SetXY($xL, $yStart);
+
+        if (trim($responsavelSistema) !== '') {
+            $pdf->Cell($lineW, $h, '____________________________________________', 0, 1, 'C');
+            $pdf->SetX($xL);
+            if (trim($linhaDirigenteCargo) !== '') {
+                $pdf->SetFont('helvetica', 'B', 10);
+                $pdf->Cell($lineW, $h, $linhaDirigenteCargo, 0, 1, 'C');
+                $pdf->SetFont('helvetica', '', 10);
+                $pdf->SetX($xL);
+            }
+            $pdf->Cell($lineW, $h, $responsavelSistema, 0, 1, 'C');
+            $pdf->Ln(8);
+            $pdf->SetX($xL);
+        }
+
+        $pdf->Cell($lineW, $h, '____________________________________________', 0, 1, 'C');
+        $pdf->SetX($xL);
+        $pdf->Cell($lineW, $h, $nomeAssinatura, 0, 1, 'C');
+    }
+}
+
 if (!function_exists('loteContratoGerarContratoAssinadoPorMatricula')) {
     function loteContratoGerarContratoAssinadoPorMatricula(
         PDO $pdo,
@@ -210,7 +270,9 @@ if (!function_exists('loteContratoGerarContratoAssinadoPorMatricula')) {
         array $dados,
         array $configAssinatura,
         ?int $idAssinanteFallback = null,
-        ?string $nomeAssinanteFallback = null
+        ?string $nomeAssinanteFallback = null,
+        ?float $sigX    = null,
+        ?float $sigYRel = null
     ): array {
         $logoProjetoPath = loteContratoResolveProjectLogoPath((string)($dados['LogoProjeto'] ?? ''), $basePath);
 
@@ -225,22 +287,37 @@ if (!function_exists('loteContratoGerarContratoAssinadoPorMatricula')) {
         $pdf->AddPage();
         $pdf->SetFont('helvetica', '', 11);
 
+        $responsavelSistema = (string)($configAssinatura['responsavelSistema'] ?? 'Instituto Tecnológico e Vocacional Avançado - ITEVA');
+        $linhaDirigenteCargo = (string)($configAssinatura['linhaDirigenteCargo'] ?? '');
+
         $htmlCorpo = loteContratoGerarHtmlCorpo($dados);
         $pdf->writeHTML($htmlCorpo, true, false, true, false, '');
-        $yBodyEnd = (float)$pdf->GetY();
-        $pageBodyEnd = (int)$pdf->getPage();
 
-        $htmlAssinatura = loteContratoGerarHtmlAssinatura(
+        // Decide where the signature block goes without using page-break-inside:avoid
+        // (which causes TCPDF to create phantom blank pages).
+        // 24 mm reserved for QR overlay + ~36 mm for the two signature lines = 60 mm total.
+        $yAfterBody    = (float)$pdf->GetY();
+        $pageAfterBody = (int)$pdf->getPage();
+        $topMargin     = (float)$pdf->getMargins()['top'];
+        $bottomLimit   = $pdf->getPageHeight() - $pdf->getBreakMargin();
+        $sigBlockTotal = 60.0;
+
+        if ($yAfterBody + $sigBlockTotal > $bottomLimit) {
+            $pdf->AddPage();
+            $paginaComEspaco = (int)$pdf->getPage();
+            $ySignaturaStart = $topMargin;
+        } else {
+            $paginaComEspaco = $pageAfterBody;
+            $ySignaturaStart = $yAfterBody;
+        }
+
+        loteContratoDesenharLinhasAssinatura(
+            $pdf,
             $dados,
-            (string)($configAssinatura['responsavelSistema'] ?? 'Instituto Tecnológico e Vocacional Avançado - ITEVA'),
-            (string)($configAssinatura['linhaDirigenteCargo'] ?? '')
+            $responsavelSistema,
+            $linhaDirigenteCargo,
+            $ySignaturaStart + 24.0
         );
-        $pdf->writeHTML($htmlAssinatura, true, false, true, false, '');
-
-        $pageSignature = (int)$pdf->getPage();
-        $ySignaturaStart = ($pageSignature > $pageBodyEnd)
-            ? (float)$pdf->GetTopMargin()
-            : $yBodyEnd;
 
         $pathBaseAssinatura = rtrim($basePath, '/\\') . '/app/storage/assinatura/';
         $pathOriginais = $pathBaseAssinatura . 'originais/';
@@ -285,7 +362,10 @@ if (!function_exists('loteContratoGerarContratoAssinadoPorMatricula')) {
             $idAssinante,
             $nomeAssinante,
             (string)($configAssinatura['responsavelSistema'] ?? 'Instituto Tecnológico e Vocacional Avançado - ITEVA'),
-            $ySignaturaStart
+            $ySignaturaStart,
+            $paginaComEspaco,
+            $sigX,
+            $sigYRel !== null ? $ySignaturaStart + $sigYRel : null
         );
 
         return $assinado;

@@ -60,6 +60,16 @@ final class MatriculaController
         $this->render('/app/views/matricula/gerarContratosCurso.php');
     }
 
+    public function contratosPreview(): void
+    {
+        $this->render('/app/views/matricula/previewAssinaturaContrato.php');
+    }
+
+    public function contratoPreviewIndividual(): void
+    {
+        $this->render('/app/views/matricula/previewContratoIndividual.php');
+    }
+
     public function contratosZip(): void
     {
         $this->render('/app/views/matricula/finalizarZipContratos.php');

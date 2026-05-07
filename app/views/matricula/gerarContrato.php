@@ -22,7 +22,9 @@ require_once $BASE_para_PATH . '/api/lib/tcpdf/fpdi/autoload.php';
 require_once __DIR__ . '/contratoAssinaturaDigital.php';
 
 $idUsuario = isset($_GET['aluno']) ? intval($_GET['aluno']) : 0;
-$idTurma = isset($_GET['turma']) ? intval($_GET['turma']) : 0;
+$idTurma   = isset($_GET['turma']) ? intval($_GET['turma']) : 0;
+$sigX      = isset($_GET['sig_x']) && is_numeric($_GET['sig_x']) ? (float)$_GET['sig_x'] : null;
+$sigY      = isset($_GET['sig_y']) && is_numeric($_GET['sig_y']) ? (float)$_GET['sig_y'] : null;
 
 if ($idUsuario <= 0 || $idTurma <= 0) {
     die("<div class='alert alert-danger'>Parâmetros inválidos.</div>");
@@ -96,7 +98,7 @@ if (isset($_GET['ajax']) && $_GET['ajax'] === 'historico') {
             'ok' => true,
             'nomeAluno' => $nome,
             'items' => $items,
-            'novoContratoUrl' => rtrim((string)$BASE_para_URL, '/') . '/matriculas/contrato/?turma=' . $idTurma . '&aluno=' . $idUsuario,
+            'novoContratoUrl' => rtrim((string)$BASE_para_URL, '/') . '/matriculas/contrato/preview?turma=' . $idTurma . '&aluno=' . $idUsuario,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     } catch (Throwable $e) {
         http_response_code(500);
@@ -204,16 +206,6 @@ $nomeAssinaturaBeneficiarioOuResponsavel = $temDadosResponsavel
     ? (trim($responsavel) !== '' ? $responsavel : 'Responsável')
     : $nome;
 
-$assinaturaHtml = '';
-if (trim((string)$responsavelSistema) !== '') {
-    $assinaturaHtml .= '<div style="clear:both; page-break-inside:avoid;"><table cellpadding="0" cellspacing="0" border="0"><tr><td style="height:42mm;"></td></tr></table><p style="text-align:center;">______________________________________________<br>';
-    if ($linhaDirigenteCargo !== '') {
-        $assinaturaHtml .= '<b>' . htmlspecialchars($linhaDirigenteCargo) . '</b><br>';
-    }
-    $assinaturaHtml .= htmlspecialchars($responsavelSistema);
-    $assinaturaHtml .= '</p>';
-}
-$assinaturaHtml .= '<table cellpadding="0" cellspacing="0" border="0"><tr><td style="height:12mm;"></td></tr></table><p style="text-align:center;">______________________________________________<br>' . htmlspecialchars($nomeAssinaturaBeneficiarioOuResponsavel) . '</p></div>';
 
 $htmlConteudo = '
 <h2 style="text-align:center;"><b>TERMO DE RESPONSABILIDADE E COMPROMISSO</b></h2>
@@ -251,13 +243,45 @@ $nomeArquivoFinal = 'contrato_' . $timestampArquivo . '_' . $idAssinante . '.pdf
 $pathOriginalTemp = $pathOriginais . 'contrato_orig_' . $timestampArquivo . '_' . $idAssinante . '_' . substr(md5(uniqid('', true)), 0, 6) . '.pdf';
 
 $pdf->writeHTML($htmlConteudo, true, false, true, false, '');
-$yBodyEnd = (float)$pdf->GetY();
-$pageBodyEnd = (int)$pdf->getPage();
-$pdf->writeHTML($assinaturaHtml, true, false, true, false, '');
-$pageSignature = (int)$pdf->getPage();
-$ySignaturaStart = ($pageSignature > $pageBodyEnd)
-    ? (float)$pdf->GetTopMargin()
-    : $yBodyEnd;
+
+$yAfterBody    = (float)$pdf->GetY();
+$pageAfterBody = (int)$pdf->getPage();
+$topMargin     = (float)$pdf->getMargins()['top'];
+$bottomLimit   = $pdf->getPageHeight() - $pdf->getBreakMargin();
+$sigBlockTotal = 60.0;
+
+if ($yAfterBody + $sigBlockTotal > $bottomLimit) {
+    $pdf->AddPage();
+    $paginaComEspaco = (int)$pdf->getPage();
+    $ySignaturaStart = $topMargin;
+} else {
+    $paginaComEspaco = $pageAfterBody;
+    $ySignaturaStart = $yAfterBody;
+}
+
+$xL    = 15.0;
+$lineW = $pdf->getPageWidth() - 30.0;
+$h     = 5.0;
+$pdf->SetFont('helvetica', '', 10);
+$pdf->SetTextColor(0, 0, 0);
+$pdf->SetXY($xL, $ySignaturaStart + 24.0);
+if (trim((string)$responsavelSistema) !== '') {
+    $pdf->Cell($lineW, $h, '____________________________________________', 0, 1, 'C');
+    $pdf->SetX($xL);
+    if (trim($linhaDirigenteCargo) !== '') {
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->Cell($lineW, $h, $linhaDirigenteCargo, 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 10);
+        $pdf->SetX($xL);
+    }
+    $pdf->Cell($lineW, $h, $responsavelSistema, 0, 1, 'C');
+    $pdf->Ln(8);
+    $pdf->SetX($xL);
+}
+$pdf->Cell($lineW, $h, '____________________________________________', 0, 1, 'C');
+$pdf->SetX($xL);
+$pdf->Cell($lineW, $h, $nomeAssinaturaBeneficiarioOuResponsavel, 0, 1, 'C');
+
 $pdf->Output($pathOriginalTemp, 'F');
 
 $assinado = contratoAssinarPdfComDirigente(
@@ -270,7 +294,10 @@ $assinado = contratoAssinarPdfComDirigente(
     $idAssinante,
     $nomeAssinante,
     $responsavelSistema,
-    $ySignaturaStart
+    $ySignaturaStart,
+    $paginaComEspaco,
+    $sigX,
+    $sigY
 );
 
 $pathSaida = $assinado['ok'] ? (string)$assinado['path'] : $pathOriginalTemp;

@@ -134,7 +134,10 @@ if (!function_exists('contratoAssinarPdfComDirigente')) {
         int $idColaborador,
         string $nomeCompleto,
         string $rotuloAssinatura = 'Instituto Tecnológico e Vocacional Avançado - ITEVA',
-        ?float $ySignaturaStart = null
+        ?float $ySignaturaStart = null,
+        ?int $paginaAssinatura = null,
+        ?float $sigX = null,
+        ?float $sigY = null
     ): array {
         try {
             $pathBase = rtrim($basePath, '/\\') . '/app/storage/assinatura/';
@@ -178,7 +181,9 @@ if (!function_exists('contratoAssinarPdfComDirigente')) {
                 $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
                 $pdf->useTemplate($tplIdx, 0, 0, $size['width'], $size['height'], true);
 
-                if ($i < $pageCount) {
+                $targetPage = $paginaAssinatura ?? $pageCount;
+
+                if ($i !== $targetPage) {
                     $pdf->SetFont('helvetica', '', 6);
                     $pdf->SetTextColor(80, 80, 80);
 
@@ -205,20 +210,23 @@ if (!function_exists('contratoAssinarPdfComDirigente')) {
                     $pdf->StopTransform();
                 }
 
-                if ($i === $pageCount) {
-                    // Bloco unico no estilo original: QR a esquerda, dados a direita.
+                if ($i === $targetPage) {
                     $qrSize = 18.0;
                     $gap = 3.0;
                     $textWidth = 98.0;
                     $groupWidth = $qrSize + $gap + $textWidth;
                     $groupHeight = 19.0;
 
-                    $groupX = max(8.0, ($size['width'] - $groupWidth) / 2);
-                    if ($ySignaturaStart !== null) {
-                        // Centraliza verticalmente nos 42mm de espaço reservado para assinatura manuscrita.
-                        $groupY = $ySignaturaStart + (42.0 - $groupHeight) / 2;
+                    if ($sigX !== null && $sigY !== null) {
+                        // Posição escolhida pelo usuário no preview interativo.
+                        $groupX = $sigX;
+                        $groupY = $sigY;
+                    } elseif ($ySignaturaStart !== null) {
+                        $groupX = max(8.0, ($size['width'] - $groupWidth) / 2);
+                        $groupY = $ySignaturaStart + 2.5;
                     } else {
                         $lineYInstitucional = max(40.0, $size['height'] - 78.0);
+                        $groupX = max(8.0, ($size['width'] - $groupWidth) / 2);
                         $groupY = max(12.0, $lineYInstitucional - $groupHeight - 8.0);
                     }
 

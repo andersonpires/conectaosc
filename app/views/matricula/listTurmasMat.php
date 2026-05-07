@@ -301,7 +301,8 @@ if (isset($_GET['IdMatricula'])) {
     const SOMENTE_ATIVAS = <?php echo (int)$Habilitado; ?>;
     const TIPO_USUARIO = "<?php echo addslashes($_SESSION['Tipo'] ?? ''); ?>";
     const SOLICITAR_TURMA_URL = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/matriculas/contratos/turma/solicitar";
-    const CONTRATO_INDIVIDUAL_BASE_URL = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/matriculas/contrato/";
+    const CONTRATO_INDIVIDUAL_BASE_URL         = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/matriculas/contrato/";
+    const CONTRATO_INDIVIDUAL_PREVIEW_BASE_URL = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/matriculas/contrato/preview";
     const BENEFICIARIO_CADASTRO_BASE_URL = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/beneficiarios/cadastro";
 
     function resolveApiBase() {
@@ -517,7 +518,8 @@ if (isset($_GET['IdMatricula'])) {
         `;
     }
 
-    const CONTRATOS_CURSO_BASE_URL = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/matriculas/contratos/curso";
+    const CONTRATOS_CURSO_BASE_URL   = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/matriculas/contratos/curso";
+    const CONTRATOS_PREVIEW_BASE_URL = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/matriculas/contratos/preview";
 
     (function iniciarModalContratosCurso() {
         const btnGerar = document.getElementById('btnGerarContratosCurso');
@@ -535,11 +537,15 @@ if (isset($_GET['IdMatricula'])) {
             const curso   = btnGerar.getAttribute('data-curso') || '0';
             const turma   = btnGerar.getAttribute('data-turma') || '0';
 
-            const url = CONTRATOS_CURSO_BASE_URL +
-                '?curso='   + encodeURIComponent(curso) +
-                '&turma='   + encodeURIComponent(turma) +
-                '&modo='    + encodeURIComponent(modo) +
-                '&assinar=' + encodeURIComponent(assinar);
+            const params = '?curso='   + encodeURIComponent(curso) +
+                           '&turma='   + encodeURIComponent(turma) +
+                           '&modo='    + encodeURIComponent(modo) +
+                           '&assinar=' + encodeURIComponent(assinar);
+
+            // Com assinatura digital: preview interativo para posicionar o bloco
+            const url = assinar === '1'
+                ? CONTRATOS_PREVIEW_BASE_URL + params
+                : CONTRATOS_CURSO_BASE_URL   + params;
 
             window.open(url, '_blank', 'noopener');
 
@@ -649,7 +655,8 @@ if (isset($_GET['IdMatricula'])) {
                 const idTurma = button.getAttribute('data-turma') || '';
                 const idAluno = button.getAttribute('data-aluno') || '';
                 const nomeAluno = button.getAttribute('data-nome') || 'aluno';
-                novoContratoUrl = `${CONTRATO_INDIVIDUAL_BASE_URL}?turma=${encodeURIComponent(idTurma)}&aluno=${encodeURIComponent(idAluno)}`;
+                const historicoBaseUrl = `${CONTRATO_INDIVIDUAL_BASE_URL}?turma=${encodeURIComponent(idTurma)}&aluno=${encodeURIComponent(idAluno)}`;
+                novoContratoUrl = `${CONTRATO_INDIVIDUAL_PREVIEW_BASE_URL}?turma=${encodeURIComponent(idTurma)}&aluno=${encodeURIComponent(idAluno)}`;
 
                 historicoDescricao.textContent = `Contratos já emitidos para ${nomeAluno}.`;
                 historicoFeedback.className = 'small mb-3 text-muted';
@@ -660,7 +667,7 @@ if (isset($_GET['IdMatricula'])) {
                 modal.show();
 
                 try {
-                    const response = await fetch(`${novoContratoUrl}&ajax=historico`, {
+                    const response = await fetch(`${historicoBaseUrl}&ajax=historico`, {
                         headers: {
                             Accept: 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'

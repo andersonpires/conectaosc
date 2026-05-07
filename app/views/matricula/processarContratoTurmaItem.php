@@ -30,6 +30,8 @@ if ($idMatricula <= 0) {
 }
 
 $assinar = isset($_POST['assinar']) && (string)$_POST['assinar'] === '1';
+$sigX    = isset($_POST['sig_x'])     && is_numeric($_POST['sig_x'])     ? (float)$_POST['sig_x']     : null;
+$sigYRel = isset($_POST['sig_y_rel']) && is_numeric($_POST['sig_y_rel']) ? (float)$_POST['sig_y_rel'] : null;
 
 try {
     $sql = $pdo->prepare("
@@ -66,7 +68,9 @@ try {
             $dados,
             $configAssinatura,
             $idSessao,
-            $nomeSessao
+            $nomeSessao,
+            $sigX,
+            $sigYRel
         );
     } else {
         $resultado = loteContratoGerarContratoPdfSemAssinatura(

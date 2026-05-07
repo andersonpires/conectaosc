@@ -195,10 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE 
                 IdAluno = VALUES(IdAluno),
-                Obs = VALUES(Obs),
-                presenca = IF(VALUES(presenca) IS NOT NULL AND VALUES(presenca) <> '', VALUES(presenca), presenca),
-                falta = IF(VALUES(falta) IS NOT NULL AND VALUES(falta) <> '', VALUES(falta), falta),
-                faltajust = IF(VALUES(faltajust) IS NOT NULL AND VALUES(faltajust) <> '', VALUES(faltajust), faltajust);
+                Obs = VALUES(Obs);
             ";
 
             $stmt = $pdo->prepare($sql);
@@ -214,7 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt->bindParam(6, $mes, PDO::PARAM_INT);
             $stmt->bindParam(7, $ano, PDO::PARAM_INT);
             $stmt->bindParam(8, $data, PDO::PARAM_STR);
-            $stmt->bindParam(9, $obsValue, PDO::PARAM_STR);
+            $stmt->bindValue(9, $obsValue, $obsValue === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
 
             if ($stmt->execute()) {
                 echo json_encode(['success' => true, 'message' => 'Observação salva com sucesso.']);

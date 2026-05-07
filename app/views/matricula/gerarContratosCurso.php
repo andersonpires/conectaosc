@@ -25,6 +25,8 @@ if ($idCurso <= 0) {
 
 $modo = (isset($_GET['modo']) && $_GET['modo'] === 'zip') ? 'zip' : 'individual';
 $assinar = isset($_GET['assinar']) && (string)$_GET['assinar'] === '1' ? 1 : 0;
+$sigX    = isset($_GET['sig_x'])     && is_numeric($_GET['sig_x'])     ? (float)$_GET['sig_x']     : null;
+$sigYRel = isset($_GET['sig_y_rel']) && is_numeric($_GET['sig_y_rel']) ? (float)$_GET['sig_y_rel'] : null;
 
 $idTurma = isset($_GET['turma']) ? (int)$_GET['turma'] : 0;
 $nomeTurma = '';
@@ -109,6 +111,8 @@ $configJson = json_encode([
     'processUrl' => $processUrl,
     'zipUrl'     => $zipUrl,
     'itens'      => $itens,
+    'sigX'    => $sigX,
+    'sigYRel' => $sigYRel,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT);
 
 $nomeCurso    = htmlspecialchars((string)$curso['NomeCurso'], ENT_QUOTES, 'UTF-8');
@@ -236,6 +240,8 @@ async function processarItem(item, card) {
         const body = new URLSearchParams();
         body.set('id_matricula', String(item.id_matricula));
         body.set('assinar', String(CONFIG.assinar));
+        if (CONFIG.sigX    !== null && CONFIG.sigX    !== undefined) body.set('sig_x',     String(CONFIG.sigX));
+        if (CONFIG.sigYRel !== null && CONFIG.sigYRel !== undefined) body.set('sig_y_rel', String(CONFIG.sigYRel));
 
         const resp = await fetch(CONFIG.processUrl, {
             method: 'POST',
