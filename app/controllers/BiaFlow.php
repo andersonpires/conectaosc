@@ -321,17 +321,43 @@ final class BiaFlow
 
     private function carregarConteudoReferencia(): string
     {
-        $faqPath = $this->basePath . '/temp/FAQ.MD';
-        if (!is_file($faqPath) || !is_readable($faqPath)) {
-            return '';
+        require_once $this->basePath . '/bootstrap/runtime.php';
+
+        $caminhoConfigurado = function_exists('bootstrap_env')
+            ? trim((string)bootstrap_env('BIA_REFERENCE_FILE', ''))
+            : trim((string)(getenv('BIA_REFERENCE_FILE') ?: ''));
+
+        $candidatos = [];
+        if ($caminhoConfigurado !== '') {
+            $ehAbsoluto = str_starts_with($caminhoConfigurado, '/')
+                || preg_match('/^[A-Za-z]:[\\\/]/', $caminhoConfigurado) === 1;
+
+            $candidatos[] = $ehAbsoluto
+                ? $caminhoConfigurado
+                : $this->basePath . '/' . ltrim(str_replace('\\', '/', $caminhoConfigurado), '/');
         }
 
-        $faqContent = file_get_contents($faqPath);
-        if (!is_string($faqContent)) {
-            return '';
+        $candidatos[] = $this->basePath . '/temp/FAQ.MD';
+        $candidatos[] = $this->basePath . '/temp/FAQ.md';
+        $candidatos[] = $this->basePath . '/temp/faq.md';
+
+        foreach (array_unique($candidatos) as $faqPath) {
+            if (!is_file($faqPath) || !is_readable($faqPath)) {
+                continue;
+            }
+
+            $faqContent = file_get_contents($faqPath);
+            if (!is_string($faqContent)) {
+                continue;
+            }
+
+            $faqContent = trim($faqContent);
+            if ($faqContent !== '') {
+                return $faqContent;
+            }
         }
 
-        return trim($faqContent);
+        return '';
     }
 
     private function iniciarStream(): void

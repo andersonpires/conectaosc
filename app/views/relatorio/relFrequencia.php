@@ -549,12 +549,12 @@ if (isset($pdo) && $pdo instanceof PDO) {
                         <div id="pdfCargoWrap" class="pdf-assinatura-cargo-wrap">
                             <label for="pdfCargoInput" class="form-label mb-1">Cargo para exibir junto ao nome</label>
                             <input type="text" id="pdfCargoInput" class="form-control" maxlength="120" value="<?= htmlspecialchars($cargoColaboradorPadrao, ENT_QUOTES, 'UTF-8') ?>" placeholder="Digite o cargo (opcional)">
-                            <small class="text-muted">Essa alteraÃ§Ã£o Ã© apenas para este PDF e nÃ£o altera o cadastro.</small>
+                            <small class="text-muted">Essa alteração é apenas para este PDF e não altera o cadastro.</small>
                         </div>
 
                         <div class="pdf-assinatura-acoes">
                             <button type="button" class="btn btn-primary" id="pdfAssinarSim">Sim, assinar digitalmente</button>
-                            <button type="button" class="btn btn-outline-secondary" id="pdfAssinarNao">NÃ£o, gerar sem assinatura</button>
+                            <button type="button" class="btn btn-outline-secondary" id="pdfAssinarNao">Não, gerar sem assinatura</button>
                         </div>
                     </div>
                 </div>

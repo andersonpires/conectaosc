@@ -182,12 +182,12 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
                                         }
                                     }
 
-                                    $textoCriador = $nomeCriador !== '' ? $nomeCriador : 'NÃ£o informado';
-                                    $textoAlteracao = $nomeAlteracao !== '' ? $nomeAlteracao : 'NÃ£o informado';
-                                    $popoverContent = "Criado por: {$textoCriador} em {$dataCriacaoBr}<br>Ãšltimo ajuste: {$textoAlteracao} em {$dataAlteracaoBr}";
+                                    $textoCriador = $nomeCriador !== '' ? $nomeCriador : 'Não informado';
+                                    $textoAlteracao = $nomeAlteracao !== '' ? $nomeAlteracao : 'Não informado';
+                                    $popoverContent = "Criado por: {$textoCriador} em {$dataCriacaoBr}<br>Último ajuste: {$textoAlteracao} em {$dataAlteracaoBr}";
                                     $popoverContentAttr = htmlspecialchars($popoverContent, ENT_QUOTES, 'UTF-8');
 
-                                    echo '<tr data-popover-content="' . $popoverContentAttr . '" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="HistÃ³rico do registro">';
+                                    echo '<tr data-popover-content="' . $popoverContentAttr . '" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="Histórico do registro">';
                                     echo '<td><input type="checkbox" class="form-radio-input doacao" name="checkbox[]" value="' . $id . '"></td>';
                                     echo '<td>' . $id . '</td>';
                                     echo '<td><span class="hover-container"><img src="' . htmlspecialchars($FOTO_PADRAO_URL) . '" data-foto-id="' . $id . '" class="rounded-circle img-cover hover-img beneficiario-foto js-foto-pendente" width="40" height="40" loading="lazy" decoding="async" alt="Foto de beneficiário"></span></td>';

@@ -21,3 +21,4 @@ zz_Suporte/
 /.codex_root_page.html
 /.editorconfig
 /.dockerignore
+!temp/FAQ.MD

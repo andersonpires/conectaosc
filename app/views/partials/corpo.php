@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $runtime = require __DIR__ . '/../../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
@@ -113,9 +113,9 @@ $matriculas = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
 
 ?>
 <main class="content">
-	<!-- Ãrea para mensagens de boas-vindas ou novidades -->
+	<!-- Área para mensagens de boas-vindas ou novidades -->
 	<!-- <h2 class="h4">Oie, temos mais novidade, <strong><?php echo $_SESSION['Nome'] ?> </strong> <strong></strong></h2>
-	<h7 class="h7 mb-3">Agora, vocÃª pode ver os aniversariantes do mÃªs! Ah, e se alguÃ©m faz ou fez aniversÃ¡rio por esses dias, ele aparece destacado em amarelo.</h7>
+	<h7 class="h7 mb-3">Agora, você pode ver os aniversariantes do mês! Ah, e se alguém faz ou fez aniversário por esses dias, ele aparece destacado em amarelo.</h7>
 	<br><br> -->
 
 
