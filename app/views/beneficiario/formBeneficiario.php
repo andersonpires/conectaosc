@@ -374,7 +374,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                             Nascimento* <span id="classificacaoIdade" style="font-weight:bold; color:#007bff; margin-left:5px;"></span>
                         </label>
 
-                        <input type="text" class="form-control" id="Nascimento" name="Nascimento" required value="<?= $_POST['Nascimento'] ?? '' ?>" autocomplete="off">
+                        <input type="text" class="form-control" id="Nascimento" name="Nascimento" required pattern="^\d{2}/\d{2}/\d{4}$" maxlength="10" inputmode="numeric" title="Informe a data no formato dd/mm/aaaa, com ano de 4 dígitos." value="<?= $_POST['Nascimento'] ?? '' ?>" autocomplete="off">
                     </div>
                     <div class="col-6">
                         <label for="SexoBio" class="form-label">Sexo</label>
@@ -1859,6 +1859,17 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
 
         let submitted = false;
 
+        function validarNascimentoComAnoQuatroDigitos(valor) {
+            const match = String(valor || '').trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (!match) return false;
+
+            const dia = Number(match[1]);
+            const mes = Number(match[2]);
+            const ano = Number(match[3]);
+            const data = new Date(ano, mes - 1, dia);
+
+            return data.getFullYear() === ano && (data.getMonth() + 1) === mes && data.getDate() === dia;
+        }
         function garantirAcaoNoPost(valor) {
             // garante que ação vá no POST mesmo com submit programático
             let hidden = form.querySelector('input[name="acao"][type="hidden"]');
@@ -1874,7 +1885,19 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
         form.addEventListener('submit', function handler(e) {
             const btn = e.submitter; // botao clicado (quando existe)
             const acao = (btn && btn.name === 'acao') ? btn.value : '';
+            const nascimentoInput = form.querySelector('#Nascimento');
+            const mensagemNascimento = 'Preencha o nascimento no formato dd/mm/aaaa, com ano de 4 dígitos.';
 
+            if (nascimentoInput) {
+                const nascimentoValido = validarNascimentoComAnoQuatroDigitos(nascimentoInput.value);
+                nascimentoInput.setCustomValidity(nascimentoValido ? '' : mensagemNascimento);
+                if (!nascimentoValido) {
+                    e.preventDefault();
+                    nascimentoInput.reportValidity();
+                    nascimentoInput.focus();
+                    return;
+                }
+            }
             // bloqueia duplo submit
             if (submitted) {
                 e.preventDefault();

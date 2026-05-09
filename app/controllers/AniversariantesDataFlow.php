@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace FrontEnd\Controllers;
 
-use DateTime;
+use DateTimeImmutable;
 use PDO;
 use PDOException;
 
@@ -69,26 +69,32 @@ final class AniversariantesDataFlow
             $dados = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             $anoAtual = (int) date('Y');
-            $hoje = new DateTime();
+            $hoje = new DateTimeImmutable('today');
 
             $aniversariantes = array_map(static function (array $item) use ($anoAtual, $hoje): array {
                 $nome = trim((string) ($item['Nome'] ?? ''));
                 $apelido = trim((string) ($item['Apelido'] ?? ''));
-                $dia = (string) ($item['dia'] ?? '');
-                $mesNasc = (string) ($item['mes'] ?? '');
+                $dia = str_pad((string) ($item['dia'] ?? ''), 2, '0', STR_PAD_LEFT);
+                $mesNasc = str_pad((string) ($item['mes'] ?? ''), 2, '0', STR_PAD_LEFT);
                 $anoNasc = (int) ($item['ano_nasc'] ?? 0);
 
+                // A idade que completa no aniversario do ano corrente e simplesmente
+                // a diferenca entre ano atual e ano de nascimento.
                 $idade = $anoAtual - $anoNasc;
-                $dataAniversario = DateTime::createFromFormat('d/m/Y', "{$dia}/{$mesNasc}/{$anoAtual}");
-                if ($dataAniversario && $dataAniversario >= $hoje) {
-                    $idade++;
+
+                // Guarda de consistencia: se a data vier fora do padrao esperado,
+                // tenta recalcular via DateTime para evitar erros de exibicao.
+                $nascimento = DateTimeImmutable::createFromFormat('!d/m/Y', (string) ($item['Nascimento'] ?? ''));
+                if ($nascimento instanceof DateTimeImmutable) {
+                    $aniversarioAnoAtual = $nascimento->setDate($anoAtual, (int) $nascimento->format('m'), (int) $nascimento->format('d'));
+                    $idade = (int) $nascimento->diff($aniversarioAnoAtual)->y;
                 }
 
                 return [
                     'Nome' => $nome,
                     'Apelido' => $apelido,
                     'Foto' => $item['Foto'] ?? '',
-                    'Nascimento' => "{$dia}/{$mesNasc}",
+                    'Nascimento' => "{$dia}/{$mesNasc}/{$anoNasc}",
                     'Idade' => $idade,
                     'Curso' => $item['NomeCurso'] ?? '',
                     'Turma' => $item['NomeTurma'] ?? '',

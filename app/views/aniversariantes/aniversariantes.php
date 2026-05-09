@@ -154,6 +154,7 @@ require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
                         if (res.status === 'ok') {
                             if (res.dados.length > 0) {
                                 const hoje = new Date();
+                                hoje.setHours(0, 0, 0, 0);
                                 const ontem = new Date();
                                 ontem.setDate(hoje.getDate() - 1);
                                 const amanha = new Date();
@@ -180,6 +181,12 @@ require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
                                     const nomeExibicao = item.Apelido ? `(${item.Apelido}) ${item.Nome}` : item.Nome;
                                     const [dia, mesNasc] = item.Nascimento.split('/').map(str => parseInt(str));
                                     const dataAniv = new Date(hoje.getFullYear(), mesNasc - 1, dia);
+                                    let acaoIdade = 'Fará';
+                                    if (dataAniv.getTime() < hoje.getTime()) {
+                                        acaoIdade = 'Fez';
+                                    } else if (dataAniv.getTime() === hoje.getTime()) {
+                                        acaoIdade = 'Faz';
+                                    }
                                     const destaque = [ontem, hoje, amanha].some(data =>
                                         data.getDate() === dataAniv.getDate() && data.getMonth() === dataAniv.getMonth()
                                     );
@@ -191,7 +198,7 @@ require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
                             <img src="${item.Foto ? '<?php echo rtrim(bootstrap_assets_img_url(), '/'); ?>/fotos/' + item.Foto : '<?php echo bootstrap_foto_url(''); ?>'}" class="foto-aniversariante" alt="Foto">
                             <div><strong>${nomeExibicao}</strong></div>
                             <div>${item.Nascimento}</div>
-                            <div class="text-muted">Fará ${item.Idade} anos</div>
+                            <div class="text-muted">${acaoIdade} ${item.Idade} anos</div>
                             <div><small>Curso: ${item.Curso || '-'}</small></div>
                             <div><small>Turma: ${item.Turma || '-'}</small></div>
                         </div>
