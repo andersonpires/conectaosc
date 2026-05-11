@@ -99,7 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             ON DUPLICATE KEY UPDATE 
                 presenca = VALUES(presenca), 
                 falta = VALUES(falta), 
-                faltajust = VALUES(faltajust)
+                faltajust = VALUES(faltajust),
+                IdColaborador = VALUES(IdColaborador)
         ";
             $stmt = $pdo->prepare($sqlInsert);
 
