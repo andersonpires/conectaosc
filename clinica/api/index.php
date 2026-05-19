@@ -142,6 +142,7 @@ if (isset($_SESSION['Cod'])) {
         $me = clinicaApiMeData();
         if ($me !== []) {
             $_SESSION['profissional_saude'] = (int) ($me['profissional_saude'] ?? 0);
+            $_SESSION['licenca_administrativa'] = (int) ($me['licenca_administrativa'] ?? 0);
             $_SESSION['especialidade_id'] = isset($me['especialidade_id']) && $me['especialidade_id'] !== null ? (int)$me['especialidade_id'] : null;
         } else {
             $basePathSession = rtrim((string) ($_SESSION['BASE_para_PATH'] ?? ''), '/\\');
@@ -150,14 +151,16 @@ if (isset($_SESSION['Cod'])) {
                 $conexaoPath = $basePathSession . '/conectabd/conexao.php';
             }
             require_once $conexaoPath;
-            $stmt = $pdo->prepare("SELECT COALESCE(profissional_saude, 0), COALESCE(especialidade_id, 0) FROM tbUser WHERE IdColaborador = ?");
+            $stmt = $pdo->prepare("SELECT COALESCE(profissional_saude, 0), COALESCE(licenca_administrativa, 0), COALESCE(especialidade_id, 0) FROM tbUser WHERE IdColaborador = ?");
             $stmt->execute([$_SESSION['Cod']]);
             $row = $stmt->fetch(\PDO::FETCH_NUM);
             $_SESSION['profissional_saude'] = (int) ($row[0] ?? 0);
-            $_SESSION['especialidade_id'] = ($row[1] ?? 0) ? (int)$row[1] : null;
+            $_SESSION['licenca_administrativa'] = (int) ($row[1] ?? 0);
+            $_SESSION['especialidade_id'] = ($row[2] ?? 0) ? (int)$row[2] : null;
         }
     } catch (Throwable $e) {
         $_SESSION['profissional_saude'] = 0;
+        $_SESSION['licenca_administrativa'] = 0;
         $_SESSION['especialidade_id'] = null;
     }
 }
@@ -191,17 +194,113 @@ $router->get('/', function () {
     ]);
 });
 
+$router->get('/debug/database', function () {
+    \App\Middlewares\AuthMiddleware::requireAcessoClinica();
+
+    if (!\App\Middlewares\AuthMiddleware::isSuperAdmin() && (int)($_SESSION['licenca_administrativa'] ?? 0) !== 1) {
+        \App\Core\JsonResponse::error('Acesso restrito ao diagnostico do banco', [], 403);
+    }
+
+    $pdo = \App\Core\Database::getConnection();
+    $info = $pdo->query("
+        SELECT
+            DATABASE() AS banco_atual,
+            @@hostname AS servidor_mysql,
+            @@port AS porta_mysql,
+            @@version AS versao_mysql
+    ")->fetch(\PDO::FETCH_ASSOC) ?: [];
+
+    $consultas = $pdo->query("
+        SELECT id, aluno_id, profissional_id, data_consulta, hora_inicio_prevista, status, created_at
+          FROM tb_consulta
+         ORDER BY id DESC
+         LIMIT 10
+    ")->fetchAll(\PDO::FETCH_ASSOC);
+
+    $prontuarios = $pdo->query("
+        SELECT id, consulta_id, aluno_id, profissional_id, status, created_at
+          FROM tb_prontuario
+         ORDER BY id DESC
+         LIMIT 10
+    ")->fetchAll(\PDO::FETCH_ASSOC);
+
+    $consultasAguardandoProntuario = $pdo->query("
+        SELECT c.id, c.aluno_id, c.profissional_id, c.data_consulta, c.hora_inicio_prevista, c.status, c.created_at,
+               (
+                   SELECT COUNT(*)
+                     FROM tb_prontuario p2
+                    WHERE p2.aluno_id = c.aluno_id
+               ) AS total_prontuarios_mesmo_aluno,
+               (
+                   SELECT p2.id
+                     FROM tb_prontuario p2
+                    WHERE p2.aluno_id = c.aluno_id
+                    ORDER BY p2.created_at DESC, p2.id DESC
+                    LIMIT 1
+               ) AS ultimo_prontuario_mesmo_aluno_id,
+               (
+                   SELECT p2.consulta_id
+                     FROM tb_prontuario p2
+                    WHERE p2.aluno_id = c.aluno_id
+                    ORDER BY p2.created_at DESC, p2.id DESC
+                    LIMIT 1
+               ) AS ultimo_prontuario_mesmo_aluno_consulta_id,
+               (
+                   SELECT p2.created_at
+                     FROM tb_prontuario p2
+                    WHERE p2.aluno_id = c.aluno_id
+                    ORDER BY p2.created_at DESC, p2.id DESC
+                    LIMIT 1
+               ) AS ultimo_prontuario_mesmo_aluno_created_at
+          FROM tb_consulta c
+         WHERE c.status IN ('concluida', 'em_atendimento')
+           AND NOT EXISTS (SELECT 1 FROM tb_prontuario p WHERE p.consulta_id = c.id)
+         ORDER BY c.data_consulta DESC, c.hora_inicio_prevista DESC
+         LIMIT 10
+    ")->fetchAll(\PDO::FETCH_ASSOC);
+
+    $prontuariosSemConsultaValida = $pdo->query("
+        SELECT p.id, p.consulta_id, p.aluno_id, p.profissional_id, p.status, p.created_at
+          FROM tb_prontuario p
+          LEFT JOIN tb_consulta c ON c.id = p.consulta_id
+         WHERE p.consulta_id IS NULL
+            OR p.consulta_id = 0
+            OR c.id IS NULL
+         ORDER BY p.id DESC
+         LIMIT 10
+    ")->fetchAll(\PDO::FETCH_ASSOC);
+
+    \App\Core\JsonResponse::success([
+        'database' => $info,
+        'env' => [
+            'DB_HOST' => bootstrap_env('DB_HOST', ''),
+            'DB_NAME' => bootstrap_env('DB_NAME', ''),
+            'DB_PORT' => bootstrap_env('DB_PORT', ''),
+            'APP_ENV' => bootstrap_env('APP_ENV', ''),
+            'APP_DEBUG' => bootstrap_env('APP_DEBUG', ''),
+        ],
+        'ultimas_consultas' => $consultas,
+        'ultimos_prontuarios' => $prontuarios,
+        'consultas_aguardando_prontuario' => $consultasAguardandoProntuario,
+        'prontuarios_sem_consulta_valida' => $prontuariosSemConsultaValida,
+    ]);
+});
+
 $pac = new \App\Controllers\PacientesController();
 $esp = new \App\Controllers\EspecialidadesController();
 $tip = new \App\Controllers\TiposConsultaController();
 $profissionais = new \App\Controllers\ProfissionaisController();
 $con = new \App\Controllers\ConsultasController();
 $pront = new \App\Controllers\ProntuariosController();
+$evol = new \App\Controllers\EvolucoesController();
 
 $router->get('/pacientes', [$pac, 'index']);
 $router->get('/pacientes/{id}', [$pac, 'show']);
 $router->get('/especialidades', [$esp, 'index']);
 $router->get('/tipos-consulta', [$tip, 'index']);
+$router->post('/tipos-consulta', [$tip, 'store']);
+$router->put('/tipos-consulta/{id}', [$tip, 'update']);
+$router->post('/tipos-consulta/{id}/toggle', [$tip, 'toggle']);
 $router->get('/profissionais', [$profissionais, 'index']);
 $router->get('/consultas/{id}', [$con, 'show']);
 $router->post('/consultas', [$con, 'store']);
@@ -211,6 +310,8 @@ $router->post('/consultas/{id}/cancelar', [$con, 'cancelar']);
 $router->post('/consultas/{id}/excluir', [$con, 'excluir']);
 $router->post('/consultas/{id}/iniciar-atendimento', [$con, 'iniciarAtendimento']);
 $router->post('/consultas/{id}/reverter-atendimento', [$con, 'reverterAtendimento']);
+$router->post('/consultas/{id}/excluir-atendimento', [$con, 'excluirAtendimento']);
+$router->post('/consultas/{id}/reverter-atendimento-completo', [$con, 'reverterAtendimentoCompleto']);
 $router->get('/agenda', [new \App\Controllers\AgendaController(), 'index']);
 $router->get('/agenda/dias-com-agendamento', [new \App\Controllers\AgendaController(), 'diasComAgendamento']);
 $router->get('/agenda/em-atendimento', [new \App\Controllers\AgendaController(), 'emAtendimento']);
@@ -227,11 +328,23 @@ $router->post('/prontuarios/pdf', [$pront, 'pdfPost']);
 $router->put('/prontuarios/{id}', [$pront, 'update']);
 $router->delete('/prontuarios/{id}', [$pront, 'destroy']);
 
+$router->get('/evolucoes', [$evol, 'index']);
+$router->get('/evolucoes/paciente/{id}', [$evol, 'paciente']);
+$router->get('/evolucoes/{id}', [$evol, 'show']);
+$router->post('/evolucoes', [$evol, 'store']);
+$router->put('/evolucoes/{id}', [$evol, 'update']);
+
 $anamnese = new \App\Controllers\AnamneseController();
 $router->get('/anamnese', [$anamnese, 'index']);
 $router->get('/anamnese/{id}', [$anamnese, 'show']);
 $router->post('/anamnese', [$anamnese, 'store']);
 $router->put('/anamnese/{id}', [$anamnese, 'update']);
+
+$rot = new \App\Controllers\AnamneseRoteiroController();
+$router->get('/anamnese-roteiro', [$rot, 'index']);
+$router->get('/anamnese-roteiro/{id}', [$rot, 'show']);
+$router->post('/anamnese-roteiro', [$rot, 'store']);
+$router->put('/anamnese-roteiro/{id}', [$rot, 'update']);
 
 $router->dispatch();
 } catch (Throwable $e) {

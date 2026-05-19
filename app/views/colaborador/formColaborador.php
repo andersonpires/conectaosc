@@ -8,6 +8,8 @@ $listaColaboradores = $listaColaboradores ?? [];
 $colaboradorEdicao = $colaboradorEdicao ?? null;
 $statusFiltro = $statusFiltro ?? 'ativos';
 $especialidadesProfissionais = $especialidadesProfissionais ?? [];
+$podeDefinirClinicaForm = ((int)($_SESSION['IdPermissao'] ?? 0) === 4)
+    || in_array((string)($_SESSION['Tipo'] ?? ''), ['Administrador', 'Superadministrador'], true);
 $ufs = [
     'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
 ];
@@ -96,6 +98,12 @@ $ufs = [
                             $nascimentoEdicao = date('Y-m-d', $timestampNascimento);
                         }
                     }
+                    $habilitacaoClinicaAtual = 'nao_habilitado';
+                    if (!empty($colaborador['profissional_saude'])) {
+                        $habilitacaoClinicaAtual = 'profissional_saude';
+                    } elseif (!empty($colaborador['licenca_administrativa'])) {
+                        $habilitacaoClinicaAtual = 'licenca_administrativa';
+                    }
                     if ($colaborador) {
                     ?>
                         <div class="col-12">
@@ -144,10 +152,16 @@ $ufs = [
                                             </div>
                                         </div>
                                         <div class="mb-3">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" role="switch" id="profissional_saude" name="profissional_saude" value="1" <?php echo !empty($colaborador['profissional_saude']) ? 'checked' : ''; ?>>
-                                                <label class="form-check-label" for="profissional_saude">Profissional de saúde</label>
-                                            </div>
+                                            <label for="habilitacao_clinica" class="form-label">Habilitar para App Clínica</label>
+                                            <select class="form-select" id="habilitacao_clinica" name="habilitacao_clinica" <?php echo !$podeDefinirClinicaForm ? 'disabled' : ''; ?>>
+                                                <option value="nao_habilitado" <?php echo $habilitacaoClinicaAtual === 'nao_habilitado' ? 'selected' : ''; ?>>Não habilitado</option>
+                                                <option value="profissional_saude" <?php echo $habilitacaoClinicaAtual === 'profissional_saude' ? 'selected' : ''; ?>>Profissional de Saúde</option>
+                                                <option value="licenca_administrativa" <?php echo $habilitacaoClinicaAtual === 'licenca_administrativa' ? 'selected' : ''; ?>>Licença Administrativa</option>
+                                            </select>
+                                            <?php if (!$podeDefinirClinicaForm): ?>
+                                            <small class="text-muted">Somente administradores podem alterar esta configuração.</small>
+                                            <input type="hidden" name="habilitacao_clinica" value="<?php echo htmlspecialchars($habilitacaoClinicaAtual); ?>">
+                                            <?php endif; ?>
                                         </div>
                                         <div id="profissionalSaudeCampos" class="border rounded p-3 mb-3" style="display: none;">
                                             <div class="d-flex align-items-center justify-content-between mb-2">
@@ -220,7 +234,7 @@ $ufs = [
                                             </div>
                                             <div class="col-5">
                                                 <label for="Senha" class="form-label">Senha</label>
-                                                <input type="text" class="form-control" id="Senha" name="Senha" value="Apenas o usuário pode alterar a senha" readonly autocomplete="off">
+                                                <input type="text" class="form-control" id="Senha" value="Apenas o usuário pode alterar a senha" disabled autocomplete="off">
                                             </div>
                                         </div>
                                         <div class="mb-3">
@@ -293,10 +307,58 @@ $ufs = [
                                             </div>
                                         </div>
                                         <div class="mb-3">
-                                            <div class="form-check form-switch">
-                                                <input class="form-check-input" type="checkbox" role="switch" id="profissional_saude" name="profissional_saude" value="1">
-                                                <label class="form-check-label" for="profissional_saude">Profissional de saúde</label>
+                                            <label for="habilitacao_clinica_novo" class="form-label">Habilitar para App Clínica</label>
+                                            <select class="form-select" id="habilitacao_clinica_novo" name="habilitacao_clinica" <?php echo !$podeDefinirClinicaForm ? 'disabled' : ''; ?>>
+                                                <option value="nao_habilitado" selected>Não habilitado</option>
+                                                <option value="profissional_saude">Profissional de Saúde</option>
+                                                <option value="licenca_administrativa">Licença Administrativa</option>
+                                            </select>
+                                            <?php if (!$podeDefinirClinicaForm): ?>
+                                            <small class="text-muted">Somente administradores podem alterar esta configuração.</small>
+                                            <input type="hidden" name="habilitacao_clinica" value="nao_habilitado">
+                                            <?php endif; ?>
+                                        </div>
+                                        <div id="profissionalSaudeCamposNovo" class="border rounded p-3 mb-3" style="display: none;">
+                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                <label class="form-label mb-0">Especialidades</label>
+                                                <button type="button" class="btn btn-outline-primary btn-sm" id="addEspecialidadeNovo">+</button>
                                             </div>
+                                            <div id="especialidadesContainerNovo">
+                                                <div class="row g-2 align-items-end especialidade-item" data-index="0">
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Especialidade</label>
+                                                        <select class="form-select" data-name="especialidade_id" name="especialidades[0][especialidade_id]">
+                                                            <option value="">Nenhuma</option>
+                                                            <?php foreach ($especialidades as $e): ?>
+                                                            <option value="<?php echo (int)$e['id']; ?>"><?php echo htmlspecialchars($e['nome']); ?></option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Conselho</label>
+                                                        <input type="text" class="form-control" data-name="conselho" name="especialidades[0][conselho]">
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">UF</label>
+                                                        <select class="form-select" data-name="uf" name="especialidades[0][uf]">
+                                                            <option value="">UF...</option>
+                                                            <?php foreach ($ufs as $uf): ?>
+                                                            <option value="<?php echo $uf; ?>"><?php echo $uf; ?></option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <label class="form-label">No registro</label>
+                                                        <input type="text" class="form-control" data-name="registro" name="especialidades[0][registro]">
+                                                    </div>
+                                                    <div class="col-md-1 d-grid">
+                                                        <button type="button" class="btn btn-danger btn-sm remove-especialidade" title="Remover especialidade" style="display: none;">
+                                                            <i class="fa-solid fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted">Defina as especialidades e dados do conselho para o colaborador.</small>
                                         </div>
 <?php if (false): ?>
                                         <div class="mb-3">
@@ -725,66 +787,66 @@ $ufs = [
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        const toggle = document.getElementById('profissional_saude');
-        const campos = document.getElementById('profissionalSaudeCampos');
-        const container = document.getElementById('especialidadesContainer');
-        const addBtn = document.getElementById('addEspecialidade');
+        function bindEspecialidades(roleSelectId, camposId, containerId, addBtnId) {
+            const roleSelect = document.getElementById(roleSelectId);
+            const campos = document.getElementById(camposId);
+            const container = document.getElementById(containerId);
+            const addBtn = document.getElementById(addBtnId);
 
-        function atualizarIndices() {
-            if (!container) return;
-            const items = container.querySelectorAll('.especialidade-item');
-            items.forEach((item, idx) => {
-                item.dataset.index = idx;
-                item.querySelectorAll('[data-name]').forEach((el) => {
-                    const base = el.getAttribute('data-name');
-                    if (base) {
-                        el.name = `especialidades[${idx}][${base}]`;
-                    }
+            if (!campos || !container) return;
+
+            function atualizarIndices() {
+                const items = container.querySelectorAll('.especialidade-item');
+                items.forEach((item, idx) => {
+                    item.dataset.index = idx;
+                    item.querySelectorAll('[data-name]').forEach((el) => {
+                        const base = el.getAttribute('data-name');
+                        if (base) {
+                            el.name = `especialidades[${idx}][${base}]`;
+                        }
+                    });
                 });
-            });
-        }
+            }
 
-        function limparValores(item) {
-            item.querySelectorAll('input').forEach((el) => {
-                el.value = '';
-            });
-            item.querySelectorAll('select').forEach((el) => {
-                el.selectedIndex = 0;
-            });
-        }
+            function limparValores(item) {
+                item.querySelectorAll('input').forEach((el) => {
+                    el.value = '';
+                });
+                item.querySelectorAll('select').forEach((el) => {
+                    el.selectedIndex = 0;
+                });
+            }
 
-        function atualizarRemover() {
-            if (!container) return;
-            const items = container.querySelectorAll('.especialidade-item');
-            items.forEach((item) => {
-                const btn = item.querySelector('.remove-especialidade');
-                if (!btn) return;
-                btn.style.display = items.length > 1 ? '' : 'none';
-            });
-        }
+            function atualizarRemover() {
+                const items = container.querySelectorAll('.especialidade-item');
+                items.forEach((item) => {
+                    const btn = item.querySelector('.remove-especialidade');
+                    if (!btn) return;
+                    btn.style.display = items.length > 1 ? '' : 'none';
+                });
+            }
 
-        function setEnabled(enabled) {
-            if (!campos) return;
-            campos.style.display = enabled ? '' : 'none';
-            campos.querySelectorAll('input, select, button.remove-especialidade').forEach((el) => {
-                el.disabled = !enabled;
-            });
-            if (addBtn) addBtn.disabled = !enabled;
-        }
+            function setEnabled() {
+                const enabled = roleSelect && roleSelect.value === 'profissional_saude';
+                campos.style.display = enabled ? '' : 'none';
+                campos.querySelectorAll('input, select, button.remove-especialidade').forEach((el) => {
+                    el.disabled = !enabled;
+                });
+                if (addBtn) addBtn.disabled = !enabled;
+            }
 
-        if (addBtn && container) {
-            addBtn.addEventListener('click', () => {
-                const first = container.querySelector('.especialidade-item');
-                if (!first) return;
-                const clone = first.cloneNode(true);
-                limparValores(clone);
-                container.appendChild(clone);
-                atualizarIndices();
-                atualizarRemover();
-            });
-        }
+            if (addBtn) {
+                addBtn.addEventListener('click', () => {
+                    const first = container.querySelector('.especialidade-item');
+                    if (!first) return;
+                    const clone = first.cloneNode(true);
+                    limparValores(clone);
+                    container.appendChild(clone);
+                    atualizarIndices();
+                    atualizarRemover();
+                });
+            }
 
-        if (container) {
             container.addEventListener('click', (event) => {
                 const btn = event.target.closest('.remove-especialidade');
                 if (!btn) return;
@@ -799,13 +861,18 @@ $ufs = [
                 atualizarIndices();
                 atualizarRemover();
             });
+
+            if (roleSelect) {
+                roleSelect.addEventListener('change', setEnabled);
+            }
+
+            atualizarIndices();
+            atualizarRemover();
+            setEnabled();
         }
 
-        if (toggle) {
-            toggle.addEventListener('change', () => setEnabled(toggle.checked));
-            setEnabled(toggle.checked);
-        }
-        atualizarRemover();
+        bindEspecialidades('habilitacao_clinica', 'profissionalSaudeCampos', 'especialidadesContainer', 'addEspecialidade');
+        bindEspecialidades('habilitacao_clinica_novo', 'profissionalSaudeCamposNovo', 'especialidadesContainerNovo', 'addEspecialidadeNovo');
     });
 </script>
 

@@ -163,11 +163,14 @@ if (empty($_SESSION['Cod'])) {
 }
 
 $profissionalSaudeAtual = 0;
+$licencaAdministrativaAtual = 0;
 try {
     $me = clinicaApiMe();
     if ($me !== []) {
         $profissionalSaudeAtual = (int)($me['profissional_saude'] ?? 0);
+        $licencaAdministrativaAtual = (int)($me['licenca_administrativa'] ?? 0);
         $_SESSION['profissional_saude'] = $profissionalSaudeAtual;
+        $_SESSION['licenca_administrativa'] = $licencaAdministrativaAtual;
         $_SESSION['especialidade_id'] = isset($me['especialidade_id']) && $me['especialidade_id'] !== null ? (int)$me['especialidade_id'] : null;
     } else {
         $conexaoPath = $conectaoscPath . '/api/conectabd/conexao.php';
@@ -175,20 +178,23 @@ try {
             $conexaoPath = $conectaoscPath . '/conectabd/conexao.php';
         }
         require_once $conexaoPath;
-        $stmt = $pdo->prepare("SELECT COALESCE(profissional_saude, 0), especialidade_id FROM tbUser WHERE IdColaborador = ?");
+        $stmt = $pdo->prepare("SELECT COALESCE(profissional_saude, 0), COALESCE(licenca_administrativa, 0), especialidade_id FROM tbUser WHERE IdColaborador = ?");
         $stmt->execute([$_SESSION['Cod']]);
         $row = $stmt->fetch(PDO::FETCH_NUM);
         $profissionalSaudeAtual = (int)($row[0] ?? 0);
+        $licencaAdministrativaAtual = (int)($row[1] ?? 0);
         $_SESSION['profissional_saude'] = $profissionalSaudeAtual;
-        $_SESSION['especialidade_id'] = ($row[1] ?? 0) ? (int)$row[1] : null;
+        $_SESSION['licenca_administrativa'] = $licencaAdministrativaAtual;
+        $_SESSION['especialidade_id'] = ($row[2] ?? 0) ? (int)$row[2] : null;
     }
 } catch (Throwable $e) {
     $_SESSION['profissional_saude'] = 0;
+    $_SESSION['licenca_administrativa'] = 0;
     $_SESSION['especialidade_id'] = null;
 }
-if ($profissionalSaudeAtual !== 1) {
+if ($profissionalSaudeAtual !== 1 && $licencaAdministrativaAtual !== 1) {
     header('Content-Type: text/html; charset=utf-8');
-    die('<div class="alert alert-danger m-4">Acesso restrito a profissionais de saude. Entre em contato com o administrador se voce deveria ter acesso.</div>');
+    die('<div class="alert alert-danger m-4">Acesso restrito ao App Clínica. Entre em contato com o administrador se você deveria ter acesso.</div>');
 }
 
 header('Content-Type: text/html; charset=utf-8');
@@ -207,12 +213,18 @@ $logoTag = '<img src="' . htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8') . '" a
 $faviconUrl = clinicaShortcutIconUrl();
 $faviconTag = '<link rel="shortcut icon" href="' . htmlspecialchars($faviconUrl, ENT_QUOTES, 'UTF-8') . '">';
 $fotoColaborador = trim((string) ($_SESSION['Foto'] ?? ''));
+$isAdminClinica = in_array((string) ($_SESSION['Tipo'] ?? ''), ['Administrador', 'Superadministrador'], true)
+    || (int) ($_SESSION['IdPermissao'] ?? 0) === 4;
 $clinicaBootstrap = [
     'usuario' => [
+        'id' => (int) ($_SESSION['Cod'] ?? 0),
         'nome' => (string) ($_SESSION['Nome'] ?? ''),
         'fotoUrl' => $fotoColaborador !== ''
             ? clinicaAssetsImgUrl() . '/fotos/' . rawurlencode(basename($fotoColaborador))
             : '',
+        'profissional_saude' => (int) ($_SESSION['profissional_saude'] ?? 0),
+        'licenca_administrativa' => (int) ($_SESSION['licenca_administrativa'] ?? 0),
+        'is_admin' => $isAdminClinica ? 1 : 0,
     ],
 ];
 $bootstrapTag = '<script>window.__CLINICA_BOOTSTRAP__ = ' . json_encode($clinicaBootstrap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . ';</script>';

@@ -1,4 +1,4 @@
-import { getAgenda, getFeriadosVerificar, getDiasComAgendamento, postConfirmacao, postCancelar, postExcluirConsulta, postIniciarAtendimento, postReverterAtendimento, postConsulta, putConsulta, getPacientes, getPaciente, getEspecialidades, getTiposConsulta, getProfissionais } from '../services/api.js';
+import { getAgenda, getFeriadosVerificar, getDiasComAgendamento, postConfirmacao, postCancelar, postExcluirConsulta, postIniciarAtendimento, postReverterAtendimento, postExcluirAtendimento, postReverterAtendimentoCompleto, postConsulta, putConsulta, getPacientes, getPaciente, getEspecialidades, getTiposConsulta, getProfissionais, getCurrentClinicaUser } from '../services/api.js';
 import { getSpinnerHtml, getButtonSpinnerHtml, showLoadingOverlay, hideLoadingOverlay } from '../utils/loading.js';
 
 let currentDate = new Date().toISOString().slice(0, 10);
@@ -1352,6 +1352,25 @@ async function openModalEvento(id, container, dataConsulta) {
     ev.paciente_telefone ? `Contato: ${ev.paciente_telefone}` : null,
     ev.observacao ? `Obs: ${ev.observacao}` : null
   ].filter(Boolean);
+  const statusAtual = String(ev.status || '').toLowerCase();
+  const isEmAtendimento = statusAtual.includes('em_atendimento');
+  const isConcluida = statusAtual.includes('concluida') || statusAtual.includes('concluída');
+  const acoesHtml = isConcluida
+    ? `
+        <button type="button" class="modal-ver-anamnese min-h-touch px-4 py-3 bg-monday-blue text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-monday-blue">Ver anamnese</button>
+        <button type="button" class="modal-ver-prontuario min-h-touch px-4 py-3 bg-slate-800 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-600">Ver prontuário</button>
+        <button type="button" class="modal-excluir-atendimento min-h-touch px-4 py-3 bg-red-600 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500">Excluir atendimento</button>
+        <button type="button" class="modal-reverter-completo min-h-touch px-4 py-3 bg-amber-600 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500">Reverter para agendado</button>
+      `
+    : `
+        <button type="button" class="modal-editar min-h-touch px-4 py-3 bg-monday-blue text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-monday-blue">Editar agendamento</button>
+        <button type="button" class="modal-confirmar min-h-touch px-4 py-3 bg-amber-500 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500">Solicitar confirmação</button>
+        <button type="button" class="modal-cancelar min-h-touch px-4 py-3 bg-red-500 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500">Cancelar agendamento</button>
+        <button type="button" class="modal-excluir min-h-touch px-4 py-3 bg-slate-800 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-600">Excluir agendamento</button>
+        ${isEmAtendimento
+          ? '<button type="button" class="modal-reverter min-h-touch px-4 py-3 bg-slate-600 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500">Reverter para agendada</button>'
+          : '<button type="button" class="modal-iniciar min-h-touch px-4 py-3 bg-emerald-600 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500">Iniciar atendimento</button>'}
+      `;
   modal.innerHTML = `
     <div class="bg-white rounded-2xl shadow-monday-lg max-w-md w-full p-6">
       <h3 class="text-lg font-semibold mb-2">${escapeHtml(ev.paciente_nome || '')}</h3>
@@ -1369,7 +1388,45 @@ async function openModalEvento(id, container, dataConsulta) {
       <button type="button" class="modal-close mt-4 w-full min-h-touch py-2 border border-gray-300 rounded-xl focus-visible:ring-2 focus-visible:ring-offset-2">Fechar</button>
     </div>
   `;
+  if (isConcluida) {
+    const actions = modal.querySelector('.flex.flex-col.gap-2');
+    if (actions) {
+      actions.insertAdjacentHTML('afterbegin', acoesHtml);
+      actions.querySelectorAll('.modal-editar, .modal-confirmar, .modal-cancelar, .modal-excluir, .modal-iniciar, .modal-reverter')
+        .forEach((button) => button.classList.add('hidden'));
+    }
+  }
   modal.querySelector('.modal-close').onclick = () => modal.remove();
+  modal.querySelector('.modal-ver-anamnese')?.addEventListener('click', () => {
+    modal.remove();
+    window.dispatchEvent(new CustomEvent('open-atendimento', { detail: { consultaId: id, date: ev.data_consulta || undefined } }));
+  });
+  modal.querySelector('.modal-ver-prontuario')?.addEventListener('click', () => {
+    modal.remove();
+    window.dispatchEvent(new CustomEvent('navigate-to', { detail: { page: 'prontuarios', options: { aluno_id: ev.aluno_id } } }));
+  });
+  modal.querySelector('.modal-excluir-atendimento')?.addEventListener('click', async () => {
+    const ok = confirm('Excluir este atendimento? Serão apagados o agendamento, prontuário, anamnese e evolução vinculados somente a esta consulta. Esta ação não pode ser desfeita.');
+    if (!ok) return;
+    try {
+      await postExcluirAtendimento(id);
+      modal.remove();
+      await renderAgenda(container);
+    } catch (err) {
+      alert(err.message || 'Erro ao excluir atendimento.');
+    }
+  });
+  modal.querySelector('.modal-reverter-completo')?.addEventListener('click', async () => {
+    const ok = confirm('Reverter para agendado? Serão apagados prontuário, anamnese e evolução vinculados somente a esta consulta, mas o agendamento será mantido.');
+    if (!ok) return;
+    try {
+      await postReverterAtendimentoCompleto(id);
+      modal.remove();
+      await renderAgenda(container);
+    } catch (err) {
+      alert(err.message || 'Erro ao reverter atendimento.');
+    }
+  });
   modal.querySelector('.modal-editar').onclick = () => {
     modal.remove();
     openModalEditarConsulta(id, container, ev);
@@ -1378,6 +1435,7 @@ async function openModalEvento(id, container, dataConsulta) {
     await postConfirmacao(id);
     modal.remove();
     await renderAgenda(container);
+    await openSolicitarConfirmacaoModal(id, ev);
   };
   modal.querySelector('.modal-cancelar').onclick = async () => {
     if (confirm('Cancelar este agendamento? Ele ficará semi-transparente na agenda.')) {
@@ -1401,10 +1459,33 @@ async function openModalEvento(id, container, dataConsulta) {
   const btnReverter = modal.querySelector('.modal-reverter');
   if (btnIniciar) {
     btnIniciar.onclick = async () => {
+      const currentUser = getCurrentClinicaUser();
+      if (currentUser.licenca_administrativa === 1 && currentUser.profissional_saude !== 1) {
+        alert('Licença administrativa não pode iniciar atendimento clínico.');
+        return;
+      }
       try {
-        await postIniciarAtendimento(id);
-        modal.remove();
-        window.dispatchEvent(new CustomEvent('open-atendimento', { detail: { consultaId: id, date: ev.data_consulta || undefined } }));
+        openEscolhaAtendimentoModal(ev, async (opcao) => {
+          try {
+            await postIniciarAtendimento(id);
+            modal.remove();
+            if (opcao === 'anamnese-adulto') {
+              window.dispatchEvent(new CustomEvent('open-atendimento', { detail: { consultaId: id, date: ev.data_consulta || undefined, anamneseTipo: 'adulto' } }));
+              return;
+            }
+            if (opcao === 'anamnese-roteiro') {
+              window.dispatchEvent(new CustomEvent('open-atendimento', { detail: { consultaId: id, date: ev.data_consulta || undefined, anamneseTipo: 'roteiro' } }));
+              return;
+            }
+            if (opcao === 'evolucao') {
+              window.dispatchEvent(new CustomEvent('navigate-to', { detail: { page: 'evolucoes', options: { aluno_id: ev.aluno_id, consulta_id: id, nova: true } } }));
+              return;
+            }
+            window.dispatchEvent(new CustomEvent('open-atendimento', { detail: { consultaId: id, date: ev.data_consulta || undefined } }));
+          } catch (err) {
+            alert(err.message || 'Erro ao iniciar atendimento.');
+          }
+        });
       } catch (err) {
         alert(err.message || 'Erro ao iniciar atendimento.');
       }
@@ -1471,6 +1552,12 @@ async function openModalEditarConsulta(id, container, ev) {
           </div>
         </div>
         <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de consulta</label>
+          <select name="tipo_consulta_id" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+            ${tiposConsulta.map((t) => `<option value="${t.id}" ${Number(t.id) === Number(ev.tipo_consulta_id) ? 'selected' : ''}>${escapeHtml(t.nome)}</option>`).join('')}
+          </select>
+        </div>
+        <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Profissional</label>
           <select name="profissional_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
             <option value="" ${!ev.profissional_id ? 'selected' : ''}>Plantonista</option>
@@ -1521,6 +1608,7 @@ async function openModalEditarConsulta(id, container, ev) {
       hora_inicio_prevista: (horaVal.length === 5 ? horaVal + ':00' : horaVal),
       duracao_minutos_prevista: parseInt(fd.get('duracao_minutos_prevista'), 10) || 60,
       especialidade_id: parseInt(fd.get('especialidade_id'), 10),
+      tipo_consulta_id: parseInt(fd.get('tipo_consulta_id'), 10),
       profissional_id: fd.get('profissional_id') || null,
       profissional_nome_livre: fd.get('profissional_id') ? null : 'Plantonista',
     });
@@ -1667,4 +1755,80 @@ function debounce(fn, ms) {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), ms);
   };
+}
+
+async function openSolicitarConfirmacaoModal(consultaId, resumoConsulta) {
+  const [consulta, paciente] = await Promise.all([
+    import('../services/api.js').then((mod) => mod.getConsulta(consultaId)),
+    getPaciente(resumoConsulta.aluno_id),
+  ]);
+
+  const whatsapp = String(paciente?.WhatsApp || '').trim();
+  const telefone = String(paciente?.Telefone || '').trim();
+  const mensagemBase = `Olá, ${consulta.paciente_nome || 'paciente'}! Confirma sua consulta de ${consulta.tipo_nome || 'atendimento'} em ${formatDateBr(consulta.data_consulta)} às ${fmtTime(consulta.hora_inicio_prevista)} com ${consulta.profissional_nome || consulta.profissional_nome_livre || 'a equipe'}?`;
+
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4';
+  modal.innerHTML = `
+    <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+      <h3 class="text-lg font-semibold text-slate-900">Solicitar confirmação</h3>
+      <div class="mt-3 rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+        <p><strong>Paciente:</strong> ${escapeHtml(consulta.paciente_nome || '')}</p>
+        <p><strong>Consulta:</strong> ${escapeHtml(formatDateBr(consulta.data_consulta))} às ${escapeHtml(fmtTime(consulta.hora_inicio_prevista))}</p>
+        <p><strong>Profissional:</strong> ${escapeHtml(consulta.profissional_nome || consulta.profissional_nome_livre || 'Plantonista')}</p>
+        <p><strong>Contato:</strong> ${escapeHtml(whatsapp || telefone || 'Sem contato cadastrado')}</p>
+      </div>
+      <label class="mt-4 block text-sm font-medium text-slate-700">Mensagem sugerida</label>
+      <textarea id="confirmacao-mensagem" class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3" rows="6">${escapeHtml(mensagemBase)}</textarea>
+      <div class="mt-4 flex flex-wrap justify-end gap-2">
+        <button type="button" class="btn-fechar rounded-xl border border-slate-300 px-4 py-2">Fechar</button>
+        ${whatsapp ? '<button type="button" class="btn-envio rounded-xl bg-emerald-600 px-4 py-2 text-white">WhatsApp</button>' : ''}
+        ${telefone ? '<button type="button" class="btn-envio rounded-xl bg-sky-600 px-4 py-2 text-white">SMS</button>' : ''}
+        ${!whatsapp && !telefone ? '<span class="rounded-xl bg-amber-100 px-4 py-2 text-sm text-amber-800">Sem contato cadastrado</span>' : ''}
+      </div>
+    </div>
+  `;
+  modal.querySelector('.btn-fechar')?.addEventListener('click', () => modal.remove());
+  modal.querySelectorAll('.btn-envio').forEach((button) => {
+    button.addEventListener('click', () => {
+      alert('Funcionalidade de envio ainda não disponível. Em fase de produção.');
+    });
+  });
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) modal.remove();
+  });
+  document.body.appendChild(modal);
+}
+
+function openEscolhaAtendimentoModal(ev, onSelect) {
+  const isAnamnese = String(ev.tipo_nome || '').trim().toLowerCase() === 'anamnese';
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4';
+  modal.innerHTML = `
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <h3 class="text-lg font-semibold text-slate-900">Iniciar atendimento</h3>
+      <p class="mt-2 text-sm text-slate-500">${escapeHtml(ev.paciente_nome || '')} • ${escapeHtml(ev.tipo_nome || 'Consulta')}</p>
+      <div class="mt-4 flex flex-col gap-2">
+        ${isAnamnese ? `
+          <button type="button" class="btn-opcao rounded-xl bg-monday-blue px-4 py-3 text-white" data-opcao="anamnese-adulto">Anamnese Adulto</button>
+          <button type="button" class="btn-opcao rounded-xl bg-slate-700 px-4 py-3 text-white" data-opcao="anamnese-roteiro">Anamnese Infantojuvenil</button>
+        ` : `
+          <button type="button" class="btn-opcao rounded-xl bg-monday-blue px-4 py-3 text-white" data-opcao="evolucao">Iniciar evolução clínica</button>
+          <button type="button" class="btn-opcao rounded-xl bg-slate-700 px-4 py-3 text-white" data-opcao="prontuario">Registrar prontuário</button>
+        `}
+      </div>
+      <button type="button" class="btn-fechar mt-4 w-full rounded-xl border border-slate-300 px-4 py-2">Cancelar</button>
+    </div>
+  `;
+  modal.querySelector('.btn-fechar')?.addEventListener('click', () => modal.remove());
+  modal.querySelectorAll('.btn-opcao').forEach((button) => {
+    button.addEventListener('click', () => {
+      modal.remove();
+      onSelect(button.dataset.opcao);
+    });
+  });
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) modal.remove();
+  });
+  document.body.appendChild(modal);
 }

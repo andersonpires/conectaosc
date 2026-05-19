@@ -54,6 +54,37 @@ export async function getTiposConsulta() {
   return j.data.tipos_consulta;
 }
 
+export async function postTipoConsulta(data) {
+  const res = await fetch(`${API_BASE}/tipos-consulta`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  const j = await handleResponse(res);
+  return j.data;
+}
+
+export async function putTipoConsulta(id, data) {
+  const res = await fetch(`${API_BASE}/tipos-consulta/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  const j = await handleResponse(res);
+  return j.data;
+}
+
+export async function postToggleTipoConsulta(id) {
+  const res = await fetch(`${API_BASE}/tipos-consulta/${id}/toggle`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+  const j = await handleResponse(res);
+  return j.data;
+}
+
 export async function getProfissionais() {
   const res = await fetch(`${API_BASE}/profissionais`, { credentials: 'include' });
   const j = await handleResponse(res);
@@ -109,6 +140,16 @@ export async function postIniciarAtendimento(id) {
 
 export async function postReverterAtendimento(id) {
   const res = await fetch(`${API_BASE}/consultas/${id}/reverter-atendimento`, { method: 'POST', credentials: 'include' });
+  await handleResponse(res);
+}
+
+export async function postExcluirAtendimento(id) {
+  const res = await fetch(`${API_BASE}/consultas/${id}/excluir-atendimento`, { method: 'POST', credentials: 'include' });
+  await handleResponse(res);
+}
+
+export async function postReverterAtendimentoCompleto(id) {
+  const res = await fetch(`${API_BASE}/consultas/${id}/reverter-atendimento-completo`, { method: 'POST', credentials: 'include' });
   await handleResponse(res);
 }
 
@@ -407,4 +448,91 @@ export async function putAnamnese(id, data) {
     body: JSON.stringify(data),
   });
   await handleResponse(res);
+}
+
+export async function getAnamneseRoteiroByConsulta(consultaId) {
+  const res = await fetch(`${API_BASE}/anamnese-roteiro?consulta_id=${consultaId}`, { credentials: 'include' });
+  const j = await handleResponse(res);
+  const list = j.data.anamneses || [];
+  return list.length > 0 ? list[0] : null;
+}
+
+export async function getAnamneseRoteiroByAluno(alunoId) {
+  const res = await fetch(`${API_BASE}/anamnese-roteiro?aluno_id=${alunoId}`, { credentials: 'include' });
+  const j = await handleResponse(res);
+  return j.data.anamneses || [];
+}
+
+export async function postAnamneseRoteiro(data) {
+  const res = await fetch(`${API_BASE}/anamnese-roteiro`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  const j = await handleResponse(res);
+  return j.data;
+}
+
+export async function putAnamneseRoteiro(id, data) {
+  const res = await fetch(`${API_BASE}/anamnese-roteiro/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  await handleResponse(res);
+}
+
+export async function getEvolucoes(filters = {}) {
+  const params = new URLSearchParams();
+  if (filters.aluno_id) params.set('aluno_id', String(filters.aluno_id));
+  if (filters.profissional_id) params.set('profissional_id', String(filters.profissional_id));
+  if (filters.especialidade_id) params.set('especialidade_id', String(filters.especialidade_id));
+  if (filters.data) params.set('data', String(filters.data));
+  const query = params.toString();
+  const res = await fetch(`${API_BASE}/evolucoes${query ? `?${query}` : ''}`, { credentials: 'include' });
+  const j = await handleResponse(res);
+  return j.data.evolucoes || [];
+}
+
+export async function getEvolucao(id) {
+  const res = await fetch(`${API_BASE}/evolucoes/${id}`, { credentials: 'include' });
+  const j = await handleResponse(res);
+  return j.data.evolucao;
+}
+
+export async function postEvolucao(data) {
+  const res = await fetch(`${API_BASE}/evolucoes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  const j = await handleResponse(res);
+  return j.data;
+}
+
+export async function putEvolucao(id, data) {
+  const res = await fetch(`${API_BASE}/evolucoes/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data),
+  });
+  const j = await handleResponse(res);
+  return j.data;
+}
+
+export function getCurrentClinicaUser() {
+  const bootstrap = typeof window !== 'undefined' ? window.__CLINICA_BOOTSTRAP__ || {} : {};
+  const usuario = bootstrap.usuario || {};
+  return {
+    id: Number(usuario.id || 0),
+    nome: String(usuario.nome || '').trim(),
+    fotoUrl: String(usuario.fotoUrl || '').trim(),
+    profissional_saude: Number(usuario.profissional_saude || 0),
+    licenca_administrativa: Number(usuario.licenca_administrativa || 0),
+    is_admin: Number(usuario.is_admin || 0),
+  };
 }

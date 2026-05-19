@@ -284,7 +284,7 @@ class AgendaController
 
         if ($view === 'week') {
             return "
-                SELECT c.id, c.aluno_id, c.profissional_id, c.profissional_nome_livre, c.data_consulta, c.hora_inicio_prevista, c.hora_fim_prevista, c.duracao_minutos_prevista, c.status, c.observacao, c.especialidade_id,
+                SELECT c.id, c.aluno_id, c.profissional_id, c.profissional_nome_livre, c.data_consulta, c.hora_inicio_prevista, c.hora_fim_prevista, c.duracao_minutos_prevista, c.status, c.observacao, c.especialidade_id, c.tipo_consulta_id,
                        a.inicio, a.fim_previsto,
                        al.Nome AS paciente_nome, al.WhatsApp AS paciente_telefone, al.Foto AS paciente_foto,
                        e.nome AS especialidade_nome, t.nome AS tipo_nome
@@ -299,7 +299,7 @@ class AgendaController
         }
 
         return "
-            SELECT c.id, c.aluno_id, c.profissional_id, c.profissional_nome_livre, c.data_consulta, c.hora_inicio_prevista, c.hora_fim_prevista, c.duracao_minutos_prevista, c.status, c.observacao, c.especialidade_id,
+            SELECT c.id, c.aluno_id, c.profissional_id, c.profissional_nome_livre, c.data_consulta, c.hora_inicio_prevista, c.hora_fim_prevista, c.duracao_minutos_prevista, c.status, c.observacao, c.especialidade_id, c.tipo_consulta_id,
                    a.inicio, a.fim_previsto,
                    al.Nome AS paciente_nome, al.WhatsApp AS paciente_telefone, al.Foto AS paciente_foto,
                    e.nome AS especialidade_nome, t.nome AS tipo_nome

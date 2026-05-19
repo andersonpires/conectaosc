@@ -67,11 +67,12 @@ class ColaboradorModel
     {
         global $pdo;
         $profissionalSaude = isset($dados['profissional_saude']) ? (int) $dados['profissional_saude'] : 0;
+        $licencaAdministrativa = isset($dados['licenca_administrativa']) ? (int) $dados['licenca_administrativa'] : 0;
         $especialidadeId = isset($dados['especialidade_id']) && $dados['especialidade_id'] ? (int) $dados['especialidade_id'] : null;
         $sql = "INSERT INTO tbUser
-                    (Foto, Nome, Sobrenome, Nascimento, Cargo, CPF, IdPermissao, WhatsApp, Email, profissional_saude, especialidade_id, Senha, Habilitado, Email_confere, Tipo, IdColaboradorAlt, TimeAlterado)
+                    (Foto, Nome, Sobrenome, Nascimento, Cargo, CPF, IdPermissao, WhatsApp, Email, profissional_saude, licenca_administrativa, especialidade_id, Senha, Habilitado, Email_confere, Tipo, IdColaboradorAlt, TimeAlterado)
                 VALUES
-                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $pdo->prepare($sql);
         $ok = $stmt->execute([
             $dados['Foto'],
@@ -84,6 +85,7 @@ class ColaboradorModel
             $dados['WhatsApp'],
             $dados['Email'],
             $profissionalSaude,
+            $licencaAdministrativa,
             $especialidadeId,
             $dados['Senha'],
             $dados['Habilitado'],
@@ -104,6 +106,7 @@ class ColaboradorModel
     {
         global $pdo;
         $profissionalSaude = isset($dados['profissional_saude']) ? (int) $dados['profissional_saude'] : 0;
+        $licencaAdministrativa = isset($dados['licenca_administrativa']) ? (int) $dados['licenca_administrativa'] : 0;
         $especialidadeId = isset($dados['especialidade_id']) && $dados['especialidade_id'] ? (int) $dados['especialidade_id'] : null;
         $sql = "UPDATE tbUser
                    SET Foto = ?,
@@ -115,6 +118,7 @@ class ColaboradorModel
                        WhatsApp = ?,
                        Email = ?,
                        profissional_saude = ?,
+                       licenca_administrativa = ?,
                        especialidade_id = ?,
                        Tipo = ?,
                        IdColaboradorAlt = ?,
@@ -129,16 +133,12 @@ class ColaboradorModel
             $dados['WhatsApp'],
             $dados['Email'],
             $profissionalSaude,
+            $licencaAdministrativa,
             $especialidadeId,
             $dados['Tipo'],
             $dados['IdColaboradorAlt'],
             $dados['TimeAlterado']
         ];
-
-        if (!empty($dados['Senha'])) {
-            $sql .= ", Senha = ?";
-            $params[] = $dados['Senha'];
-        }
 
         $sql .= " WHERE IdColaborador = ?";
         $params[] = $dados['IdColaborador'];

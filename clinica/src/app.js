@@ -2,6 +2,8 @@ import { renderPacientes } from './pages/pacientes.js?v=20260302a';
 import { renderAgenda } from './pages/agenda.js?v=20260311a';
 import { renderProntuarios } from './pages/prontuarios.js?v=20260502a';
 import { renderAtendimento } from './pages/atendimento.js?v=20260311a';
+import { renderEvolucoes } from './pages/evolucoes.js?v=20260517b';
+import { renderConfiguracoes } from './pages/configuracoes.js?v=20260516a';
 import { getSpinnerHtml } from './utils/loading.js?v=20260302a';
 
 const main = document.getElementById('main-content');
@@ -9,7 +11,9 @@ const ROUTE_BY_PAGE = {
   pacientes: 'paciente',
   agenda: 'agenda',
   prontuarios: 'prontuario',
-  atendimento: 'atendimento'
+  evolucoes: 'evolucoes',
+  atendimento: 'atendimento',
+  configuracoes: 'configuracoes'
 };
 const PAGE_BY_ROUTE = Object.entries(ROUTE_BY_PAGE).reduce((acc, [page, route]) => {
   acc[route] = page;
@@ -59,6 +63,14 @@ function buildQueryParams(page, options = {}) {
     if (options?.date) {
       params.set('date', String(options.date));
     }
+    if (options?.anamneseTipo) {
+      params.set('anamneseTipo', String(options.anamneseTipo));
+    }
+  }
+  if (page === 'evolucoes') {
+    if (options?.aluno_id) params.set('aluno_id', String(options.aluno_id));
+    if (options?.consulta_id) params.set('consulta_id', String(options.consulta_id));
+    if (options?.nova) params.set('nova', '1');
   }
   return params;
 }
@@ -78,12 +90,25 @@ function getOptionsFromLocation(page) {
     const options = {};
     const consultaId = parseInt(params.get('consultaId') || '', 10);
     const date = (params.get('date') || '').trim();
+    const anamneseTipo = (params.get('anamneseTipo') || '').trim();
     if (Number.isFinite(consultaId) && consultaId > 0) {
       options.consultaId = consultaId;
     }
     if (date !== '') {
       options.date = date;
     }
+    if (anamneseTipo !== '') {
+      options.anamneseTipo = anamneseTipo;
+    }
+    return options;
+  }
+  if (page === 'evolucoes') {
+    const options = {};
+    const alunoId = parseInt(params.get('aluno_id') || '', 10);
+    const consultaId = parseInt(params.get('consulta_id') || '', 10);
+    if (Number.isFinite(alunoId) && alunoId > 0) options.aluno_id = alunoId;
+    if (Number.isFinite(consultaId) && consultaId > 0) options.consulta_id = consultaId;
+    if (params.get('nova') === '1') options.nova = true;
     return options;
   }
   return {};
@@ -133,8 +158,14 @@ async function navigate(page, options = {}, navigation = {}) {
       case 'prontuarios':
         await renderProntuarios(main, options);
         break;
+      case 'evolucoes':
+        await renderEvolucoes(main, options);
+        break;
       case 'atendimento':
         await renderAtendimento(main, options);
+        break;
+      case 'configuracoes':
+        await renderConfiguracoes(main);
         break;
       default:
         main.innerHTML = '<p>Pagina nao encontrada</p>';
@@ -177,10 +208,17 @@ document.querySelectorAll('.nav-btn').forEach((btn) => {
   btn.addEventListener('click', () => navigate(btn.dataset.page));
 });
 
+const bootstrapUser = (window.__CLINICA_BOOTSTRAP__ || {}).usuario || {};
+const isAdmin = Number(bootstrapUser.is_admin || 0) === 1;
+const isProfissional = Number(bootstrapUser.profissional_saude || 0) === 1;
+document.querySelector('[data-page="configuracoes"]')?.classList.toggle('hidden', !isAdmin);
+document.querySelector('[data-page="evolucoes"]')?.classList.toggle('hidden', !isProfissional);
+
 window.addEventListener('open-atendimento', (e) => {
   const consultaId = e.detail?.consultaId;
   const date = e.detail?.date;
-  navigate('atendimento', consultaId || date ? { consultaId, date } : {});
+  const anamneseTipo = e.detail?.anamneseTipo;
+  navigate('atendimento', consultaId || date || anamneseTipo ? { consultaId, date, anamneseTipo } : {});
 });
 
 window.addEventListener('navigate-to', (e) => {

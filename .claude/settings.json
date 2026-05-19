@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(Get-ChildItem -Path \"d:\\\\OneDrive\\\\OneDrive - INSTITUTO TECNOLOGICO E VOCACIONAL AVANÇADO\\\\htdocs\\\\conectaosc\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Read(//d/OneDrive/OneDrive - INSTITUTO TECNOLOGICO E VOCACIONAL AVAN�ADO/htdocs/**)",
+      "PowerShell(Get-ChildItem -Path \"d:\\\\OneDrive\\\\OneDrive - INSTITUTO TECNOLOGICO E VOCACIONAL AVANÇADO\\\\htdocs\\\\conectaosc\\\\clinica\" -Depth 2 | ForEach-Object { $_.FullName } | Select-Object -First 50)"
     ]
   }
 }

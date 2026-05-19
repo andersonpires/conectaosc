@@ -22,6 +22,7 @@ final class AuthController
                     'perfil' => $_SESSION['Perfil'] ?? null,
                     'nome_completo' => $profile['nome_completo'] ?? trim((string)(($_SESSION['Nome'] ?? '') . ' ' . ($_SESSION['Sobrenome'] ?? ''))),
                     'profissional_saude' => $profile['profissional_saude'] ?? null,
+                    'licenca_administrativa' => $profile['licenca_administrativa'] ?? null,
                     'especialidade_id' => $profile['especialidade_id'] ?? null,
                 ],
                 'errors' => [],
@@ -44,7 +45,9 @@ final class AuthController
             }
 
             $stmt = $pdo->prepare(
-                'SELECT Nome, Sobrenome, COALESCE(profissional_saude, 0) AS profissional_saude, especialidade_id
+                'SELECT Nome, Sobrenome, COALESCE(profissional_saude, 0) AS profissional_saude,
+                        COALESCE(licenca_administrativa, 0) AS licenca_administrativa,
+                        especialidade_id
                    FROM tbUser
                   WHERE IdColaborador = ?'
             );
@@ -57,6 +60,7 @@ final class AuthController
             return [
                 'nome_completo' => trim((string)($row['Nome'] ?? '') . ' ' . (string)($row['Sobrenome'] ?? '')),
                 'profissional_saude' => (int)($row['profissional_saude'] ?? 0),
+                'licenca_administrativa' => (int)($row['licenca_administrativa'] ?? 0),
                 'especialidade_id' => isset($row['especialidade_id']) && $row['especialidade_id'] !== null ? (int)$row['especialidade_id'] : null,
             ];
         } catch (\Throwable) {

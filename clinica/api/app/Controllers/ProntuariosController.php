@@ -300,7 +300,79 @@ Exemplo de estrutura:
 - Desenvolva cada seção com 2 a 5 frases quando houver dados. Seja completo, não superficial.
 - Objetividade não significa brevidade excessiva: cubra todos os aspectos relevantes de cada tópico.
 - Hipóteses entre parênteses (ex.: negação? crise focal?).
-- NUNCA incluir renda do paciente. ";
+- NUNCA incluir renda do paciente.
+- Quando houver ANAMNESE INFANTOJUVENIL / ROTEIRO FAMILIAR, use os dados de desenvolvimento, familia, escola, rotina, comportamento, saude, gestacao e observacoes do responsavel para adaptar o prontuario a faixa etaria; nao force esses dados em categorias adultas quando nao couber.
+- Quando houver mais de um modelo de anamnese no contexto, integre as informacoes sem duplicar e preserve divergencias relevantes. ";
+    }
+
+    private function buildAnamneseContext(\PDO $pdo, int $consultaId, int $alunoId): string
+    {
+        $sections = [];
+        $ignored = ['id', 'consulta_id', 'aluno_id', 'profissional_id', 'created_at', 'updated_at'];
+
+        $models = [
+            [
+                'table' => 'tb_anamnese_psi',
+                'title' => 'ANAMNESE ADULTO / AVALIACAO PSICOLOGICA (tb_anamnese_psi)',
+            ],
+            [
+                'table' => 'tb_anamnese_infantojuvenil',
+                'title' => 'ANAMNESE INFANTOJUVENIL / ROTEIRO FAMILIAR (tb_anamnese_infantojuvenil)',
+            ],
+        ];
+
+        foreach ($models as $model) {
+            $row = $this->fetchAnamneseForContext($pdo, $model['table'], $consultaId, $alunoId);
+            if (!$row) {
+                continue;
+            }
+
+            $parts = [];
+            foreach ($row as $field => $value) {
+                if (in_array($field, $ignored, true)) {
+                    continue;
+                }
+                if ($value === null || $value === '') {
+                    continue;
+                }
+
+                $label = strtoupper(str_replace('_', ' ', (string) $field));
+                $parts[] = $label . ': ' . trim((string) $value);
+            }
+
+            if (!empty($parts)) {
+                $sections[] = $model['title'] . ":\n\n" . implode("\n", $parts);
+            }
+        }
+
+        return !empty($sections) ? "\n\n" . implode("\n\n", $sections) : '';
+    }
+
+    private function fetchAnamneseForContext(\PDO $pdo, string $table, int $consultaId, int $alunoId): ?array
+    {
+        try {
+            if ($consultaId > 0) {
+                $stmt = $pdo->prepare("SELECT * FROM {$table} WHERE consulta_id = ? LIMIT 1");
+                $stmt->execute([$consultaId]);
+                $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+                if ($row) {
+                    return $row;
+                }
+            }
+
+            if ($alunoId > 0) {
+                $stmt = $pdo->prepare("SELECT * FROM {$table} WHERE aluno_id = ? ORDER BY created_at DESC, id DESC LIMIT 1");
+                $stmt->execute([$alunoId]);
+                $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+                if ($row) {
+                    return $row;
+                }
+            }
+        } catch (\PDOException $e) {
+            return null;
+        }
+
+        return null;
     }
 
     private function sanitizeConteudoIa(string $html): string
@@ -445,6 +517,7 @@ Exemplo de estrutura:
                 $anamneseTexto = !empty($partes) ? "\n\nANAMNESE PSICOLÓGICA (tb_anamnese_psi):\n\n" . implode("\n", $partes) : '';
             }
         }
+        $anamneseTexto = $this->buildAnamneseContext($pdo, $consultaId, $alunoId);
 
         $basePath = $_SESSION['BASE_para_PATH'] ?? dirname(dirname(dirname(dirname(__DIR__))));
         $apiKey = function_exists('bootstrap_openai_api_key') ? bootstrap_openai_api_key($basePath) : '';
@@ -668,6 +741,7 @@ Exemplo de estrutura:
                 $anamneseTexto = !empty($partes) ? "\n\nANAMNESE PSICOLÓGICA (tb_anamnese_psi):\n\n" . implode("\n", $partes) : '';
             }
         }
+        $anamneseTexto = $this->buildAnamneseContext($pdo, $consultaId, $alunoId);
 
         $basePath = $_SESSION['BASE_para_PATH'] ?? dirname(dirname(dirname(dirname(__DIR__))));
         $apiKey = function_exists('bootstrap_openai_api_key') ? bootstrap_openai_api_key($basePath) : '';

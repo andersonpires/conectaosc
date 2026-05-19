@@ -204,6 +204,37 @@ class ConsultasController
     public function iniciarAtendimento(string $id): void
     {
         AuthMiddleware::requireProfissionalSaude();
+        $id = (int) $id;
+        if ($id <= 0) JsonResponse::error('ID invÃ¡lido', [], 400);
+
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("SELECT id, aluno_id FROM tb_consulta WHERE id = ? LIMIT 1");
+        $stmt->execute([$id]);
+        $consulta = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$consulta) {
+            JsonResponse::error('Consulta nÃ£o encontrada', [], 404);
+        }
+
+        $stmtAberta = $pdo->prepare("
+            SELECT c.id, c.data_consulta, c.hora_inicio_prevista
+              FROM tb_consulta c
+             WHERE c.aluno_id = ?
+               AND c.id <> ?
+               AND c.status = 'em_atendimento'
+               AND NOT EXISTS (SELECT 1 FROM tb_prontuario p WHERE p.consulta_id = c.id)
+             ORDER BY c.data_consulta DESC, c.hora_inicio_prevista DESC
+             LIMIT 1
+        ");
+        $stmtAberta->execute([(int)$consulta['aluno_id'], $id]);
+        $consultaAberta = $stmtAberta->fetch(\PDO::FETCH_ASSOC);
+        if ($consultaAberta) {
+            JsonResponse::error(
+                'Este paciente ja possui uma consulta em atendimento sem prontuario. Finalize ou reverta a consulta #' . (int)$consultaAberta['id'] . ' antes de iniciar outra.',
+                ['consulta_aberta_id' => (int)$consultaAberta['id']],
+                422
+            );
+        }
+
         $this->updateStatus($id, 'em_atendimento');
     }
 
@@ -211,6 +242,78 @@ class ConsultasController
     {
         AuthMiddleware::requireAuth();
         $this->updateStatus($id, 'agendada');
+    }
+
+    public function excluirAtendimento(string $id): void
+    {
+        AuthMiddleware::requireProfissionalSaude();
+        $consultaId = (int) $id;
+        if ($consultaId <= 0) JsonResponse::error('ID invÃ¡lido', [], 400);
+
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("SELECT id FROM tb_consulta WHERE id = ? LIMIT 1");
+        $stmt->execute([$consultaId]);
+        if (!$stmt->fetch(\PDO::FETCH_ASSOC)) {
+            JsonResponse::error('Consulta nÃ£o encontrada', [], 404);
+        }
+
+        $pdo->beginTransaction();
+        try {
+            $this->deleteDadosAtendimento($pdo, $consultaId);
+            $pdo->prepare("DELETE FROM tb_agenda_clinica WHERE consulta_id = ?")->execute([$consultaId]);
+            $pdo->prepare("DELETE FROM tb_consulta WHERE id = ?")->execute([$consultaId]);
+            $pdo->commit();
+            JsonResponse::success(['id' => $consultaId], 'Atendimento excluido');
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            error_log('Erro ao excluir atendimento: ' . $e->getMessage());
+            JsonResponse::error('Erro ao excluir atendimento', [], 500);
+        }
+    }
+
+    public function reverterAtendimentoCompleto(string $id): void
+    {
+        AuthMiddleware::requireProfissionalSaude();
+        $consultaId = (int) $id;
+        if ($consultaId <= 0) JsonResponse::error('ID invÃ¡lido', [], 400);
+
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("SELECT id FROM tb_consulta WHERE id = ? LIMIT 1");
+        $stmt->execute([$consultaId]);
+        if (!$stmt->fetch(\PDO::FETCH_ASSOC)) {
+            JsonResponse::error('Consulta nÃ£o encontrada', [], 404);
+        }
+
+        $pdo->beginTransaction();
+        try {
+            $this->deleteDadosAtendimento($pdo, $consultaId);
+            $pdo->prepare("UPDATE tb_consulta SET status = 'agendada' WHERE id = ?")->execute([$consultaId]);
+            $pdo->prepare("UPDATE tb_agenda_clinica SET status = 'agendada' WHERE consulta_id = ?")->execute([$consultaId]);
+            $pdo->commit();
+            JsonResponse::success(['id' => $consultaId], 'Atendimento revertido para agendado');
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            error_log('Erro ao reverter atendimento completo: ' . $e->getMessage());
+            JsonResponse::error('Erro ao reverter atendimento', [], 500);
+        }
+    }
+
+    private function deleteDadosAtendimento(\PDO $pdo, int $consultaId): void
+    {
+        $tables = [
+            'tb_prontuario',
+            'tb_anamnese_psi',
+            'tb_anamnese_infantojuvenil',
+            'tb_evolucao_clinica',
+        ];
+
+        foreach ($tables as $table) {
+            try {
+                $pdo->prepare("DELETE FROM {$table} WHERE consulta_id = ?")->execute([$consultaId]);
+            } catch (\PDOException $e) {
+                // Tabelas opcionais em bases antigas nao devem bloquear a acao principal.
+            }
+        }
     }
 
     private function updateStatus(int $id, string $status): void

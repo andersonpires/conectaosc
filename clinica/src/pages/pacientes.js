@@ -1,4 +1,4 @@
-import { getAnamnesesByAluno, getPacientes } from '../services/api.js';
+import { getAnamnesesByAluno, getPacientes, getCurrentClinicaUser } from '../services/api.js';
 import { openModalAgendar } from './agenda.js';
 import { getSpinnerHtml } from '../utils/loading.js';
 
@@ -236,10 +236,15 @@ async function openModalPaciente(alunoId, nomePaciente) {
         <button type="button" class="modal-agendar min-h-touch px-4 py-3 bg-monday-blue text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-monday-blue">Agendar consulta</button>
         <button type="button" class="modal-prontuarios min-h-touch px-4 py-3 bg-slate-600 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500">Ver prontuários</button>
         <button type="button" class="modal-anamneses min-h-touch px-4 py-3 bg-slate-600 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500">Ver anamneses</button>
+        <button type="button" class="modal-evolucoes min-h-touch px-4 py-3 bg-slate-600 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500">Ver evoluções</button>
       </div>
       <button type="button" class="modal-close mt-4 w-full min-h-touch py-2 border border-gray-300 rounded-xl focus-visible:ring-2 focus-visible:ring-offset-2">Fechar</button>
     </div>
   `;
+  const currentUser = getCurrentClinicaUser();
+  if (currentUser.licenca_administrativa === 1 && currentUser.profissional_saude !== 1) {
+    modal.querySelector('.modal-evolucoes')?.classList.add('hidden');
+  }
 
   modal.querySelector('.modal-close').onclick = () => modal.remove();
   modal.querySelector('.modal-agendar').onclick = () => {
@@ -249,6 +254,10 @@ async function openModalPaciente(alunoId, nomePaciente) {
   modal.querySelector('.modal-prontuarios').onclick = () => {
     modal.remove();
     window.dispatchEvent(new CustomEvent('navigate-to', { detail: { page: 'prontuarios', options: { aluno_id: alunoId } } }));
+  };
+  modal.querySelector('.modal-evolucoes').onclick = () => {
+    modal.remove();
+    window.dispatchEvent(new CustomEvent('navigate-to', { detail: { page: 'evolucoes', options: { aluno_id: alunoId } } }));
   };
   modal.querySelector('.modal-anamneses').onclick = async () => {
     try {
@@ -282,8 +291,7 @@ async function openModalPaciente(alunoId, nomePaciente) {
 }
 
 function getCurrentUser() {
-  const bootstrap = typeof window !== 'undefined' ? window.__CLINICA_BOOTSTRAP__ || {} : {};
-  const usuario = bootstrap.usuario || {};
+  const usuario = getCurrentClinicaUser();
   return {
     nome: String(usuario.nome || '').trim(),
     fotoUrl: String(usuario.fotoUrl || '').trim(),

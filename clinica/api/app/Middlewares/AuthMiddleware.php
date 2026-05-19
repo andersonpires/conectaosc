@@ -27,6 +27,16 @@ class AuthMiddleware
         }
     }
 
+    public static function requireAcessoClinica(): void
+    {
+        self::requireAuth();
+        $profissional = (int)($_SESSION['profissional_saude'] ?? 0);
+        $licencaAdministrativa = (int)($_SESSION['licenca_administrativa'] ?? 0);
+        if ($profissional !== 1 && $licencaAdministrativa !== 1) {
+            JsonResponse::error('Acesso restrito ao App Clinica', [], 403);
+        }
+    }
+
     public static function getUserId(): int
     {
         return (int)($_SESSION['Cod'] ?? 0);
@@ -37,5 +47,11 @@ class AuthMiddleware
         $permissao = $_SESSION['IdPermissao'] ?? 0;
         $nome = $_SESSION['Tipo'] ?? '';
         return ($permissao === 4 || $nome === 'Administrador' || $nome === 'Superadministrador');
+    }
+
+    public static function isLicencaAdministrativa(): bool
+    {
+        return (int)($_SESSION['licenca_administrativa'] ?? 0) === 1
+            && (int)($_SESSION['profissional_saude'] ?? 0) !== 1;
     }
 }

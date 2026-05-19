@@ -30,17 +30,21 @@ $tipoSessao = (string)($_SESSION['Tipo'] ?? '');
 				</a>
 			</li>
 			<?php
-			if (!isset($_SESSION['profissional_saude']) && isset($_SESSION['Cod'])) {
+			if ((!isset($_SESSION['profissional_saude']) || !isset($_SESSION['licenca_administrativa'])) && isset($_SESSION['Cod'])) {
 				try {
 					if (!isset($pdo)) require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
-					$stmt = $pdo->prepare("SELECT COALESCE(profissional_saude, 0) FROM tbUser WHERE IdColaborador = ?");
+					$stmt = $pdo->prepare("SELECT COALESCE(profissional_saude, 0), COALESCE(licenca_administrativa, 0) FROM tbUser WHERE IdColaborador = ?");
 					$stmt->execute([$_SESSION['Cod']]);
-					$_SESSION['profissional_saude'] = (int)($stmt->fetchColumn() ?: 0);
+					$rowMenuClinica = $stmt->fetch(PDO::FETCH_NUM);
+					$_SESSION['profissional_saude'] = (int)($rowMenuClinica[0] ?? 0);
+					$_SESSION['licenca_administrativa'] = (int)($rowMenuClinica[1] ?? 0);
 				} catch (Throwable $e) {
 					$_SESSION['profissional_saude'] = 0;
+					$_SESSION['licenca_administrativa'] = 0;
 				}
 			}
-			$mostrarAppClinica = (int)($_SESSION['profissional_saude'] ?? 0) === 1;
+			$mostrarAppClinica = (int)($_SESSION['profissional_saude'] ?? 0) === 1
+				|| (int)($_SESSION['licenca_administrativa'] ?? 0) === 1;
 			if ($mostrarAppClinica):
 			?>
 			<li class="sidebar-item">

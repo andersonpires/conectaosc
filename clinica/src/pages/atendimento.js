@@ -7,7 +7,10 @@ import {
   postIniciarAtendimento,
   getAnamneseByConsulta,
   postAnamnese,
-  putAnamnese
+  putAnamnese,
+  getAnamneseRoteiroByConsulta,
+  postAnamneseRoteiro,
+  putAnamneseRoteiro
 } from '../services/api.js';
 import { getSpinnerHtml, getButtonSpinnerHtml } from '../utils/loading.js';
 import { markdownToHtml } from '../utils/markdownToHtml.js';
@@ -40,7 +43,7 @@ function normalizarTexto(valor) {
   return String(valor || '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
+    .replace(/[̀-ͯ]/g, '');
 }
 
 function filtrarConsultasParaAtendimento(consultas, filtros) {
@@ -95,6 +98,10 @@ function selectDificuldadesMemoria(value = '') {
   ];
   return `<select name="dificuldades_memoria" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">${ops.map((o) => `<option value="${o.v}" ${value === o.v ? 'selected' : ''}>${o.t}</option>`).join('')}</select>`;
 }
+
+/* =========================================================
+   FORMULÁRIO ANAMNESE ADULTO (Avaliação Psicológica)
+   ========================================================= */
 
 function buildAnamneseFormHtml(anamnese = {}) {
   const data = anamnese ?? {};
@@ -243,6 +250,353 @@ function collectAnamneseFormData(formEl) {
   return data;
 }
 
+/* =========================================================
+   FORMULÁRIO ANAMNESE ROTEIRO PEDIÁTRICO/FAMILIAR
+   ========================================================= */
+
+function buildAnamneseRoteiroFormHtml(anamnese = {}) {
+  const data = anamnese ?? {};
+  const v = (k) => data[k] ?? '';
+  const ck = (k) => (data[k] == 1 || data[k] === true) ? 'checked' : '';
+  const rb = (k, val) => String(v(k)) === String(val) ? 'checked' : '';
+
+  const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm';
+  const inputSmCls = 'w-full px-2 py-1.5 border border-gray-300 rounded text-sm';
+  const labelCls = 'block text-sm text-gray-600 mb-1';
+  const labelSmCls = 'text-xs text-gray-500 block mb-0.5';
+  const taCls = `${inputCls} resize-y`;
+  const summCls = 'px-4 py-3 bg-gray-50 cursor-pointer font-medium text-gray-800 flex items-center justify-between';
+  const bodyPad = 'p-4 space-y-3 border-t border-gray-200';
+  const chevron = '<i data-lucide="chevron-down" class="w-5 h-5 group-open:rotate-180 transition"></i>';
+
+  function acomp(label, cbName, ondeName, quandoName) {
+    return `
+    <div class="rounded-lg border border-gray-200 p-3">
+      <label class="flex items-center gap-2 text-sm font-medium text-gray-800 mb-2 cursor-pointer">
+        <input type="checkbox" name="${cbName}" value="1" class="rounded w-4 h-4 accent-monday-blue" ${ck(cbName)}>
+        ${label}
+      </label>
+      <div class="pl-6 grid grid-cols-2 gap-2">
+        <div><label class="${labelSmCls}">Onde:</label><input type="text" name="${ondeName}" value="${escapeHtml(v(ondeName))}" class="${inputSmCls}"></div>
+        <div><label class="${labelSmCls}">Quando:</label><input type="text" name="${quandoName}" value="${escapeHtml(v(quandoName))}" class="${inputSmCls}"></div>
+      </div>
+    </div>`;
+  }
+
+  return `
+  <div class="space-y-4">
+
+    <!-- Queixa principal -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden">
+      <details class="group" open>
+        <summary class="${summCls}">${escapeHtml('Por que procurou o atendimento?')} ${chevron}</summary>
+        <div class="${bodyPad}">
+          <div><label class="${labelCls}">Descreva o motivo do atendimento:</label>
+          <textarea name="motivo_atendimento" rows="3" class="${taCls}">${escapeHtml(v('motivo_atendimento'))}</textarea></div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Acompanhamentos anteriores -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden">
+      <details class="group">
+        <summary class="${summCls}">Acompanhamentos anteriores e atuais ${chevron}</summary>
+        <div class="${bodyPad} space-y-3">
+          ${acomp('Psicológico', 'acomp_psicologico', 'acomp_psi_onde', 'acomp_psi_quando')}
+          ${acomp('Psicopedagógico', 'acomp_psicopedagogico', 'acomp_psicoped_onde', 'acomp_psicoped_quando')}
+          ${acomp('Fonoaudiológico', 'acomp_fonoaudiologico', 'acomp_fono_onde', 'acomp_fono_quando')}
+          ${acomp('Neurológico', 'acomp_neurologico', 'acomp_neuro_onde', 'acomp_neuro_quando')}
+          ${acomp('Terapia Ocupacional', 'acomp_terapia_ocupacional', 'acomp_to_onde', 'acomp_to_quando')}
+          ${acomp('Fisioterapia', 'acomp_fisioterapia', 'acomp_fisio_onde', 'acomp_fisio_quando')}
+          <div><label class="${labelCls}">Outros:</label>
+          <textarea name="acomp_outros" rows="2" class="${taCls}">${escapeHtml(v('acomp_outros'))}</textarea></div>
+        </div>
+      </details>
+    </div>
+
+    <!-- 01 a 06 - História e desenvolvimento -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden">
+      <details class="group">
+        <summary class="${summCls}">01 a 06 — História e Desenvolvimento ${chevron}</summary>
+        <div class="${bodyPad} space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">01 — História Gestacional</label>
+            <p class="text-xs text-gray-500 mb-1">Pré-natal, gestações prévias, abortamentos, planejamento/aceitação, intercorrências, parto/tipo, a termo/prematuro.</p>
+            <textarea name="historia_gestacional" rows="3" class="${taCls}">${escapeHtml(v('historia_gestacional'))}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">02 — Antecedentes Mórbidos</label>
+            <p class="text-xs text-gray-500 mb-1">Infecções de repetição, doenças prévias, alergias, hospitalizações, cirurgias, traumas, uso de medicações.</p>
+            <textarea name="antecedentes_morbidos" rows="3" class="${taCls}">${escapeHtml(v('antecedentes_morbidos'))}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">03 — Psicomotor</label>
+            <p class="text-xs text-gray-500 mb-1">Motor, senso perceptivo, postura, coordenação, controle de esfíncteres etc.</p>
+            <textarea name="psicomotor" rows="3" class="${taCls}">${escapeHtml(v('psicomotor'))}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">04 — Linguagem</label>
+            <p class="text-xs text-gray-500 mb-1">Aquisição, atrasos, dificuldades passadas e atuais.</p>
+            <textarea name="linguagem" rows="3" class="${taCls}">${escapeHtml(v('linguagem'))}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">05 — Alimentação</label>
+            <p class="text-xs text-gray-500 mb-1">Amamentação/tempo, desmame, dificuldades, introdução dos alimentos, hábitos atuais, seletividade, intolerâncias, alergias.</p>
+            <textarea name="alimentacao" rows="3" class="${taCls}">${escapeHtml(v('alimentacao'))}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">06 — Sono</label>
+            <p class="text-xs text-gray-500 mb-1">Insônia, hipersonia, pesadelos, sonambulismo, terror noturno, enurese noturna.</p>
+            <textarea name="sono" rows="3" class="${taCls}">${escapeHtml(v('sono'))}</textarea>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- 07 - Escolaridade -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden">
+      <details class="group">
+        <summary class="${summCls}">07 — Escolaridade ${chevron}</summary>
+        <div class="${bodyPad} space-y-3">
+          <div>
+            <label class="${labelCls}">Relato:</label>
+            <p class="text-xs text-gray-500 mb-1">Entrada na escola, adaptação, desempenho, desenvolvimento intelectual, dificuldades, repetência.</p>
+            <textarea name="escolaridade" rows="3" class="${taCls}">${escapeHtml(v('escolaridade'))}</textarea>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="${labelCls}">Escola:</label><input type="text" name="escola_nome" value="${escapeHtml(v('escola_nome'))}" class="${inputCls}"></div>
+            <div><label class="${labelCls}">Telefone:</label><input type="text" name="escola_telefone" value="${escapeHtml(v('escola_telefone'))}" class="${inputCls}"></div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- 08-10 Social -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden">
+      <details class="group">
+        <summary class="${summCls}">08 a 10 — Social, Sexualidade e Situação Socioeconômica ${chevron}</summary>
+        <div class="${bodyPad} space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">08 — Sociabilidade</label>
+            <p class="text-xs text-gray-500 mb-1">Afetuosidade, agressividade, introversão, extroversão.</p>
+            <textarea name="sociabilidade" rows="2" class="${taCls}">${escapeHtml(v('sociabilidade'))}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">09 — Sexualidade</label>
+            <p class="text-xs text-gray-500 mb-1">Interesse pelo tema, curiosidade, questionamentos, reações dos adultos.</p>
+            <textarea name="sexualidade" rows="2" class="${taCls}">${escapeHtml(v('sexualidade'))}</textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">10 — Situação Socioeconômica</label>
+            <p class="text-xs text-gray-500 mb-1">Provedores, carga-horária.</p>
+            <textarea name="situacao_socioeconomica" rows="2" class="${taCls}">${escapeHtml(v('situacao_socioeconomica'))}</textarea>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- 11 - Aspectos sensoriais -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden">
+      <details class="group">
+        <summary class="${summCls}">11 — Aspectos Sensoriais ${chevron}</summary>
+        <div class="${bodyPad} space-y-4">
+          <div>
+            <p class="text-sm text-gray-700 mb-1">Apresenta alguma dificuldade para enxergar? (aproxima objeto dos olhos, franze a testa)</p>
+            <div class="flex gap-6 mt-1 text-sm">
+              <label class="flex items-center gap-2"><input type="radio" name="dificuldade_visao" value="1" ${rb('dificuldade_visao', 1)}> Sim</label>
+              <label class="flex items-center gap-2"><input type="radio" name="dificuldade_visao" value="0" ${rb('dificuldade_visao', 0)}> Não</label>
+            </div>
+            <div class="mt-2"><label class="${labelSmCls}">Se sim, especificar:</label>
+            <input type="text" name="dificuldade_visao_desc" value="${escapeHtml(v('dificuldade_visao_desc'))}" class="${inputCls}"></div>
+          </div>
+          <div>
+            <p class="text-sm text-gray-700 mb-1">Aparenta ter dificuldade para ouvir? (necessita de repetir uma explicação dada anteriormente)</p>
+            <div class="flex gap-6 mt-1 text-sm">
+              <label class="flex items-center gap-2"><input type="radio" name="dificuldade_audicao" value="1" ${rb('dificuldade_audicao', 1)}> Sim</label>
+              <label class="flex items-center gap-2"><input type="radio" name="dificuldade_audicao" value="0" ${rb('dificuldade_audicao', 0)}> Não</label>
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- 12 - Antecedentes familiares + Constelação -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden">
+      <details class="group">
+        <summary class="${summCls}">12 — Antecedentes Familiares e Constelação ${chevron}</summary>
+        <div class="${bodyPad} space-y-4">
+          <div>
+            <p class="text-sm font-medium text-gray-700 mb-2">Antecedentes familiares:</p>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <label class="flex items-center gap-2"><input type="checkbox" name="antec_fam_doencas" value="1" class="rounded accent-monday-blue" ${ck('antec_fam_doencas')}> Doenças</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="antec_fam_alcoolismo" value="1" class="rounded accent-monday-blue" ${ck('antec_fam_alcoolismo')}> Alcoolismo</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="antec_fam_homicidio" value="1" class="rounded accent-monday-blue" ${ck('antec_fam_homicidio')}> Homicídio</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="antec_fam_def_mental" value="1" class="rounded accent-monday-blue" ${ck('antec_fam_def_mental')}> Deficiências mentais</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="antec_fam_suicidio" value="1" class="rounded accent-monday-blue" ${ck('antec_fam_suicidio')}> Suicídio</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="antec_fam_drogadicao" value="1" class="rounded accent-monday-blue" ${ck('antec_fam_drogadicao')}> Drogadição</label>
+            </div>
+            <div class="mt-3 grid grid-cols-2 gap-2">
+              <div><label class="${labelSmCls}">Quais doenças:</label><input type="text" name="antec_fam_doencas_quais" value="${escapeHtml(v('antec_fam_doencas_quais'))}" class="${inputSmCls}"></div>
+              <div><label class="${labelSmCls}">Grau de parentesco:</label><input type="text" name="antec_fam_grau_parentesco" value="${escapeHtml(v('antec_fam_grau_parentesco'))}" class="${inputSmCls}"></div>
+            </div>
+            <div class="mt-2"><label class="${labelSmCls}">Outros:</label>
+            <textarea name="antec_fam_outros" rows="2" class="${taCls}">${escapeHtml(v('antec_fam_outros'))}</textarea></div>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-700 mb-2">Constelação familiar:</p>
+            <div class="grid grid-cols-2 gap-3">
+              <div><label class="${labelCls}">Nº de irmãos/sexo/idades:</label><input type="text" name="num_irmaos" value="${escapeHtml(v('num_irmaos'))}" class="${inputCls}"></div>
+              <div><label class="${labelCls}">Posição no bloco familiar:</label><input type="text" name="posicao_familiar" value="${escapeHtml(v('posicao_familiar'))}" class="${inputCls}"></div>
+            </div>
+            <div class="mt-2">
+              <p class="text-sm text-gray-600 mb-1">Situação dos pais:</p>
+              <div class="flex flex-wrap gap-4 text-sm">
+                <label class="flex items-center gap-2"><input type="radio" name="situacao_pais" value="casados" ${rb('situacao_pais', 'casados')}> Casados</label>
+                <label class="flex items-center gap-2"><input type="radio" name="situacao_pais" value="separados" ${rb('situacao_pais', 'separados')}> Separados</label>
+                <label class="flex items-center gap-2"><input type="radio" name="situacao_pais" value="separados_nova_estrutura" ${rb('situacao_pais', 'separados_nova_estrutura')}> Separados com nova estrutura familiar</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Dados de triagem -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden">
+      <details class="group">
+        <summary class="${summCls}">Dados de Triagem ${chevron}</summary>
+        <div class="${bodyPad} space-y-3">
+          <div class="grid grid-cols-3 gap-3">
+            <div><label class="${labelCls}">Triado por:</label><input type="text" name="triagem_por" value="${escapeHtml(v('triagem_por'))}" class="${inputCls}"></div>
+            <div><label class="${labelCls}">Início:</label><input type="text" name="triagem_inicio" value="${escapeHtml(v('triagem_inicio'))}" class="${inputCls}" placeholder="HH:MM" inputmode="numeric" maxlength="5" autocomplete="off"></div>
+            <div><label class="${labelCls}">Término:</label><input type="text" name="triagem_termino" value="${escapeHtml(v('triagem_termino'))}" class="${inputCls}" placeholder="HH:MM" inputmode="numeric" maxlength="5" autocomplete="off"></div>
+          </div>
+          <div><label class="${labelCls}">Hipótese diagnóstica:</label>
+          <textarea name="hipotese_diagnostica" rows="2" class="${taCls}">${escapeHtml(v('hipotese_diagnostica'))}</textarea></div>
+          <div>
+            <p class="text-sm text-gray-600 mb-1">Conclusão:</p>
+            <div class="flex gap-6 text-sm">
+              <label class="flex items-center gap-2"><input type="radio" name="conclusao" value="elegivel" ${rb('conclusao', 'elegivel')}> Elegível</label>
+              <label class="flex items-center gap-2"><input type="radio" name="conclusao" value="inelegivel" ${rb('conclusao', 'inelegivel')}> Inelegível</label>
+            </div>
+          </div>
+          <div><label class="${labelCls}">Indicação terapêutica:</label>
+          <textarea name="indicacao_terapeutica" rows="2" class="${taCls}">${escapeHtml(v('indicacao_terapeutica'))}</textarea></div>
+          <div>
+            <p class="text-sm text-gray-600 mb-1">Necessidade de atendimento:</p>
+            <div class="flex gap-6 text-sm">
+              <label class="flex items-center gap-2"><input type="radio" name="necessidade_atendimento" value="urgente" ${rb('necessidade_atendimento', 'urgente')}> Urgente</label>
+              <label class="flex items-center gap-2"><input type="radio" name="necessidade_atendimento" value="curto_prazo" ${rb('necessidade_atendimento', 'curto_prazo')}> Curto prazo</label>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div><label class="${labelCls}">Profissional:</label><input type="text" name="profissional_triagem" value="${escapeHtml(v('profissional_triagem'))}" class="${inputCls}"></div>
+            <div><label class="${labelCls}">Data:</label><input type="date" name="data_triagem" value="${escapeHtml(v('data_triagem'))}" class="${inputCls}"></div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- Impressões gerais e complementares -->
+    <div class="border border-gray-200 rounded-xl overflow-hidden">
+      <details class="group">
+        <summary class="${summCls}">Impressões Gerais e Informações Complementares ${chevron}</summary>
+        <div class="${bodyPad} space-y-4">
+          <div>
+            <p class="text-sm font-medium text-gray-700 mb-2">Impressões durante o atendimento:</p>
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <label class="flex items-center gap-2"><input type="checkbox" name="impressao_tranquilo" value="1" class="rounded accent-monday-blue" ${ck('impressao_tranquilo')}> Tranquilo</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="impressao_ansioso" value="1" class="rounded accent-monday-blue" ${ck('impressao_ansioso')}> Ansioso</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="impressao_seguro" value="1" class="rounded accent-monday-blue" ${ck('impressao_seguro')}> Seguro</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="impressao_alegre" value="1" class="rounded accent-monday-blue" ${ck('impressao_alegre')}> Alegre</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="impressao_queixoso" value="1" class="rounded accent-monday-blue" ${ck('impressao_queixoso')}> Queixoso</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="impressao_intolerante" value="1" class="rounded accent-monday-blue" ${ck('impressao_intolerante')}> Intolerante</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="impressao_atencao" value="1" class="rounded accent-monday-blue" ${ck('impressao_atencao')}> Atenção</label>
+              <label class="flex items-center gap-2"><input type="checkbox" name="impressao_adequacao_respostas" value="1" class="rounded accent-monday-blue" ${ck('impressao_adequacao_respostas')}> Adequação das respostas</label>
+            </div>
+          </div>
+          <div><label class="${labelCls}">Rotina do paciente:</label>
+          <textarea name="rotina_paciente" rows="2" class="${taCls}">${escapeHtml(v('rotina_paciente'))}</textarea></div>
+          <div><label class="${labelCls}">Perdas recentes ou mudanças bruscas:</label>
+          <textarea name="perdas_recentes" rows="2" class="${taCls}">${escapeHtml(v('perdas_recentes'))}</textarea></div>
+          <div><label class="${labelCls}">Outras informações relevantes:</label>
+          <textarea name="outras_informacoes" rows="3" class="${taCls}">${escapeHtml(v('outras_informacoes'))}</textarea></div>
+        </div>
+      </details>
+    </div>
+
+  </div>`;
+}
+
+function collectAnamneseRoteiroFormData(formEl) {
+  const fd = new FormData(formEl);
+  const data = {};
+
+  const textFields = [
+    'nome_paciente', 'motivo_atendimento',
+    'acomp_psi_onde', 'acomp_psi_quando',
+    'acomp_psicoped_onde', 'acomp_psicoped_quando',
+    'acomp_fono_onde', 'acomp_fono_quando',
+    'acomp_neuro_onde', 'acomp_neuro_quando',
+    'acomp_to_onde', 'acomp_to_quando',
+    'acomp_fisio_onde', 'acomp_fisio_quando',
+    'acomp_outros',
+    'historia_gestacional', 'antecedentes_morbidos', 'psicomotor', 'linguagem',
+    'alimentacao', 'sono', 'escolaridade', 'escola_nome', 'escola_telefone',
+    'sociabilidade', 'sexualidade', 'situacao_socioeconomica',
+    'dificuldade_visao_desc',
+    'antec_fam_doencas_quais', 'antec_fam_outros', 'antec_fam_grau_parentesco',
+    'num_irmaos', 'posicao_familiar', 'situacao_pais',
+    'triagem_por', 'triagem_inicio', 'triagem_termino',
+    'hipotese_diagnostica', 'conclusao',
+    'indicacao_terapeutica', 'necessidade_atendimento',
+    'profissional_triagem', 'data_triagem',
+    'rotina_paciente', 'perdas_recentes', 'outras_informacoes'
+  ];
+  for (const n of textFields) {
+    const val = fd.get(n);
+    data[n] = (val === '' || val === null) ? null : String(val).trim();
+  }
+
+  // Checkboxes: ausente no FormData quando desmarcado
+  const checkboxFields = [
+    'acomp_psicologico', 'acomp_psicopedagogico', 'acomp_fonoaudiologico',
+    'acomp_neurologico', 'acomp_terapia_ocupacional', 'acomp_fisioterapia',
+    'antec_fam_doencas', 'antec_fam_alcoolismo', 'antec_fam_homicidio',
+    'antec_fam_def_mental', 'antec_fam_suicidio', 'antec_fam_drogadicao',
+    'impressao_tranquilo', 'impressao_ansioso', 'impressao_seguro',
+    'impressao_alegre', 'impressao_queixoso', 'impressao_intolerante',
+    'impressao_atencao', 'impressao_adequacao_respostas'
+  ];
+  for (const n of checkboxFields) {
+    data[n] = (fd.has(n) && fd.get(n) === '1') ? 1 : 0;
+  }
+
+  // Radios mapeados para TINYINT (null quando nenhum selecionado)
+  const radioIntFields = ['dificuldade_visao', 'dificuldade_audicao'];
+  for (const n of radioIntFields) {
+    const val = fd.get(n);
+    data[n] = val !== null ? parseInt(val, 10) : null;
+  }
+
+  return data;
+}
+
+function aplicarMascaraHora(input) {
+  if (!input) return;
+  const formatar = () => {
+    const numeros = String(input.value || '').replace(/\D/g, '').slice(0, 4);
+    input.value = numeros.length > 2 ? `${numeros.slice(0, 2)}:${numeros.slice(2)}` : numeros;
+  };
+  input.addEventListener('input', formatar);
+  input.addEventListener('paste', () => setTimeout(formatar, 0));
+  formatar();
+}
+
+/* =========================================================
+   MODAL DE SUCESSO
+   ========================================================= */
+
 function openAtendimentoSuccessModal({ title, message, onContinue, onClose }) {
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
@@ -262,27 +616,19 @@ function openAtendimentoSuccessModal({ title, message, onContinue, onClose }) {
   `;
 
   const cleanup = () => modal.remove();
-  modal.querySelector('[data-action="continue"]')?.addEventListener('click', () => {
-    cleanup();
-    onContinue?.();
-  });
-  modal.querySelector('[data-action="close"]')?.addEventListener('click', () => {
-    cleanup();
-    onClose?.();
-  });
-  modal.addEventListener('click', (event) => {
-    if (event.target === modal) {
-      cleanup();
-      onClose?.();
-    }
-  });
-
+  modal.querySelector('[data-action="continue"]')?.addEventListener('click', () => { cleanup(); onContinue?.(); });
+  modal.querySelector('[data-action="close"]')?.addEventListener('click', () => { cleanup(); onClose?.(); });
+  modal.addEventListener('click', (event) => { if (event.target === modal) { cleanup(); onClose?.(); } });
   document.body.appendChild(modal);
 }
 
+/* =========================================================
+   RENDER PRINCIPAL
+   ========================================================= */
+
 export async function renderAtendimento(container, opts = {}) {
   if (typeof tinymce !== 'undefined' && tinymce.get('prontuario-texto')) tinymce.get('prontuario-texto').remove();
-  const { consultaId: preselectConsultaId, date: dataFiltro } = opts;
+  const { consultaId: preselectConsultaId, date: dataFiltro, anamneseTipo: anamneseTipoPrefill } = opts;
   const dataConsulta = dataFiltro || new Date().toISOString().slice(0, 10);
   container.innerHTML = getSpinnerHtml('Carregando atendimento...');
 
@@ -292,24 +638,23 @@ export async function renderAtendimento(container, opts = {}) {
     ? consultasParaAtendimento.find((c) => Number(c.id) === Number(preselectConsultaId))
     : null;
   if (!consultaSelecionada && preselectConsultaId) {
-    try {
-      consultaSelecionada = await getConsulta(preselectConsultaId);
-    } catch {
-      consultaSelecionada = null;
-    }
+    try { consultaSelecionada = await getConsulta(preselectConsultaId); } catch { consultaSelecionada = null; }
   }
 
   const consultasRender = consultaSelecionada && !consultasParaAtendimento.some((c) => Number(c.id) === Number(consultaSelecionada.id))
     ? [consultaSelecionada, ...consultasParaAtendimento]
     : consultasParaAtendimento;
 
+  // Busca paralela das duas anamneses
   let anamneseExistente = null;
+  let anamneseRoteiroExistente = null;
   if (consultaSelecionada) {
-    try {
-      anamneseExistente = await getAnamneseByConsulta(consultaSelecionada.id);
-    } catch {
-      anamneseExistente = null;
-    }
+    const [resAdulto, resRoteiro] = await Promise.allSettled([
+      getAnamneseByConsulta(consultaSelecionada.id),
+      getAnamneseRoteiroByConsulta(consultaSelecionada.id),
+    ]);
+    anamneseExistente       = resAdulto.status  === 'fulfilled' ? resAdulto.value  : null;
+    anamneseRoteiroExistente = resRoteiro.status === 'fulfilled' ? resRoteiro.value : null;
   }
 
   const listHtml = `
@@ -340,6 +685,23 @@ export async function renderAtendimento(container, opts = {}) {
     </div>
   `);
 
+  // Selector de tipo de anamnese
+  const tipoSelectorHtml = `
+    <div class="flex gap-1 mb-4 p-1 bg-gray-100 rounded-xl">
+      <button type="button" data-tipo="adulto" class="tipo-anamnese-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1.5">
+        <i data-lucide="user" class="w-4 h-4"></i> Avaliação Adulto
+      </button>
+      <button type="button" data-tipo="roteiro" class="tipo-anamnese-btn flex-1 py-2 px-3 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1.5">
+        <i data-lucide="baby" class="w-4 h-4"></i> Roteiro Infantojuvenil
+      </button>
+    </div>
+  `;
+  const statusConsultaSelecionada = String(consultaSelecionada?.status || '').toLowerCase();
+  const podeIniciarAtendimento = !!consultaSelecionada
+    && !statusConsultaSelecionada.includes('em_atendimento')
+    && !statusConsultaSelecionada.includes('concluida')
+    && !statusConsultaSelecionada.includes('concluída');
+
   const formSection = `
     <div id="atend-form-section" class="bg-white rounded-xl shadow-monday p-4 space-y-4 ${!consultaSelecionada ? 'opacity-60 pointer-events-none' : ''}">
       <h2 class="font-semibold text-lg">Atendimento clínico</h2>
@@ -356,8 +718,15 @@ export async function renderAtendimento(container, opts = {}) {
         <button type="button" data-tab="prontuario" class="tab-atend px-4 py-2 font-medium text-gray-500 hover:text-gray-700">Prontuário IA</button>
       </div>
       <div id="tab-anamnese" class="tab-content">
-        <form id="form-anamnese">${buildAnamneseFormHtml(anamneseExistente ?? {})}</form>
-        <input type="hidden" id="anamnese-id" value="${anamneseExistente?.id || ''}">
+        ${tipoSelectorHtml}
+        <div id="anamnese-adulto-section">
+          <form id="form-anamnese">${buildAnamneseFormHtml(anamneseExistente ?? {})}</form>
+          <input type="hidden" id="anamnese-id" value="${anamneseExistente?.id || ''}">
+        </div>
+        <div id="anamnese-roteiro-section" class="hidden">
+          <form id="form-anamnese-roteiro">${buildAnamneseRoteiroFormHtml(anamneseRoteiroExistente ?? {})}</form>
+          <input type="hidden" id="anamnese-roteiro-id" value="${anamneseRoteiroExistente?.id || ''}">
+        </div>
         <input type="hidden" id="atend-consulta-id" value="${consultaSelecionada?.id || preselectConsultaId || 0}">
         <button type="button" id="btn-salvar-anamnese" class="mt-4 w-full py-3 bg-monday-blue text-white rounded-xl font-medium hover:bg-monday-blue/90">Salvar anamnese</button>
       </div>
@@ -376,7 +745,7 @@ export async function renderAtendimento(container, opts = {}) {
           <button type="button" id="btn-salvar-pront" class="mt-3 w-full py-3 bg-monday-blue text-white rounded-lg font-medium">Salvar prontuário</button>
         </div>
       </div>
-      <button type="button" id="btn-iniciar-atendimento" class="w-full min-h-touch py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition" ${consultaSelecionada && !(consultaSelecionada.status || '').toLowerCase().includes('em_atendimento') ? '' : 'style="display:none"'}>
+      <button type="button" id="btn-iniciar-atendimento" class="w-full min-h-touch py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition" ${podeIniciarAtendimento ? '' : 'style="display:none"'}>
         Iniciar atendimento
       </button>
     </div>
@@ -384,11 +753,13 @@ export async function renderAtendimento(container, opts = {}) {
 
   container.innerHTML = listHtml + formSection;
 
+  // Filtro de data
   container.querySelector('#atend-data-filtro')?.addEventListener('change', (e) => {
     const d = e.target.value;
     if (d) renderAtendimento(container, { date: d, consultaId: consultaSelecionada?.id });
   });
 
+  // Seleção de consulta
   container.querySelectorAll('.atend-consulta-card').forEach((btn) => {
     btn.onclick = () => {
       const id = parseInt(btn.dataset.consultaId, 10);
@@ -396,19 +767,20 @@ export async function renderAtendimento(container, opts = {}) {
     };
   });
 
-  const consultaIdInput = container.querySelector('#atend-consulta-id');
-  const btnIniciar = container.querySelector('#btn-iniciar-atendimento');
-  const btnGerar = container.querySelector('#btn-gerar-ia');
-  const resultadoDiv = container.querySelector('#resultado-ia');
-  const prontTextarea = container.querySelector('#prontuario-texto');
-  const formAnamnese = container.querySelector('#form-anamnese');
-  const btnSalvarAnamnese = container.querySelector('#btn-salvar-anamnese');
-  const anamneseIdInput = container.querySelector('#anamnese-id');
+  const consultaIdInput    = container.querySelector('#atend-consulta-id');
+  const btnIniciar         = container.querySelector('#btn-iniciar-atendimento');
+  const btnGerar           = container.querySelector('#btn-gerar-ia');
+  const resultadoDiv       = container.querySelector('#resultado-ia');
+  const prontTextarea      = container.querySelector('#prontuario-texto');
+  const formAnamnese       = container.querySelector('#form-anamnese');
+  const btnSalvarAnamnese  = container.querySelector('#btn-salvar-anamnese');
+  const anamneseIdInput    = container.querySelector('#anamnese-id');
 
   if (consultaSelecionada) {
     consultaIdInput.value = consultaSelecionada.id;
   }
 
+  // Dados do paciente (readonly)
   if (consultaSelecionada?.aluno_id) {
     const readonlyDiv = container.querySelector('#paciente-dados-readonly');
     try {
@@ -419,11 +791,10 @@ export async function renderAtendimento(container, opts = {}) {
         <p>Telefone: ${escapeHtml(p.Telefone || p.WhatsApp || '—')} | Endereço: ${escapeHtml([p.Endereco, p.Numero, p.Bairro, p.Cidade].filter(Boolean).join(', ') || '—')}</p>
       `;
       readonlyDiv.classList.remove('hidden');
-    } catch {
-      readonlyDiv.classList.add('hidden');
-    }
+    } catch { readonlyDiv.classList.add('hidden'); }
   }
 
+  // Tabs (Anamnese / Prontuário IA)
   container.querySelectorAll('.tab-atend').forEach((btn) => {
     btn.onclick = () => {
       container.querySelectorAll('.tab-atend').forEach((b) => {
@@ -433,30 +804,67 @@ export async function renderAtendimento(container, opts = {}) {
       btn.classList.add('text-monday-blue', 'border-monday-blue');
       btn.classList.remove('text-gray-500');
       container.querySelectorAll('.tab-content').forEach((tc) => tc.classList.add('hidden'));
-      const tab = btn.dataset.tab;
-      container.querySelector(`#tab-${tab}`).classList.remove('hidden');
+      container.querySelector(`#tab-${btn.dataset.tab}`).classList.remove('hidden');
     };
   });
 
+  // Seletor de tipo de anamnese
+  let tipoAnamnese = anamneseTipoPrefill || ((anamneseRoteiroExistente && !anamneseExistente) ? 'roteiro' : 'adulto');
+
+  function setTipoAnamnese(tipo) {
+    tipoAnamnese = tipo;
+    container.querySelectorAll('.tipo-anamnese-btn').forEach((b) => {
+      const ativo = b.dataset.tipo === tipo;
+      b.classList.toggle('bg-white', ativo);
+      b.classList.toggle('shadow-sm', ativo);
+      b.classList.toggle('text-monday-blue', ativo);
+      b.classList.toggle('font-semibold', ativo);
+      b.classList.toggle('text-gray-500', !ativo);
+    });
+    container.querySelector('#anamnese-adulto-section')?.classList.toggle('hidden', tipo !== 'adulto');
+    container.querySelector('#anamnese-roteiro-section')?.classList.toggle('hidden', tipo !== 'roteiro');
+  }
+
+  setTipoAnamnese(tipoAnamnese);
+  container.querySelectorAll('.tipo-anamnese-btn').forEach((btn) => {
+    btn.onclick = () => setTipoAnamnese(btn.dataset.tipo);
+  });
+  aplicarMascaraHora(container.querySelector('input[name="triagem_inicio"]'));
+  aplicarMascaraHora(container.querySelector('input[name="triagem_termino"]'));
+
+  // Salvar anamnese (adulto ou roteiro)
   btnSalvarAnamnese?.addEventListener('click', async () => {
     const consultaId = parseInt(consultaIdInput?.value, 10) || Number(consultaSelecionada?.id) || 0;
-    const alunoId = Number(consultaSelecionada?.aluno_id) || 0;
-    if (!consultaId || !alunoId) {
-      alert('Selecione uma consulta válida.');
-      return;
-    }
-    const data = collectAnamneseFormData(formAnamnese);
-    data.consulta_id = consultaId;
-    data.aluno_id = alunoId;
+    const alunoId    = Number(consultaSelecionada?.aluno_id) || 0;
+    if (!consultaId || !alunoId) { alert('Selecione uma consulta válida.'); return; }
+
     btnSalvarAnamnese.disabled = true;
     btnSalvarAnamnese.innerHTML = getButtonSpinnerHtml() + ' Salvando...';
     try {
-      const id = anamneseIdInput?.value ? parseInt(anamneseIdInput.value, 10) : 0;
-      if (id > 0) {
-        await putAnamnese(id, data);
+      if (tipoAnamnese === 'adulto') {
+        const data = collectAnamneseFormData(formAnamnese);
+        data.consulta_id = consultaId;
+        data.aluno_id    = alunoId;
+        const id = anamneseIdInput?.value ? parseInt(anamneseIdInput.value, 10) : 0;
+        if (id > 0) {
+          await putAnamnese(id, data);
+        } else {
+          const res = await postAnamnese(data);
+          if (res.id && anamneseIdInput) anamneseIdInput.value = res.id;
+        }
       } else {
-        const res = await postAnamnese(data);
-        if (res.id) anamneseIdInput.value = res.id;
+        const formRoteiro    = container.querySelector('#form-anamnese-roteiro');
+        const roteiroIdInput = container.querySelector('#anamnese-roteiro-id');
+        const data = collectAnamneseRoteiroFormData(formRoteiro);
+        data.consulta_id = consultaId;
+        data.aluno_id    = alunoId;
+        const id = roteiroIdInput?.value ? parseInt(roteiroIdInput.value, 10) : 0;
+        if (id > 0) {
+          await putAnamneseRoteiro(id, data);
+        } else {
+          const res = await postAnamneseRoteiro(data);
+          if (res.id && roteiroIdInput) roteiroIdInput.value = res.id;
+        }
       }
       openAtendimentoSuccessModal({
         title: 'Anamnese salva',
@@ -472,7 +880,8 @@ export async function renderAtendimento(container, opts = {}) {
     }
   });
 
-  if (btnIniciar && consultaSelecionada && !(consultaSelecionada.status || '').toLowerCase().includes('em_atendimento')) {
+  // Iniciar atendimento
+  if (btnIniciar && podeIniciarAtendimento) {
     btnIniciar.onclick = async () => {
       btnIniciar.disabled = true;
       btnIniciar.innerHTML = getButtonSpinnerHtml() + ' Iniciando...';
@@ -488,6 +897,7 @@ export async function renderAtendimento(container, opts = {}) {
     };
   }
 
+  // TinyMCE para prontuário
   const initTinyMCEAtend = () => {
     if (typeof tinymce === 'undefined' || tinymce.get('prontuario-texto')) return;
     tinymce.init({
@@ -507,10 +917,7 @@ export async function renderAtendimento(container, opts = {}) {
   btnGerar.onclick = async () => {
     const alunoId = Number(consultaSelecionada?.aluno_id) || 0;
     const dados = container.querySelector('#atend-dados').value.trim();
-    if (!alunoId) {
-      alert('Selecione uma consulta válida.');
-      return;
-    }
+    if (!alunoId) { alert('Selecione uma consulta válida.'); return; }
     removeTinyMCEAtend();
     btnGerar.disabled = true;
     btnGerar.innerHTML = getButtonSpinnerHtml() + ' Gerando...';
@@ -539,15 +946,12 @@ export async function renderAtendimento(container, opts = {}) {
   };
 
   container.querySelector('#btn-salvar-pront').onclick = async () => {
-    const alunoId = Number(consultaSelecionada?.aluno_id) || 0;
+    const alunoId    = Number(consultaSelecionada?.aluno_id) || 0;
     const consultaId = parseInt(consultaIdInput.value, 10) || 0;
-    const conteudo = (typeof tinymce !== 'undefined' && tinymce.get('prontuario-texto'))
+    const conteudo   = (typeof tinymce !== 'undefined' && tinymce.get('prontuario-texto'))
       ? tinymce.get('prontuario-texto').getContent().trim()
       : prontTextarea.value.trim();
-    if (!alunoId || !conteudo) {
-      alert('Gere o prontuário com IA antes de salvar.');
-      return;
-    }
+    if (!alunoId || !conteudo) { alert('Gere o prontuário com IA antes de salvar.'); return; }
     const btnSalvar = container.querySelector('#btn-salvar-pront');
     const orig = btnSalvar.innerHTML;
     btnSalvar.disabled = true;

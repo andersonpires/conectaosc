@@ -117,8 +117,6 @@ final class ColaboradorFlow
         $nascimento = $this->normalizarNascimento($_POST['Nascimento'] ?? null);
         $cargo = trim((string) ($_POST['Cargo'] ?? ''));
         $email = trim((string) ($_POST['Email'] ?? ''));
-        $senha = (string) ($_POST['Senha'] ?? '');
-
         if ($nome === '' || $sobrenome === '' || $email === '' || $idPermissao <= 0) {
             $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('Preencha os campos obrigatorios.'));
         }
@@ -127,6 +125,8 @@ final class ColaboradorFlow
         if (!$tipo) {
             $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('Permissao invalida.'));
         }
+
+        $podeDefinirClinica = $this->currentUserIsAdmin();
 
         if ($id > 0) {
             $this->atualizarColaborador(
@@ -138,11 +138,11 @@ final class ColaboradorFlow
                 $nascimento,
                 $cargo,
                 $email,
-                $senha,
                 $tipo,
                 $idColaboradorAlt,
                 $timeAlterado,
-                $colaboradoresRoute
+                $colaboradoresRoute,
+                $podeDefinirClinica
             );
             return;
         }
@@ -160,7 +160,8 @@ final class ColaboradorFlow
             $tipo,
             $idColaboradorAlt,
             $timeAlterado,
-            $colaboradoresRoute
+            $colaboradoresRoute,
+            $podeDefinirClinica
         );
     }
 
@@ -173,11 +174,11 @@ final class ColaboradorFlow
         ?string $nascimento,
         string $cargo,
         string $email,
-        string $senha,
         string $tipo,
         ?int $idColaboradorAlt,
         string $timeAlterado,
-        string $colaboradoresRoute
+        string $colaboradoresRoute,
+        bool $podeDefinirClinica
     ): void {
         $registro = \ColaboradorModel::getById($id);
         if (!$registro) {
@@ -186,12 +187,7 @@ final class ColaboradorFlow
 
         $fotoAtual = $registro['Foto'] ?? 'padrao.jfif';
         $foto = $this->tratarUploadFoto($_FILES['foto'] ?? null, $fotoAtual);
-        $senhaAtualizar = null;
-        if ($senha !== '' && $senha !== 'Apenas o usuario pode alterar a senha') {
-            $senhaAtualizar = password_hash($senha, PASSWORD_DEFAULT);
-        }
-
-        $profissionalSaude = isset($_POST['profissional_saude']) && $_POST['profissional_saude'] === '1' ? 1 : 0;
+        [$profissionalSaude, $licencaAdministrativa] = $this->resolveClinicaFlags($_POST['habilitacao_clinica'] ?? null, $registro, $podeDefinirClinica);
         $especialidadesInput = $this->normalizarEspecialidadesInput($_POST['especialidades'] ?? []);
         if ($profissionalSaude !== 1) {
             $especialidadesInput = [];
@@ -209,8 +205,8 @@ final class ColaboradorFlow
             'Cargo' => $cargo !== '' ? $cargo : null,
             'Email' => $email,
             'profissional_saude' => $profissionalSaude,
+            'licenca_administrativa' => $licencaAdministrativa,
             'especialidade_id' => $especialidadeId,
-            'Senha' => $senhaAtualizar,
             'Tipo' => $tipo,
             'IdColaboradorAlt' => $idColaboradorAlt,
             'TimeAlterado' => $timeAlterado,
@@ -252,7 +248,8 @@ final class ColaboradorFlow
         string $tipo,
         ?int $idColaboradorAlt,
         string $timeAlterado,
-        string $colaboradoresRoute
+        string $colaboradoresRoute,
+        bool $podeDefinirClinica
     ): void {
         if ($cpf === '' || $senha === '') {
             $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('CPF e senha sao obrigatorios.'));
@@ -260,7 +257,7 @@ final class ColaboradorFlow
 
         $foto = $this->tratarUploadFoto($_FILES['foto'] ?? null, 'padrao.jfif');
         $hashSenha = password_hash($senha, PASSWORD_DEFAULT);
-        $profissionalSaude = isset($_POST['profissional_saude']) && $_POST['profissional_saude'] === '1' ? 1 : 0;
+        [$profissionalSaude, $licencaAdministrativa] = $this->resolveClinicaFlags($_POST['habilitacao_clinica'] ?? null, null, $podeDefinirClinica);
         $especialidadesInput = $this->normalizarEspecialidadesInput($_POST['especialidades'] ?? []);
         if ($profissionalSaude !== 1) {
             $especialidadesInput = [];
@@ -278,6 +275,7 @@ final class ColaboradorFlow
             'Cargo' => $cargo !== '' ? $cargo : null,
             'Email' => $email,
             'profissional_saude' => $profissionalSaude,
+            'licenca_administrativa' => $licencaAdministrativa,
             'especialidade_id' => $especialidadeId,
             'Senha' => $hashSenha,
             'Habilitado' => 1,
@@ -403,6 +401,30 @@ final class ColaboradorFlow
         }
 
         return $raw;
+    }
+
+    private function currentUserIsAdmin(): bool
+    {
+        $tipo = (string) ($_SESSION['Tipo'] ?? '');
+        $permissao = (int) ($_SESSION['IdPermissao'] ?? 0);
+        return $permissao === 4 || in_array($tipo, ['Administrador', 'Superadministrador'], true);
+    }
+
+    private function resolveClinicaFlags(mixed $habilitacaoClinica, ?array $registroAtual, bool $podeDefinirClinica): array
+    {
+        if (!$podeDefinirClinica) {
+            return [
+                (int) ($registroAtual['profissional_saude'] ?? 0),
+                (int) ($registroAtual['licenca_administrativa'] ?? 0),
+            ];
+        }
+
+        $role = trim((string) $habilitacaoClinica);
+        return match ($role) {
+            'profissional_saude' => [1, 0],
+            'licenca_administrativa' => [0, 1],
+            default => [0, 0],
+        };
     }
 
     private function redirect(string $location): never
