@@ -126,6 +126,7 @@ $router->get('/beneficiarios/fotos', [$beneficiarioController, 'fotos']);
 $router->get('/beneficiarios/aniversariantes', [$beneficiarioController, 'aniversariantes']);
 $router->post('/beneficiarios/aniversariantes/dados', [$beneficiarioController, 'aniversariantesDados']);
 $router->get('/beneficiarios/consulta-cpf', [$beneficiarioController, 'consultaCpf']);
+$router->get('/beneficiarios/criancas-responsavel', [$beneficiarioController, 'criancasResponsavel']);
 $router->post('/beneficiarios/avaliar-vulnerabilidade-stream', [$beneficiarioController, 'avaliarVulnerabilidadeStream']);
 $router->get('/cursos', [$academicoController, 'cursos']);
 $router->get('/cursos/planejamento', [$academicoController, 'cursosPlanejamento']);

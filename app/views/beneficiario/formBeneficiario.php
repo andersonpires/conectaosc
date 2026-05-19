@@ -191,9 +191,11 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                         </div>
                     <?php endif;
 
-                    $cpfInformado = isset($_POST['CPF']);
-                    $modoEdicao = isset($_POST['IdUsuario']);
                     $cpf = $_POST['CPF'] ?? '';
+                    $modoEdicao = isset($_POST['IdUsuario']);
+                    $modoCrianca = ($_POST['modo'] ?? '') === 'crianca'
+                        || ($modoEdicao && trim((string)$cpf) === '');
+                    $cpfInformado = isset($_POST['CPF']) || $modoCrianca;
                     $cpfNaoEncontrado = isset($cpfNaoEncontrado) ? $cpfNaoEncontrado : false;
                     $tabAtiva = $_GET['tab'] ?? 'inscricao';
                     $tabsValidas = ['inscricao', 'socio', 'medico', 'ipai', 'outros'];
@@ -212,6 +214,12 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                                     <div id="cpfStatus" class="mt-2" style="font-weight: bold;"></div>
                                 </div>
                                 <button type="submit" class="btn btn-primary">Enviar</button>
+                                <div class="text-center mt-3">
+                                    <a href="<?= rtrim((string)$BASE_para_URL, '/') ?>/beneficiarios/cadastro?modo=crianca"
+                                       class="text-secondary small text-decoration-none">
+                                        <i class="fa-solid fa-child"></i> Criança sem CPF
+                                    </a>
+                                </div>
                             </div>
                         </form>
 
@@ -271,7 +279,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                     dataType: 'json',
                     data: {
                         token: token, // O jQuery vai codificar o pipe '|' corretamente
-                        value: rawCpf, // Voltamos a usar a variavel digitada, em vez do fixo
+                        value: rawCpf, // Voltamos a usar a variável digitada, em vez do fixo
                         type: 'cpf'
                     },
                     success: function(response) {
@@ -299,6 +307,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
 <form action="<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/beneficiarios/cadastro/" id="formulario" enctype="multipart/form-data" method="post">
     <input type="hidden" name="tab" id="tabDestino" value="<?= htmlspecialchars($tabAtiva) ?>">
     <input type="hidden" name="fechar" id="fecharCadastro" value="">
+    <input type="hidden" name="modo" value="<?= $modoCrianca ? 'crianca' : htmlspecialchars($_POST['modo'] ?? '', ENT_QUOTES, 'UTF-8') ?>">
     <?php if ($modoEdicao): ?>
         <input type="hidden" name="IdUsuario" value="<?= $_POST['IdUsuario'] ?>">
         <input type="hidden" name="IdColaboradorAlt" value="<?= (int)($_SESSION['Cod'] ?? 0) ?>">
@@ -339,7 +348,9 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
     <div class="tab-content" id="benefTabsContent">
         <div class="tab-pane fade <?= $tabAtiva === 'inscricao' ? 'show active' : '' ?>" id="tab-inscricao" role="tabpanel" aria-labelledby="tab-inscricao-btn">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <h1 class="h3 mb-0 section-title">DADOS DE INSCRIÇÃO</h1>
+                <h1 class="h3 mb-0 section-title">
+                    DADOS DE INSCRIÇÃO<?= $modoCrianca ? ' - CRIANÇA' : '' ?>
+                </h1>
             </div>
     <div class="col-11">
         <div class="card shadow-lg">
@@ -359,8 +370,8 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                 <hr class="close-hr">
                 <div class="row mb-3">
                     <div class="mb-3 col-8">
-                        <label for="Nome" class="form-label">Nome*</label>
-                        <input type="text" class="form-control" id="Nome" name="Nome" value="<?= $_POST['Nome'] ?? '' ?>" required autocomplete="off">
+                        <label for="Nome" class="form-label"><?= $modoCrianca ? 'Nome da Criança*' : 'Nome*' ?></label>
+                        <input type="text" class="form-control" id="Nome" name="Nome" value="<?= htmlspecialchars($_POST['Nome'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required autocomplete="off">
                         <input type="hidden" name="Colaborador" value="<?php echo (int)($_SESSION['Cod'] ?? 0) ?>">
                     </div>
                     <div class="mb-3 col-4">
@@ -371,7 +382,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                 <div class="row mb-3">
                     <div class="col-6">
                         <label for="Nascimento" class="form-label">
-                            Nascimento* <span id="classificacaoIdade" style="font-weight:bold; color:#007bff; margin-left:5px;"></span>
+                            <?= $modoCrianca ? 'Nascimento da Criança*' : 'Nascimento*' ?> <span id="classificacaoIdade" style="font-weight:bold; color:#007bff; margin-left:5px;"></span>
                         </label>
 
                         <input type="text" class="form-control" id="Nascimento" name="Nascimento" required pattern="^\d{2}/\d{2}/\d{4}$" maxlength="10" inputmode="numeric" title="Informe a data no formato dd/mm/aaaa, com ano de 4 dígitos." value="<?= $_POST['Nascimento'] ?? '' ?>" autocomplete="off">
@@ -469,6 +480,61 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                         <input type="text" class="form-control" id="Telefone" name="Telefone" value="<?= $_POST['Telefone'] ?? '' ?>" autocomplete="off">
                     </div>
                 </div>
+                <?php if ($modoCrianca): ?>
+                    <br>
+                    <h5>RESPONSÁVEL <small class="text-danger">(obrigatório para criança sem CPF)</small></h5>
+                    <hr class="close-hr"><br>
+                    <div class="mb-3">
+                        <label for="NomeResp1" class="form-label">Nome do Responsável 1*</label>
+                        <input type="text" class="form-control" id="NomeResp1" name="NomeResp1"
+                               value="<?= htmlspecialchars($_POST['NomeResp1'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                               required autocomplete="off">
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="Parentesco" class="form-label">Parentesco*</label>
+                            <select class="form-select" id="Parentesco" name="Parentesco" required>
+                                <?php
+                                $opcoesParentesco = [
+                                    '' => 'Selecione',
+                                    'Mae' => 'Mãe',
+                                    'Pai' => 'Pai',
+                                    'Avo/Avo' => 'Avô/Avó',
+                                    'Madrasta' => 'Madrasta',
+                                    'Padrasto' => 'Padrasto',
+                                    'Cuidador' => 'Cuidador',
+                                    'Outro' => 'Outro',
+                                ];
+                                $parentescoSel = $_POST['Parentesco'] ?? '';
+                                foreach ($opcoesParentesco as $val => $label) {
+                                    $sel = ($val === $parentescoSel) ? 'selected' : '';
+                                    echo '<option value="' . htmlspecialchars($val, ENT_QUOTES, 'UTF-8') . "\" $sel>" . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</option>';
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label for="CpfResp1" class="form-label">CPF do Responsável*</label>
+                            <input type="text" class="form-control" id="CpfResp1" name="CpfResp1"
+                                   value="<?= htmlspecialchars($_POST['CpfResp1'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                   required autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label for="WhatsAppResp1" class="form-label">WhatsApp do Responsável*</label>
+                            <input type="text" class="form-control" id="WhatsAppResp1" name="WhatsAppResp1"
+                                   value="<?= htmlspecialchars($_POST['WhatsAppResp1'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                   required autocomplete="off">
+                        </div>
+                        <div class="col-6">
+                            <label for="TelefoneResp1" class="form-label">Telefone do Responsável</label>
+                            <input type="text" class="form-control" id="TelefoneResp1" name="TelefoneResp1"
+                                   value="<?= htmlspecialchars($_POST['TelefoneResp1'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
+                                   autocomplete="off">
+                        </div>
+                    </div>
+                <?php endif; ?>
                 <div class="mb-3">
                     <?php
                     $fotoAtual = $_POST['Foto'] ?? '';
@@ -477,7 +543,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                     <br>
                     <img src="<?= htmlspecialchars($caminhoFoto) ?>" class="rounded-circle img-cover" width="100px" height="100px" id="currentPhoto">
                     <br>
-                    <label for="uploadImage" class="form-label">Foto beneficiario</label>
+                    <label for="uploadImage" class="form-label">Foto do beneficiário</label>
                     <input type="hidden" name="fotoAtual" value="<?= $_POST['Foto'] ?? 'padrao.jfif' ?>">
                     <input class="form-control mb-3" type="file" name="foto" id="uploadImage" accept="image/*">
 
@@ -501,14 +567,14 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                 ?>
                     <br>
                     <div class="text-center mb3">
-                        <p class="text-center">SE E INSCRICAO, SELECIONE OS INTERESSES:</p>
+                        <p class="text-center">SE FOR INSCRIÇÃO, SELECIONE OS INTERESSES:</p>
                     </div>
                     <div class="checkbox-container">
                         <?php
                         $projetosSelecionados = [];
 
                         if (isset($_POST['IdUsuario'])) {
-                            // Pega os projetos que o usuario ja selecionou
+                            // Pega os projetos que o usuário já selecionou
                             $stmt = $pdo->prepare("SELECT IdProjeto FROM tbInteresse WHERE IdUsuario = ? AND Valor = 1");
                             $stmt->execute([$_POST['IdUsuario']]);
                             $projetosSelecionados = $stmt->fetchAll(PDO::FETCH_COLUMN); // array com os IDs dos projetos selecionados
@@ -530,7 +596,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                 <?php
                 } else {
                     echo "<br><br>";
-                    echo '<p class="text-center">Nenhum interesse disponivel ou erro ao acessar o banco de dados.</p>';
+                    echo '<p class="text-center">Nenhum interesse disponível ou erro ao acessar o banco de dados.</p>';
                 }
                 ?>
                 <div class="d-flex justify-content-end gap-2 flex-wrap">
@@ -547,7 +613,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
         </div>
         <div class="tab-pane fade <?= $tabAtiva === 'socio' ? 'show active' : '' ?>" id="tab-socio" role="tabpanel" aria-labelledby="tab-socio-btn">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
-                <h1 class="h3 mb-0 section-title">DADOS ECONOMICOS E SOCIOASSISTENCIAIS</h1>
+                <h1 class="h3 mb-0 section-title">DADOS ECONÔMICOS E SOCIOASSISTENCIAIS</h1>
             </div>
     <div class="col-11">
         <div class="card shadow-lg">
@@ -565,7 +631,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <label class="form-label">No de pessoas na residencia</label>
+                        <label class="form-label">Número de pessoas na residência</label>
                         <input type="number" name="NumPessoasReside" class="form-control" value="<?= $_POST['NumPessoasReside'] ?? '' ?>">
                     </div>
                     <div class="col-md-4">
@@ -588,11 +654,16 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                         <select name="ComQuemMora" class="form-select">
                             <option value="">Selecione</option>
                             <?php
-                            $opcoes = ["Sozinho", "Familia nuclear", "Parentes", "Outros"];
+                            $opcoes = [
+                                "Sozinho" => "Sozinho",
+                                "Familia nuclear" => "Família nuclear",
+                                "Parentes" => "Parentes",
+                                "Outros" => "Outros",
+                            ];
                             $valor = $_POST['ComQuemMora'] ?? '';
-                            foreach ($opcoes as $op) {
-                                $selected = ($valor == $op) ? 'selected' : '';
-                                echo "<option value=\"$op\" $selected>$op</option>";
+                            foreach ($opcoes as $valorOpcao => $labelOpcao) {
+                                $selected = ($valor == $valorOpcao || $valor == $labelOpcao) ? 'selected' : '';
+                                echo '<option value="' . htmlspecialchars($valorOpcao, ENT_QUOTES, 'UTF-8') . "\" $selected>" . htmlspecialchars($labelOpcao, ENT_QUOTES, 'UTF-8') . '</option>';
                             }
                             ?>
                         </select>
@@ -630,9 +701,9 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                         </select>
                     </div>
 
-                    <!-- Quantos e quais deficiencias -->
+                    <!-- Quantas e quais deficiências -->
                     <div class="col-md-5">
-                        <label class="form-label">Quantos e quais deficiencias</label>
+                        <label class="form-label">Quantas e quais deficiências</label>
                         <input type="text"
                             name="DeficienciasCasa"
                             class="form-control"
@@ -671,7 +742,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
 
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Tipo da construcao</label>
+                        <label class="form-label">Tipo da construção</label>
                         <select name="TipoConstrucao" class="form-select">
                             <option value="">Selecione</option>
                             <?php
@@ -686,15 +757,19 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
 
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Abastecimento de agua</label>
+                        <label class="form-label">Abastecimento de água</label>
                         <select name="AbastecimentoAgua" class="form-select">
                             <option value="">Selecione</option>
                             <?php
-                            $opcoes = ["Rede publica", "Poco", "Outro"];
+                            $opcoes = [
+                                "Rede publica" => "Rede pública",
+                                "Poco" => "Poço",
+                                "Outro" => "Outro",
+                            ];
                             $valor = $_POST['AbastecimentoAgua'] ?? '';
-                            foreach ($opcoes as $op) {
-                                $selected = ($valor == $op) ? 'selected' : '';
-                                echo "<option value=\"$op\" $selected>$op</option>";
+                            foreach ($opcoes as $valorOpcao => $labelOpcao) {
+                                $selected = ($valor == $valorOpcao || $valor == $labelOpcao) ? 'selected' : '';
+                                echo '<option value="' . htmlspecialchars($valorOpcao, ENT_QUOTES, 'UTF-8') . "\" $selected>" . htmlspecialchars($labelOpcao, ENT_QUOTES, 'UTF-8') . '</option>';
                             }
                             ?>
                         </select>
@@ -703,15 +778,19 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                 </div>
                 <div class="row mb-3">
                     <div class="col-md-4">
-                        <label class="form-label">Esgotamento sanitario</label>
+                        <label class="form-label">Esgotamento sanitário</label>
                         <select name="EsgotamentoSanitario" class="form-select">
                             <option value="">Selecione</option>
                             <?php
-                            $opcoes = ["Rede publica", "Fossa septica", "Ceu aberto"];
+                            $opcoes = [
+                                "Rede publica" => "Rede pública",
+                                "Fossa septica" => "Fossa séptica",
+                                "Ceu aberto" => "Céu aberto",
+                            ];
                             $valor = $_POST['EsgotamentoSanitario'] ?? '';
-                            foreach ($opcoes as $op) {
-                                $selected = ($valor == $op) ? 'selected' : '';
-                                echo "<option value=\"$op\" $selected>$op</option>";
+                            foreach ($opcoes as $valorOpcao => $labelOpcao) {
+                                $selected = ($valor == $valorOpcao || $valor == $labelOpcao) ? 'selected' : '';
+                                echo '<option value="' . htmlspecialchars($valorOpcao, ENT_QUOTES, 'UTF-8') . "\" $selected>" . htmlspecialchars($labelOpcao, ENT_QUOTES, 'UTF-8') . '</option>';
                             }
                             ?>
                         </select>
@@ -938,7 +1017,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
 
                     </div>
                     <div class="col-md-8">
-                        <label class="form-label">Qual / Frequencia</label>
+                        <label class="form-label">Qual / Frequência</label>
                         <input type="text" name="TipoFrequenciaAtividade" class="form-control" value="<?= $_POST['TipoFrequenciaAtividade'] ?? '' ?>">
                     </div>
                 </div>
@@ -995,7 +1074,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
 
                     </div>
                     <div class="col-md-8">
-                        <label class="form-label">Frequencia</label>
+                        <label class="form-label">Frequência</label>
                         <input type="text" name="FrequenciaAlcool" class="form-control" value="<?= $_POST['FrequenciaAlcool'] ?? '' ?>">
                     </div>
                 </div>
@@ -1235,7 +1314,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                 <div class="row mb-3">
                     <div class="col-6">
                         <label for="CPF" class="form-label">CPF</label>
-                        <input type="text" class="form-control" id="CPF" name="CPF" value="<?= $cpf ?>" <?= $modoEdicao ? '' : 'readonly' ?> autocomplete="off">
+                        <input type="text" class="form-control" id="CPF" name="CPF" value="<?= htmlspecialchars((string)$cpf, ENT_QUOTES, 'UTF-8') ?>" <?= $modoEdicao ? '' : 'readonly' ?> autocomplete="off">
                     </div>
                     <div class="col-6">
                         <label for="Identidade" class="form-label">Identidade</label>
@@ -1249,7 +1328,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                     </div>
                 </div>
                 <br>
-                <h5>INFORMACOES ADICIONAIS</h5>
+                <h5>INFORMAÇÕES ADICIONAIS</h5>
                 <hr class="close-hr"><br>
                 <div class="row mb-3">
                     <div class="col-12">
@@ -1289,13 +1368,16 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                                 "Casado",
                                 "Separado",
                                 "Viúvo",
-                                "Uniao estavel",
+                                "Uniao estavel" => "União estável",
                                 "Outro"
                             ];
                             $estadoCivilSelecionado = $_POST['EstadoCivil'] ?? 'Solteiro'; // valor padrão
-                            foreach ($opcoesEstadoCivil as $estadoCivil) {
-                                $selected = ($estadoCivil === $estadoCivilSelecionado) ? 'selected' : '';
-                                echo "<option value=\"$estadoCivil\" $selected>$estadoCivil</option>";
+                            foreach ($opcoesEstadoCivil as $valorEstadoCivil => $labelEstadoCivil) {
+                                if (is_int($valorEstadoCivil)) {
+                                    $valorEstadoCivil = $labelEstadoCivil;
+                                }
+                                $selected = ($valorEstadoCivil === $estadoCivilSelecionado || $labelEstadoCivil === $estadoCivilSelecionado) ? 'selected' : '';
+                                echo '<option value="' . htmlspecialchars((string)$valorEstadoCivil, ENT_QUOTES, 'UTF-8') . "\" $selected>" . htmlspecialchars((string)$labelEstadoCivil, ENT_QUOTES, 'UTF-8') . '</option>';
                             }
                             ?>
                         </select>
@@ -1305,15 +1387,16 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
 
                 <div class="row mb-3">
                     <div class="col-12">
-                        <label for="Profissao" class="form-label">Profissao</label>
+                        <label for="Profissao" class="form-label">Profissão</label>
                         <input type="text" class="form-control" id="Profissao" name="Profissao" value="<?= $_POST['Profissao'] ?? '' ?>" autocomplete="off">
                     </div>
                 </div>
+                <?php if (!$modoCrianca): ?>
                 <br>
-                <h5>RESPONSAVEIS</h5>
+                <h5>RESPONSÁVEIS</h5>
                 <hr class="close-hr"><br>
                 <div class="mb-3">
-                    <label for="NomeResp1" class="form-label">Nome do responsavel 1</label>
+                    <label for="NomeResp1" class="form-label">Nome do responsável 1</label>
                     <input type="text" class="form-control" id="NomeResp1" name="NomeResp1" value="<?= $_POST['NomeResp1'] ?? '' ?>" autocomplete="off">
                 </div>
                 <div class="row mb-3">
@@ -1323,9 +1406,9 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                             <?php
                             $opcoesParentesco = [
                                 "" => "", // opcao vazia
-                                "Mae" => "Mae",
+                                "Mae" => "Mãe",
                                 "Pai" => "Pai",
-                                "Avo/Avo" => "Avo/Avo",
+                                "Avo/Avo" => "Avô/Avó",
                                 "Madrasta" => "Madrasta",
                                 "Padrasto" => "Padrasto",
                                 "Cuidador" => "Cuidador",
@@ -1357,10 +1440,11 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                 </div>
                 <div class="row mb-3">
                     <div class="col-12">
-                        <label for="NomeResp2" class="form-label">Nome do responsavel 2</label>
+                        <label for="NomeResp2" class="form-label">Nome do responsável 2</label>
                         <input type="text" class="form-control" id="NomeResp2" name="NomeResp2" value="<?= $_POST['NomeResp2'] ?? '' ?>" autocomplete="off">
                     </div>
                 </div>
+                <?php endif; ?>
                 <br>
                 <h5>OUTROS</h5>
                 <hr class="close-hr"><br>
@@ -1375,9 +1459,11 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                     <button type="submit" name="acao" value="salvar" class="btn btn-primary">
                         Salvar
                     </button>
-                    <button type="submit" name="acao" value="salvar_versatilis" class="btn" style="background-color: #03989E; color: #ffffff;" <?= $podeUsarVersatilis ? '' : 'disabled' ?> title="<?= $podeUsarVersatilis ? '' : 'Sem permissão Versatilis' ?>">
-                        Salvar + Versatilis
-                    </button>
+                    <?php if (!$modoCrianca): ?>
+                        <button type="submit" name="acao" value="salvar_versatilis" class="btn" style="background-color: #03989E; color: #ffffff;" <?= $podeUsarVersatilis ? '' : 'disabled' ?> title="<?= $podeUsarVersatilis ? '' : 'Sem permissão Versatilis' ?>">
+                            Salvar + Versatilis
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
      
@@ -1386,6 +1472,106 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
     </div>
         </div>
     </div>
+
+    <?php
+    $cpfNumericoBenef = preg_replace('/\D/', '', (string)($cpf ?? ''));
+    if (strlen($cpfNumericoBenef) === 11): ?>
+        <div id="containerBtnCriancas" class="my-3" style="display:none;">
+            <button type="button" class="btn btn-outline-info btn-sm"
+                    data-bs-toggle="modal" data-bs-target="#modalCriancasVinculadas">
+                <i class="fa-solid fa-children"></i> Ver crianças vinculadas
+            </button>
+        </div>
+
+        <div class="modal fade" id="modalCriancasVinculadas" tabindex="-1"
+             aria-labelledby="modalCriancasLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalCriancasLabel">
+                            <i class="fa-solid fa-children"></i>
+                            Crianças vinculadas ao CPF do responsável
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>IdAluno</th>
+                                        <th>Nome</th>
+                                        <th>Nascimento</th>
+                                        <th>CPF</th>
+                                        <th>Responsável</th>
+                                        <th>Parentesco</th>
+                                        <th>WhatsApp Resp.</th>
+                                        <th>Telefone Resp.</th>
+                                        <th>Colaborador</th>
+                                        <th>Data/Hora Cadastro</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="corpoTabelaCriancas">
+                                    <tr>
+                                        <td colspan="11" class="text-center text-muted">Carregando...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            (function () {
+                const cpfResponsavel = '<?= htmlspecialchars($cpfNumericoBenef, ENT_QUOTES, 'UTF-8') ?>';
+                const endpointCriancas = '<?= rtrim((string)$BASE_para_URL, '/') ?>/beneficiarios/criancas-responsavel';
+
+                if (cpfResponsavel.length !== 11 || typeof $ === 'undefined') return;
+
+                $.getJSON(endpointCriancas, { cpf: cpfResponsavel }, function (data) {
+                    if (!data || !data.success || data.total === 0) return;
+
+                    $('#containerBtnCriancas').show();
+
+                    const tbody = $('#corpoTabelaCriancas');
+                    tbody.empty();
+
+                    $.each(data.criancas, function (i, c) {
+                        const cpfExibir = (c.CPF && String(c.CPF).trim() !== '') ? $('<span>').text(c.CPF).html() : '<em class="text-muted">Sem CPF</em>';
+                        const nascimento = c.Nascimento ? $('<span>').text(c.Nascimento).html() : '-';
+                        const timeEntrada = c.TimeEntrada
+                            ? $('<span>').text(String(c.TimeEntrada).replace('T', ' ').substring(0, 16)).html()
+                            : '-';
+                        const urlCadastro = $('<span>').text(c.UrlCadastro || '#').html();
+                        const btnAbrir = '<a href="' + urlCadastro + '" target="_blank" rel="noopener noreferrer"'
+                            + ' class="btn btn-sm btn-primary">Abrir cadastro</a>';
+
+                        tbody.append(
+                            '<tr>'
+                            + '<td>' + $('<span>').text(c.IdUsuario || '').html() + '</td>'
+                            + '<td>' + $('<span>').text(c.Nome || '-').html() + '</td>'
+                            + '<td>' + nascimento + '</td>'
+                            + '<td>' + cpfExibir + '</td>'
+                            + '<td>' + $('<span>').text(c.NomeResp1 || '-').html() + '</td>'
+                            + '<td>' + $('<span>').text(c.Parentesco || '-').html() + '</td>'
+                            + '<td>' + $('<span>').text(c.WhatsAppResp1 || '-').html() + '</td>'
+                            + '<td>' + $('<span>').text(c.TelefoneResp1 || '-').html() + '</td>'
+                            + '<td>' + $('<span>').text(c.NomeColaborador || '-').html() + '</td>'
+                            + '<td>' + timeEntrada + '</td>'
+                            + '<td>' + btnAbrir + '</td>'
+                            + '</tr>'
+                        );
+                    });
+                });
+            }());
+        </script>
+    <?php endif; ?>
 </form>
 
 </div>
@@ -1435,7 +1621,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                 },
             });
         } else {
-            alert("Por favor, envie uma imagem valida.");
+            alert("Por favor, envie uma imagem válida.");
             uploadImage.value = '';
         }
     });
@@ -1741,13 +1927,13 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
             let rendaFamiliarStr = $('input[name="RendaFamiliar"]').val();
             let numPessoasStr = $('input[name="NumPessoasReside"]').val();
 
-            // Troca virgula por ponto (caso o usuario digite assim)
+            // Troca vírgula por ponto (caso o usuário digite assim)
             rendaFamiliarStr = rendaFamiliarStr.replace(/\./g, '').replace(',', '.');
 
             const rendaFamiliar = parseFloat(rendaFamiliarStr);
             const numPessoas = parseInt(numPessoasStr);
 
-            // Se estiver faltando dado ou invalido, limpa o campo
+            // Se estiver faltando dado ou inválido, limpa o campo
             if (isNaN(rendaFamiliar) || isNaN(numPessoas) || numPessoas <= 0) {
                 $('input[name="Calculo"]').val('');
                 return;
@@ -1765,9 +1951,9 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
             } else if (rendaPerCapita <= 1254) {
                 classificacao = 'Baixa renda';
             } else if (rendaPerCapita <= 4085) {
-                classificacao = 'Classe media';
+                classificacao = 'Classe média';
             } else if (rendaPerCapita <= 9734) {
-                classificacao = 'Classe media alta';
+                classificacao = 'Classe média alta';
             } else {
                 classificacao = 'Alta renda';
             }
@@ -1783,7 +1969,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
             atualizarClassificacaoSocioeconomica();
         });
 
-        // Se ja vier valor do banco (modo edicao), calcula na carga da pagina
+        // Se já vier valor do banco (modo edição), calcula na carga da página
         atualizarClassificacaoSocioeconomica();
     });
 </script>
@@ -1847,7 +2033,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
 
         $("#Nascimento").on("input change", atualizarIdade);
 
-        atualizarIdade(); // modo edicao
+        atualizarIdade(); // modo edição
     });
 </script>
 

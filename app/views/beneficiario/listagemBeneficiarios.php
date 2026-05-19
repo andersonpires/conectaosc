@@ -161,6 +161,10 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
                                     $def = (string)($dados['DeficienciasCasa'] ?? '');
                                     $defCurto = mb_strlen($def) > 40 ? mb_substr($def, 0, 40) . '...' : $def;
                                     $cpfNumerico = preg_replace('/\D/', '', $cpf ?? '');
+                                    $criancaSemCpf = $cpfNumerico === ''
+                                        && trim((string)($dados['NomeResp1'] ?? '')) !== ''
+                                        && preg_replace('/\D/', '', (string)($dados['CpfResp1'] ?? '')) !== '';
+                                    $textoCpfVazio = $criancaSemCpf ? 'Criança sem CPF' : 'Sem CPF';
                                     $nomeCriador = trim((string)($dados['NomeUserEnt'] ?? ''));
                                     $nomeAlteracao = trim((string)($dados['NomeUserAlt'] ?? ''));
                                     $dataCriacaoBr = '-';
@@ -186,19 +190,25 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
                                     $textoAlteracao = $nomeAlteracao !== '' ? $nomeAlteracao : 'Não informado';
                                     $popoverContent = "Criado por: {$textoCriador} em {$dataCriacaoBr}<br>Último ajuste: {$textoAlteracao} em {$dataAlteracaoBr}";
                                     $popoverContentAttr = htmlspecialchars($popoverContent, ENT_QUOTES, 'UTF-8');
+                                    $urlCadastro = $BASE_para_URL . '/beneficiarios/cadastro?id=' . $id;
+                                    if ($cpfNumerico !== '') {
+                                        $urlCadastro .= '&cpf=' . urlencode((string)$cpfNumerico);
+                                    } else {
+                                        $urlCadastro .= '&modo=crianca';
+                                    }
 
                                     echo '<tr data-popover-content="' . $popoverContentAttr . '" data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top" data-bs-title="Histórico do registro">';
                                     echo '<td><input type="checkbox" class="form-radio-input doacao" name="checkbox[]" value="' . $id . '"></td>';
                                     echo '<td>' . $id . '</td>';
                                     echo '<td><span class="hover-container"><img src="' . htmlspecialchars($FOTO_PADRAO_URL) . '" data-foto-id="' . $id . '" class="rounded-circle img-cover hover-img beneficiario-foto js-foto-pendente" width="40" height="40" loading="lazy" decoding="async" alt="Foto de beneficiário"></span></td>';
-                                    echo '<td><a href="' . $BASE_para_URL . '/beneficiarios/cadastro?cpf=' . urlencode((string)$cpfNumerico) . '&id=' . $id . '" style="text-decoration:none;color:inherit;">' . htmlspecialchars($nome) . '</a></td>';
+                                    echo '<td><a href="' . htmlspecialchars($urlCadastro, ENT_QUOTES, 'UTF-8') . '" style="text-decoration:none;color:inherit;">' . htmlspecialchars($nome) . '</a></td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['Interesses'] ?? '')) . '</td>';
                                     echo '<td class="text-center">' . $paciente . '</td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['TurmasAtivas'] ?? '')) . '</td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['HistoricoTurmas'] ?? '')) . '</td>';
                                     echo '<td>' . htmlspecialchars($nascimento) . '</td>';
                                     echo '<td>' . htmlspecialchars($idade) . '</td>';
-                                    echo '<td>' . htmlspecialchars($cpf) . '</td>';
+                                    echo '<td>' . ($cpf !== '' ? htmlspecialchars($cpf) : '<em class="text-muted">' . htmlspecialchars($textoCpfVazio) . '</em>') . '</td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['Identidade'] ?? '')) . '</td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['Endereco'] ?? '')) . '</td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['Bairro'] ?? '')) . '</td>';
@@ -211,7 +221,13 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
                                     echo '<td title="' . htmlspecialchars($def) . '">' . htmlspecialchars($defCurto) . '</td>';
                                     echo '<td title="' . htmlspecialchars($obs) . '">' . htmlspecialchars($obsCurto) . '</td>';
                                     echo '<td><div class="d-flex justify-content-center gap-2">';
-                                    echo '<form method="GET" action="' . $BASE_para_URL . '/beneficiarios/cadastro" style="display:inline;"><input type="hidden" name="cpf" value="' . htmlspecialchars((string)$cpfNumerico) . '"><input type="hidden" name="id" value="' . $id . '"><button type="submit" class="btn btn-warning"><i class="fa-solid fa-pen-to-square" data-feather="edit-3"></i></button></form>';
+                                    echo '<form method="GET" action="' . $BASE_para_URL . '/beneficiarios/cadastro" style="display:inline;">';
+                                    if ($cpfNumerico !== '') {
+                                        echo '<input type="hidden" name="cpf" value="' . htmlspecialchars((string)$cpfNumerico) . '">';
+                                    } else {
+                                        echo '<input type="hidden" name="modo" value="crianca">';
+                                    }
+                                    echo '<input type="hidden" name="id" value="' . $id . '"><button type="submit" class="btn btn-warning"><i class="fa-solid fa-pen-to-square" data-feather="edit-3"></i></button></form>';
                                     echo '<form method="GET" action="' . $BASE_para_URL . '/relatorios/ficha-cadastro-pdf/" target="_blank" style="display:inline;"><input type="hidden" name="id" value="' . $id . '"><button type="submit" class="btn btn-success" title="Gerar PDF"><i data-feather="file-text"></i></button></form>';
                                     echo '<form method="POST" action="' . $BASE_para_URL . '/beneficiarios/cadastro/" style="display:inline;"><input type="hidden" name="delete" value="' . $id . '"><button type="submit" class="btn btn-danger" onclick="return confirm(\'Tem certeza que deseja excluir este beneficiário?\');"><i class="bi bi-trash-fill" data-feather="trash-2"></i></button></form>';
                                     echo '</div></td>';
@@ -388,7 +404,7 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
         const headers = ['ID','Nome','Interesses','Paciente','Turmas Ativas','Histórico de turmas','Nascimento','CPF','Endereço','Bairro','Cidade','Telefone','WhatsApp','Responsável','Contato','Obs'];
         const dadosFormatados = [];
         dadosFiltrados.each(function(row) {
-            dadosFormatados.push([row[1], extrairTexto(row[3]), row[4], extrairPaciente(row[5]), row[6], row[7], row[8], row[10], row[12], row[13], row[14], row[15], row[16], row[17], row[18], row[21]]);
+            dadosFormatados.push([row[1], extrairTexto(row[3]), row[4], extrairPaciente(row[5]), row[6], row[7], row[8], extrairTexto(row[10]) || 'Sem CPF', row[12], row[13], row[14], row[15], row[16], row[17], row[18], row[21]]);
         });
 
         const wb = XLSX.utils.book_new();

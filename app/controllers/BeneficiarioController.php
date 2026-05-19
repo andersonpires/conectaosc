@@ -125,6 +125,65 @@ final class BeneficiarioController
         }
     }
 
+    public function criancasResponsavel(): void
+    {
+        try {
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                @session_start();
+            }
+
+            require_once $this->basePath . '/api/legacy/checa-token.php';
+            require_once $this->basePath . '/api/conectabd/conexao.php';
+            header('Content-Type: application/json; charset=utf-8');
+
+            $cpf = preg_replace('/\D/', '', (string)($_GET['cpf'] ?? ''));
+            if (strlen($cpf) !== 11) {
+                echo json_encode(['success' => false, 'total' => 0, 'criancas' => []], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
+            /** @var PDO $pdo */
+            $stmt = $pdo->prepare("
+                SELECT
+                    a.IdUsuario,
+                    a.Nome,
+                    a.Nascimento,
+                    a.CPF,
+                    a.NomeResp1,
+                    a.Parentesco,
+                    a.CpfResp1,
+                    a.TelefoneResp1,
+                    a.WhatsAppResp1,
+                    a.IdColaboradorEnt,
+                    a.TimeEntrada,
+                    TRIM(CONCAT(COALESCE(u.Nome,''), ' ', COALESCE(u.Sobrenome,''))) AS NomeColaborador
+                FROM tbAluno a
+                LEFT JOIN tbUser u ON u.IdColaborador = a.IdColaboradorEnt
+                WHERE REPLACE(REPLACE(REPLACE(a.CpfResp1, '.', ''), '-', ''), ' ', '') = :cpf
+                  AND (a.CPF IS NULL OR TRIM(a.CPF) = '')
+                  AND a.Habilitado = 1
+                ORDER BY a.Nome ASC
+            ");
+            $stmt->execute([':cpf' => $cpf]);
+            $criancas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $baseUrl = rtrim($this->baseUrl, '/');
+            foreach ($criancas as &$crianca) {
+                $crianca['UrlCadastro'] = $baseUrl . '/beneficiarios/cadastro?id=' . (int)$crianca['IdUsuario'] . '&modo=crianca';
+            }
+            unset($crianca);
+
+            echo json_encode(
+                ['success' => true, 'total' => count($criancas), 'criancas' => $criancas],
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+        } catch (Throwable $e) {
+            header('Content-Type: application/json; charset=utf-8');
+            http_response_code(500);
+            echo json_encode(['success' => false, 'total' => 0, 'criancas' => []], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
     public function avaliarVulnerabilidadeStream(): void
     {
         $this->render('/app/views/beneficiario/avaliarVulnerabilidadeStream.php');

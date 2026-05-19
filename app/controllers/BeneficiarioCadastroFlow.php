@@ -11,6 +11,8 @@ final class BeneficiarioCadastroFlow
     ) {
     }
 
+    private ?array $pendingFotoUpload = null;
+
     public function handle(): void
     {
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -38,13 +40,13 @@ final class BeneficiarioCadastroFlow
                 require_once $this->basePath . '/api/services/BeneficiarioService.php';
                 $service = new \BackEnd\Services\BeneficiarioService(new \BackEnd\Repositories\BeneficiarioRepository());
                 if ($service->softDelete($id)) {
-                    header("Location: {$beneficiariosListaUrl}?msg=" . urlencode('Beneficiario excluido com sucesso!'));
+                    header("Location: {$beneficiariosListaUrl}?msg=" . urlencode('Beneficiário excluído com sucesso!'));
                     exit;
                 }
-                header("Location: {$beneficiariosListaUrl}?erro=" . urlencode('Erro ao excluir beneficiario.'));
+                header("Location: {$beneficiariosListaUrl}?erro=" . urlencode('Erro ao excluir beneficiário.'));
                 exit;
             }
-            header("Location: {$beneficiariosListaUrl}?erro=" . urlencode('ID invalido para exclusao.'));
+            header("Location: {$beneficiariosListaUrl}?erro=" . urlencode('ID inválido para exclusão.'));
             exit;
         }
 
@@ -63,12 +65,15 @@ final class BeneficiarioCadastroFlow
                 $tipoPermissao = $_SESSION['Tipo'] ?? '';
                 $podeUsarVersatilis = in_array($tipoPermissao, ['Versatilis', 'Geral', 'Administrador', 'Superadministrador'], true);
                 if (!$podeUsarVersatilis) {
-                    header("Location: {$beneficiariosCadastroUrl}?erro=" . urlencode('Sem permissao para salvar com Versatilis.'));
+                    header("Location: {$beneficiariosCadastroUrl}?erro=" . urlencode('Sem permissão para salvar com Versatilis.'));
                     exit;
                 }
 
                 $this->processUploadFoto();
                 $resultado = \BeneficiarioModel::salvarComVersatilis($_POST);
+                if (!empty($resultado['ok']) && !empty($resultado['idUsuario']) && (($resultado['tipo'] ?? '') === 'create')) {
+                    $this->finalizePendingFotoUpload((int) $resultado['idUsuario']);
+                }
                 $cpf = preg_replace('/[^0-9]/', '', $_POST['CPF'] ?? '');
                 $query = [];
                 if (!empty($_POST['IdUsuario'])) {
@@ -105,19 +110,35 @@ final class BeneficiarioCadastroFlow
             if ($acao === 'salvar') {
                 $this->processUploadFoto();
 
+                $erroCriancaSemCpf = $this->validarCriancaSemCpf($_POST);
+                if ($erroCriancaSemCpf !== null) {
+                    $_POST['erro'] = $erroCriancaSemCpf;
+                    $_POST['modo'] = 'crianca';
+                    if ($tab) {
+                        $_GET['tab'] = $tab;
+                    }
+                    require $this->basePath . '/app/views/beneficiario/formBeneficiario.php';
+                    exit;
+                }
+
+                $this->prepararDadosCriancaSemCpf($_POST);
+
                 if (!empty($_POST['IdUsuario'])) {
                     $sucesso = \BeneficiarioModel::update($_POST);
                     if ($sucesso) {
                         $idsProjetosSelecionados = $_POST['projetos'] ?? [];
                         \BeneficiarioModel::salvarInteresses($_POST['IdUsuario'], $idsProjetosSelecionados);
-                        $cpf = preg_replace('/[^0-9]/', '', $_POST['CPF'] ?? '');
+                        $cpf = $this->cpfSomenteDigitos($_POST['CPF'] ?? '');
 
                         if ($fecharCadastro) {
                             header("Location: {$beneficiariosListaUrl}?msg=" . urlencode('Registro atualizado com sucesso!'));
                             exit;
                         }
 
-                        $query = ['cpf' => $cpf, 'msg' => 'Registro atualizado com sucesso!'];
+                        $query = $cpf !== ''
+                            ? ['cpf' => $cpf]
+                            : ['id' => (int)$_POST['IdUsuario'], 'modo' => 'crianca'];
+                        $query['msg'] = 'Registro atualizado com sucesso!';
                         if ($tab) {
                             $query['tab'] = $tab;
                         }
@@ -126,6 +147,9 @@ final class BeneficiarioCadastroFlow
                     }
 
                     $query = ['id' => (int) $_POST['IdUsuario'], 'erro' => 'Erro ao atualizar registro.'];
+                    if ($this->postIndicaCriancaSemCpf($_POST)) {
+                        $query['modo'] = 'crianca';
+                    }
                     if ($tab) {
                         $query['tab'] = $tab;
                     }
@@ -135,16 +159,22 @@ final class BeneficiarioCadastroFlow
 
                 $idUsuario = \BeneficiarioModel::create($_POST);
                 if ($idUsuario) {
+                    if ($this->pendingFotoUpload !== null) {
+                        $this->finalizePendingFotoUpload($idUsuario);
+                    }
                     $idsProjetosSelecionados = $_POST['projetos'] ?? [];
                     \BeneficiarioModel::salvarInteresses($idUsuario, $idsProjetosSelecionados);
-                    $cpf = preg_replace('/[^0-9]/', '', $_POST['CPF'] ?? '');
+                    $cpf = $this->cpfSomenteDigitos($_POST['CPF'] ?? '');
 
                     if ($fecharCadastro) {
                         header("Location: {$beneficiariosListaUrl}?msg=" . urlencode('Cadastro realizado com sucesso!'));
                         exit;
                     }
 
-                    $query = ['cpf' => $cpf, 'msg' => 'Cadastro realizado com sucesso!'];
+                    $query = $cpf !== ''
+                        ? ['cpf' => $cpf]
+                        : ['id' => $idUsuario, 'modo' => 'crianca'];
+                    $query['msg'] = 'Cadastro realizado com sucesso!';
                     if ($tab) {
                         $query['tab'] = $tab;
                     }
@@ -153,6 +183,9 @@ final class BeneficiarioCadastroFlow
                 }
 
                 $query = ['erro' => 'Erro ao cadastrar registro.'];
+                if ($this->postIndicaCriancaSemCpf($_POST)) {
+                    $query['modo'] = 'crianca';
+                }
                 if ($tab) {
                     $query['tab'] = $tab;
                 }
@@ -172,13 +205,16 @@ final class BeneficiarioCadastroFlow
         $id = isset($_GET['id']) ? (int) $_GET['id'] : null;
 
         if (!$cpf && !$id) {
+            if (($_GET['modo'] ?? '') === 'crianca') {
+                $_POST['modo'] = 'crianca';
+            }
             require $this->basePath . '/app/views/beneficiario/formBeneficiario.php';
             exit;
         }
 
         if ($cpf && strlen($cpf) !== 11) {
             if (!$id) {
-                header("Location: {$beneficiariosCadastroUrl}?erro=CPF invalido");
+                header("Location: {$beneficiariosCadastroUrl}?erro=CPF inválido");
                 exit;
             }
             $cpf = null;
@@ -188,6 +224,11 @@ final class BeneficiarioCadastroFlow
         $cpfNaoEncontrado = false;
 
         if ($dados) {
+            $cpfBanco = $this->cpfSomenteDigitos($dados['CPF'] ?? '');
+            if ($cpfBanco === '') {
+                $_POST['modo'] = 'crianca';
+            }
+
             foreach ($dados as $key => $value) {
                 $_POST[$key] = $value;
             }
@@ -200,6 +241,55 @@ final class BeneficiarioCadastroFlow
         exit;
     }
 
+    private function cpfSomenteDigitos(?string $valor): string
+    {
+        return preg_replace('/\D/', '', (string)$valor);
+    }
+
+    private function postIndicaCriancaSemCpf(array $dados): bool
+    {
+        $modo = (string)($dados['modo'] ?? '');
+        $cpf = $this->cpfSomenteDigitos($dados['CPF'] ?? '');
+        return $modo === 'crianca' || $cpf === '';
+    }
+
+    private function prepararDadosCriancaSemCpf(array &$dados): void
+    {
+        if (!$this->postIndicaCriancaSemCpf($dados)) {
+            return;
+        }
+
+        $dados['modo'] = 'crianca';
+        $dados['CPF'] = null;
+    }
+
+    private function validarCriancaSemCpf(array $dados): ?string
+    {
+        if (!$this->postIndicaCriancaSemCpf($dados)) {
+            return null;
+        }
+
+        $nomeResp = trim((string)($dados['NomeResp1'] ?? ''));
+        $parentesco = trim((string)($dados['Parentesco'] ?? ''));
+        $cpfResp = $this->cpfSomenteDigitos($dados['CpfResp1'] ?? '');
+        $whatsappResp = preg_replace('/\D/', '', (string)($dados['WhatsAppResp1'] ?? ''));
+
+        if ($nomeResp === '') {
+            return 'Informe o nome do responsável.';
+        }
+        if ($parentesco === '') {
+            return 'Informe o parentesco do responsável.';
+        }
+        if (strlen($cpfResp) !== 11) {
+            return 'Informe um CPF válido para o responsável.';
+        }
+        if ($whatsappResp === '') {
+            return 'Informe o WhatsApp do responsável.';
+        }
+
+        return null;
+    }
+
     private function processUploadFoto(): void
     {
         $foto = $_FILES['foto'] ?? null;
@@ -209,17 +299,67 @@ final class BeneficiarioCadastroFlow
         if ($foto && $foto['error'] === UPLOAD_ERR_OK && !empty($foto['tmp_name'])) {
             preg_match('/\.(png|jpg|jpeg)$/i', (string) $foto['name'], $ext);
             if (!empty($ext)) {
-                $nomeArquivo = md5(uniqid((string) time(), true)) . '.' . $ext[1];
-                $destinoDir = $this->resolveFotosDir();
-                if (!is_dir($destinoDir)) {
-                    @mkdir($destinoDir, 0777, true);
+                $extension = strtolower($ext[1]);
+                if (!empty($_POST['IdUsuario'])) {
+                    $idUsuario = (int) $_POST['IdUsuario'];
+                    $nomeArquivo = $this->buildFotoFileName('aluno', $idUsuario, $extension);
+                    $destinoDir = $this->resolveFotosDir();
+                    if (!is_dir($destinoDir)) {
+                        @mkdir($destinoDir, 0777, true);
+                    }
+                    $destino = $destinoDir . DIRECTORY_SEPARATOR . $nomeArquivo;
+                    move_uploaded_file((string) $foto['tmp_name'], $destino);
+                    $this->deleteOldFoto($fotoAtual, $nomeArquivo, $destinoDir);
+                } else {
+                    $this->pendingFotoUpload = [
+                        'tmp_name' => (string) $foto['tmp_name'],
+                        'ext' => $extension,
+                        'fotoAtual' => $fotoAtual,
+                    ];
                 }
-                $destino = $destinoDir . DIRECTORY_SEPARATOR . $nomeArquivo;
-                move_uploaded_file((string) $foto['tmp_name'], $destino);
             }
         }
 
         $_POST['Foto'] = $nomeArquivo;
+    }
+
+    private function finalizePendingFotoUpload(int $idUsuario): void
+    {
+        if ($this->pendingFotoUpload === null) {
+            return;
+        }
+
+        $extension = $this->pendingFotoUpload['ext'];
+        $fotoAtual = $this->pendingFotoUpload['fotoAtual'];
+        $nomeArquivo = $this->buildFotoFileName('aluno', $idUsuario, $extension);
+        $destinoDir = $this->resolveFotosDir();
+        if (!is_dir($destinoDir)) {
+            @mkdir($destinoDir, 0777, true);
+        }
+        $destino = $destinoDir . DIRECTORY_SEPARATOR . $nomeArquivo;
+        move_uploaded_file($this->pendingFotoUpload['tmp_name'], $destino);
+        $this->deleteOldFoto($fotoAtual, $nomeArquivo, $destinoDir);
+        $_POST['Foto'] = $nomeArquivo;
+        \BeneficiarioModel::update(['IdUsuario' => $idUsuario, 'Foto' => $nomeArquivo]);
+        $this->pendingFotoUpload = null;
+    }
+
+    private function buildFotoFileName(string $prefix, int $id, string $ext): string
+    {
+        return sprintf('%s_%d.%s', $prefix, $id, $ext);
+    }
+
+    private function deleteOldFoto(string $oldFoto, string $newFoto, string $dirFotos): void
+    {
+        $oldFoto = trim((string) $oldFoto);
+        if ($oldFoto === '' || $oldFoto === 'padrao.jfif' || $oldFoto === $newFoto) {
+            return;
+        }
+
+        $oldFile = $dirFotos . DIRECTORY_SEPARATOR . basename($oldFoto);
+        if (is_file($oldFile)) {
+            @unlink($oldFile);
+        }
     }
 
     private function resolveFotosDir(): string

@@ -25,17 +25,26 @@ final class PerfilService
 
         $fotoString = (string)($dados['fotostring'] ?? '');
         $nomeArquivo = $fotoString;
+
+        $fotoAtual = '';
+        $usuario = $this->repository->getById($idColaborador);
+        if ($usuario !== null) {
+            $fotoAtual = (string)($usuario['Foto'] ?? '');
+        }
+
         if (isset($files['foto']) && is_array($files['foto']) && ($files['foto']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK) {
             $foto = $files['foto'];
             preg_match('/\.(png|jpg|jpeg){1}$/i', (string)$foto['name'], $ext);
             if ($ext) {
-                $nomeArquivo = md5(uniqid((string)time(), true)) . "." . $ext[1];
+                $extension = strtolower($ext[1]);
+                $nomeArquivo = $this->buildFotoFileName('user', $idColaborador, $extension);
                 $dirFotos = $this->resolveFotosDir($basePath);
                 if (!is_dir($dirFotos)) {
                     @mkdir($dirFotos, 0777, true);
                 }
                 $caminhoArquivo = rtrim($dirFotos, '/\\') . DIRECTORY_SEPARATOR . $nomeArquivo;
                 move_uploaded_file((string)$foto['tmp_name'], $caminhoArquivo);
+                $this->deleteOldFoto($fotoAtual, $nomeArquivo, $dirFotos);
             }
         }
 
@@ -74,6 +83,24 @@ final class PerfilService
         }
 
         return $raw;
+    }
+
+    private function buildFotoFileName(string $prefix, int $id, string $ext): string
+    {
+        return sprintf('%s_%d.%s', $prefix, $id, $ext);
+    }
+
+    private function deleteOldFoto(string $oldFoto, string $newFoto, string $dirFotos): void
+    {
+        $oldFoto = trim((string)$oldFoto);
+        if ($oldFoto === '' || $oldFoto === 'padrao.jfif' || $oldFoto === $newFoto) {
+            return;
+        }
+
+        $oldFile = $dirFotos . DIRECTORY_SEPARATOR . basename($oldFoto);
+        if (is_file($oldFile)) {
+            @unlink($oldFile);
+        }
     }
 
     private function resolveFotosDir(string $basePath): string
