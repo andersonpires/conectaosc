@@ -23,7 +23,16 @@ final class ColaboradorFlow
         $timeAlterado = date('Y-m-d H:i:s');
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->handlePost($acao, $colaboradoresRoute, $idColaboradorAlt, $timeAlterado);
+            try {
+                $this->handlePost($acao, $colaboradoresRoute, $idColaboradorAlt, $timeAlterado);
+            } catch (Throwable $e) {
+                error_log('[colaboradores.handlePost] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+                $mensagemErro = 'Erro interno ao salvar colaborador.';
+                if (\bootstrap_is_debug()) {
+                    $mensagemErro = $e->getMessage() . ' @ ' . basename($e->getFile()) . ':' . $e->getLine();
+                }
+                $this->redirect("{$colaboradoresRoute}?erro=" . urlencode($mensagemErro));
+            }
         }
 
         if (isset($_GET['msg'])) {
@@ -221,6 +230,11 @@ final class ColaboradorFlow
             $this->redirect("{$colaboradoresRoute}?erro=" . urlencode('Registro salvo, mas houve erro ao salvar especialidades.'));
         }
 
+        if ($idColaboradorAlt !== null && $id === $idColaboradorAlt) {
+            $_SESSION['profissional_saude'] = $profissionalSaude;
+            $_SESSION['licenca_administrativa'] = $licencaAdministrativa;
+        }
+
         $mensagem = "
             <!DOCTYPE html>
             <html lang='pt-br'>
@@ -232,7 +246,7 @@ final class ColaboradorFlow
             </body>
             </html>
         ";
-        \enviarEmail($nome, $email, $mensagem);
+        $this->safeEnviarEmail($nome, $email, $mensagem);
         $this->redirect("{$colaboradoresRoute}?msg=" . urlencode('Registro alterado com sucesso.'));
     }
 
@@ -313,7 +327,7 @@ final class ColaboradorFlow
             </body>
             </html>
         ";
-        \enviarEmail($nome, $email, $mensagem);
+        $this->safeEnviarEmail($nome, $email, $mensagem);
 
         $this->redirect("{$colaboradoresRoute}?msg=" . urlencode('Colaborador cadastrado com sucesso.'));
     }
@@ -441,6 +455,15 @@ final class ColaboradorFlow
         }
 
         return rtrim($path, '/') . $suffix;
+    }
+
+    private function safeEnviarEmail(string $nome, string $email, string $mensagem): void
+    {
+        try {
+            \enviarEmail($nome, $email, $mensagem);
+        } catch (Throwable $e) {
+            error_log('[colaboradores.email] ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+        }
     }
 
     private function redirect(string $location): never

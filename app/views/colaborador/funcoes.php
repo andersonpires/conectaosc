@@ -66,7 +66,7 @@ function enviarEmail($nomeCad, $emailCad, $mensagem)
     $headers .= 'From: no-reply@iteva.org.br' . "\r\n";
     $headers .= 'Cc: cadastro@iteva.org.br' . "\r\n";
 
-    if (mail($para, $assunto, $mensagem, $headers)) {
+    if (@mail($para, $assunto, $mensagem, $headers)) {
         $emailEnviado = "Ok";
     } else {
         $emailEnviado = "Erro";

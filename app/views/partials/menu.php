@@ -1,5 +1,6 @@
 <?php
 $tipoSessao = (string)($_SESSION['Tipo'] ?? '');
+$menuClinicaDebug = [];
 ?>
 <nav id="sidebar" class="sidebar js-sidebar">
 	<div class="sidebar-content js-simplebar">
@@ -30,19 +31,31 @@ $tipoSessao = (string)($_SESSION['Tipo'] ?? '');
 				</a>
 			</li>
 			<?php
-			if ((!isset($_SESSION['profissional_saude']) || !isset($_SESSION['licenca_administrativa'])) && isset($_SESSION['Cod'])) {
+			if (isset($_SESSION['Cod'])) {
 				try {
-					if (!isset($pdo)) require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
+					if (!isset($pdo) || !($pdo instanceof PDO)) {
+						$pdo = $GLOBALS['pdo'] ?? null;
+					}
+					if (!isset($pdo) || !($pdo instanceof PDO)) {
+						require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
+						$pdo = $GLOBALS['pdo'] ?? ($pdo ?? null);
+					}
 					$stmt = $pdo->prepare("SELECT COALESCE(profissional_saude, 0), COALESCE(licenca_administrativa, 0) FROM tbUser WHERE IdColaborador = ?");
 					$stmt->execute([$_SESSION['Cod']]);
 					$rowMenuClinica = $stmt->fetch(PDO::FETCH_NUM);
 					$_SESSION['profissional_saude'] = (int)($rowMenuClinica[0] ?? 0);
 					$_SESSION['licenca_administrativa'] = (int)($rowMenuClinica[1] ?? 0);
+					$menuClinicaDebug['db_profissional_saude'] = (int)($rowMenuClinica[0] ?? 0);
+					$menuClinicaDebug['db_licenca_administrativa'] = (int)($rowMenuClinica[1] ?? 0);
 				} catch (Throwable $e) {
 					$_SESSION['profissional_saude'] = 0;
 					$_SESSION['licenca_administrativa'] = 0;
+					$menuClinicaDebug['erro'] = $e->getMessage();
 				}
 			}
+			$menuClinicaDebug['session_cod'] = (int)($_SESSION['Cod'] ?? 0);
+			$menuClinicaDebug['session_profissional_saude'] = (int)($_SESSION['profissional_saude'] ?? 0);
+			$menuClinicaDebug['session_licenca_administrativa'] = (int)($_SESSION['licenca_administrativa'] ?? 0);
 			$mostrarAppClinica = (int)($_SESSION['profissional_saude'] ?? 0) === 1
 				|| (int)($_SESSION['licenca_administrativa'] ?? 0) === 1;
 			if ($mostrarAppClinica):
@@ -51,6 +64,13 @@ $tipoSessao = (string)($_SESSION['Tipo'] ?? '');
 				<a class="sidebar-link" href="<?php echo $BASE_para_URL ?>/clinica/" target="_blank">
 					<i class="align-middle" data-feather="heart"></i> <span class="align-middle">App Clínica</span>
 				</a>
+			</li>
+			<?php endif; ?>
+			<?php if (!$mostrarAppClinica && bootstrap_is_debug()): ?>
+			<li class="sidebar-item">
+				<div class="sidebar-link text-warning" style="white-space: normal; cursor: default;">
+					<i class="align-middle" data-feather="alert-circle"></i> <span class="align-middle">Debug App ClÃ­nica: <?php echo htmlspecialchars(json_encode($menuClinicaDebug, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?></span>
+				</div>
 			</li>
 			<?php endif; ?>
 			<li class="sidebar-item">
