@@ -1,23 +1,17 @@
 import { getCurrentClinicaUser, getEvolucoes, getEvolucao, postEvolucao, putEvolucao, getPaciente, getConsulta, getPacientes, getProfissionais, getEspecialidades } from '../services/api.js';
-import { getSpinnerHtml } from '../utils/loading.js';
+import { getButtonSpinnerHtml, getSpinnerHtml } from '../utils/loading.js';
 
-const TEMPLATE_INICIAL = `Dados observados durante o atendimento:
-
-Queixas ou temas principais abordados:
-
-Estado cognitivo:
-
-Estado de humor:
-
-Aspectos sociais:
-
-Impressões do profissional:
-
-Condutas adotadas:
-
-Encaminhamentos ou orientações:
-
-Postura/plano para próxima consulta:`;
+const TEMPLATE_INICIAL = `
+<p><strong>Dados observados durante o atendimento:</strong><br>Ex.: postura, comunica&ccedil;&atilde;o, intera&ccedil;&atilde;o, ades&atilde;o ao atendimento e sinais observ&aacute;veis relevantes.</p>
+<p><strong>Queixas ou temas principais abordados:</strong><br>Ex.: ansiedade, conflito familiar, dificuldade escolar, rotina, sono, alimenta&ccedil;&atilde;o ou demanda trazida pelo paciente/respons&aacute;vel.</p>
+<p><strong>Estado cognitivo:</strong><br>Ex.: orientado em tempo e espa&ccedil;o, aten&ccedil;&atilde;o preservada, pensamento organizado, mem&oacute;ria sem altera&ccedil;&otilde;es aparentes.</p>
+<p><strong>Estado de humor:</strong><br>Ex.: humor est&aacute;vel, ansioso, deprimido, irritadi&ccedil;o, oscilante, compat&iacute;vel ou incompat&iacute;vel com o contexto.</p>
+<p><strong>Aspectos sociais:</strong><br>Ex.: apoio familiar, conviv&ecirc;ncia, v&iacute;nculos, contexto escolar/profissional e fatores sociais que impactam o caso.</p>
+<p><strong>Impress&otilde;es do profissional:</strong><br>Ex.: hip&oacute;teses cl&iacute;nicas iniciais, leitura t&eacute;cnica do momento e pontos de aten&ccedil;&atilde;o observados na consulta.</p>
+<p><strong>Condutas adotadas:</strong><br>Ex.: escuta qualificada, interven&ccedil;&atilde;o breve, t&eacute;cnicas aplicadas, combinados realizados e estrat&eacute;gias definidas.</p>
+<p><strong>Encaminhamentos ou orienta&ccedil;&otilde;es:</strong><br>Ex.: orienta&ccedil;&otilde;es ao paciente/respons&aacute;vel, solicita&ccedil;&atilde;o de retorno, articula&ccedil;&atilde;o com rede ou encaminhamento para outro profissional.</p>
+<p><strong>Postura/plano para pr&oacute;xima consulta:</strong><br>Ex.: aprofundar tema espec&iacute;fico, acompanhar evolu&ccedil;&atilde;o, revisar combinados e monitorar resposta &agrave;s orienta&ccedil;&otilde;es.</p>
+`.trim();
 
 function escapeHtml(value) {
   const div = document.createElement('div');
@@ -25,9 +19,33 @@ function escapeHtml(value) {
   return div.innerHTML;
 }
 
+function escapeAttribute(value) {
+  return escapeHtml(String(value ?? '')).replace(/"/g, '&quot;');
+}
+
+function getFallbackFotoUrl() {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="32" fill="#e2e8f0"/>
+      <circle cx="32" cy="24" r="12" fill="#94a3b8"/>
+      <path d="M14 54c3-10 12-16 18-16s15 6 18 16" fill="#94a3b8"/>
+    </svg>
+  `.trim());
+}
+
 function fmtDate(value) {
   if (!value) return '';
   return new Date(`${value}T00:00:00`).toLocaleDateString('pt-BR');
+}
+
+function fmtDateTime(value, time) {
+  const data = fmtDate(value);
+  const hora = String(time || '').slice(0, 5);
+  return [data, hora].filter(Boolean).join(' ');
+}
+
+function getCurrentUserProfile() {
+  return window.__CLINICA_BOOTSTRAP__ || {};
 }
 
 function resumoAtendimento(item) {
@@ -35,10 +53,10 @@ function resumoAtendimento(item) {
   if (item.consulta_status) partes.push(`Status: ${item.consulta_status}`);
   if (item.tem_anamnese_adulto) partes.push('Anamnese adulto');
   if (item.tem_anamnese_infantojuvenil) partes.push('Roteiro infantojuvenil');
-  if (item.tem_prontuario) partes.push('Prontuario');
-  if (item.tem_evolucao) partes.push('Evolucao');
-  if (item.conteudo) partes.push(String(item.conteudo).replace(/<[^>]+>/g, '').slice(0, 120));
-  return partes.join(' | ') || 'Consulta sem registro clinico vinculado';
+  if (item.tem_prontuario) partes.push('Prontu\u00E1rio');
+  if (item.tem_evolucao) partes.push('Evolu\u00E7\u00E3o');
+  if (item.conteudo) partes.push(String(item.conteudo).replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 120));
+  return partes.join(' | ') || 'Consulta sem registro cl\u00EDnico vinculado';
 }
 
 function pacienteMeta(paciente) {
@@ -77,6 +95,10 @@ function initEditor() {
   });
 }
 
+function getPdfPath(id) {
+  return `./pdf_evolucao.php?id=${id}`;
+}
+
 async function openDetalheModal(id, canEdit, onSaved) {
   const user = getCurrentClinicaUser();
   const evolucao = await getEvolucao(id);
@@ -86,8 +108,8 @@ async function openDetalheModal(id, canEdit, onSaved) {
     <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <h3 class="text-xl font-semibold text-slate-900">${escapeHtml(evolucao.paciente_nome || 'Evolução clínica')}</h3>
-          <p class="text-sm text-slate-500">${fmtDate(evolucao.data_evolucao)} às ${escapeHtml(String(evolucao.hora_evolucao || '').slice(0, 5))} • ${escapeHtml(evolucao.profissional_nome || '')}</p>
+          <h3 class="text-xl font-semibold text-slate-900">${escapeHtml(evolucao.paciente_nome || 'Evolu\u00E7\u00E3o cl\u00EDnica')}</h3>
+          <p class="text-sm text-slate-500">${fmtDate(evolucao.data_evolucao)} \u00E0s ${escapeHtml(String(evolucao.hora_evolucao || '').slice(0, 5))} - ${escapeHtml(evolucao.profissional_nome || '')}</p>
         </div>
         <button type="button" class="btn-fechar rounded-xl border border-slate-300 px-4 py-2">Fechar</button>
       </div>
@@ -131,7 +153,7 @@ async function openDetalheModal(id, canEdit, onSaved) {
   });
 
   modal.querySelector('.btn-imprimir')?.addEventListener('click', () => {
-    window.open(`./pdf_evolucao.php?id=${evolucao.id}`, '_blank', 'noopener');
+    window.open(getPdfPath(evolucao.id), '_blank', 'noopener');
   });
 }
 
@@ -147,7 +169,7 @@ async function openNovaEvolucaoModal(prefill, onSaved) {
     <div class="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <h3 class="text-xl font-semibold text-slate-900">Nova evolução clínica</h3>
+          <h3 class="text-xl font-semibold text-slate-900">Nova evolu\u00E7\u00E3o cl\u00EDnica</h3>
           <p class="text-sm text-slate-500">${escapeHtml(paciente?.Nome || '')}</p>
         </div>
         <button type="button" class="btn-fechar rounded-xl border border-slate-300 px-4 py-2">Fechar</button>
@@ -157,13 +179,14 @@ async function openNovaEvolucaoModal(prefill, onSaved) {
         <input type="time" id="evolucao-hora" class="rounded-xl border border-slate-300 px-4 py-3" value="${escapeHtml(String(consulta?.hora_inicio_prevista || '08:00').slice(0, 5))}">
       </div>
       <div class="mt-4">
-        <textarea id="evolucao-conteudo" class="w-full rounded-2xl border border-slate-300 px-4 py-3">${escapeHtml(TEMPLATE_INICIAL)}</textarea>
+        <textarea id="evolucao-conteudo" class="w-full rounded-2xl border border-slate-300 px-4 py-3"></textarea>
       </div>
       <div class="mt-4 flex justify-end gap-2">
         <button type="button" class="btn-salvar rounded-xl bg-monday-blue px-4 py-2 text-white">Salvar</button>
       </div>
     </div>
   `;
+
   modal.querySelector('.btn-fechar')?.addEventListener('click', () => {
     destroyEditor();
     modal.remove();
@@ -175,6 +198,8 @@ async function openNovaEvolucaoModal(prefill, onSaved) {
     }
   });
   document.body.appendChild(modal);
+  const textarea = modal.querySelector('#evolucao-conteudo');
+  if (textarea) textarea.value = TEMPLATE_INICIAL;
   initEditor();
 
   modal.querySelector('.btn-salvar')?.addEventListener('click', async () => {
@@ -195,11 +220,11 @@ async function openNovaEvolucaoModal(prefill, onSaved) {
 export async function renderEvolucoes(container, opts = {}) {
   const user = getCurrentClinicaUser();
   if (user.profissional_saude !== 1) {
-    container.innerHTML = '<div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">Acesso restrito a profissionais de saúde.</div>';
+    container.innerHTML = '<div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-900">Acesso restrito a profissionais de sa\u00FAde.</div>';
     return;
   }
 
-  container.innerHTML = getSpinnerHtml('Carregando evoluções...');
+  container.innerHTML = getSpinnerHtml('Carregando evolu\u00E7\u00F5es...');
   const alunoIdSelecionado = parseInt(opts.aluno_id || '', 10);
   const temPacienteSelecionado = Number.isFinite(alunoIdSelecionado) && alunoIdSelecionado > 0;
   const [profissionais, especialidades, pacienteSelecionado, evolucoes] = await Promise.all([
@@ -209,65 +234,101 @@ export async function renderEvolucoes(container, opts = {}) {
     temPacienteSelecionado ? getEvolucoes(opts).catch(() => []) : Promise.resolve([]),
   ]);
 
+  const colaborador = getCurrentUserProfile();
+  const colaboradorNome = escapeAttribute(colaborador.nome || 'Profissional');
+  const colaboradorFoto = escapeAttribute(colaborador.fotoUrl || getFallbackFotoUrl());
+  const listaHtml = !temPacienteSelecionado
+    ? '<p class="py-8 text-center text-gray-500">Busque e selecione um benefici\u00E1rio para listar o hist\u00F3rico.</p>'
+    : evolucoes.length === 0
+      ? '<p class="py-8 text-center text-gray-500">Nenhum atendimento encontrado para este benefici\u00E1rio.</p>'
+      : `
+      <div class="space-y-3" id="evol-list">
+        ${evolucoes.map((item) => `
+          <div class="rounded-2xl border border-slate-50 bg-white p-4 shadow-sm transition-all hover:shadow-md">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <p class="truncate text-sm font-semibold text-slate-900">${escapeHtml(item.paciente_nome || '')}</p>
+                  <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">${escapeHtml(item.tipo_nome || item.registro_tipo || 'Consulta')}</span>
+                </div>
+                <p class="mt-1 text-xs text-slate-500">${escapeHtml(fmtDateTime(item.data_evolucao, item.hora_evolucao))}</p>
+                <p class="mt-0.5 text-xs text-slate-500">Profissional: ${escapeHtml(item.profissional_nome || '')}</p>
+                <p class="mt-0.5 text-xs text-slate-500">Resumo: ${escapeHtml(resumoAtendimento(item))}</p>
+              </div>
+              <div class="flex shrink-0 flex-wrap justify-end gap-1">
+                ${item.tem_evolucao ? `<button type="button" class="btn-ver-evolucao min-h-touch rounded-xl bg-blue-50 px-3 py-2 text-xs font-medium text-monday-blue hover:bg-blue-100" data-id="${item.evolucao_id}" data-autor="${item.profissional_id}">Evolu\u00E7\u00E3o</button>` : ''}
+                ${(item.tem_anamnese_adulto || item.tem_anamnese_infantojuvenil) ? `<button type="button" class="btn-ver-anamnese min-h-touch rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50" data-consulta-id="${item.consulta_id}" data-aluno-id="${item.aluno_id}">Anamnese</button>` : ''}
+                ${item.tem_prontuario ? `<button type="button" class="btn-ver-prontuario min-h-touch rounded-xl border border-slate-300 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50" data-aluno-id="${item.aluno_id}">Prontu\u00E1rio</button>` : ''}
+                ${!item.tem_evolucao && !item.tem_anamnese_adulto && !item.tem_anamnese_infantojuvenil && !item.tem_prontuario ? '<span class="px-2 py-2 text-xs text-slate-400">Sem registros</span>' : ''}
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
   container.innerHTML = `
-    <section class="space-y-4">
-      <div class="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 class="text-xl font-semibold text-slate-900">Evoluções clínicas</h2>
-          <p class="text-sm text-slate-500">Consulte o histórico de consultas, anamneses, prontuários e evoluções do paciente.</p>
+    <section class="mx-auto w-full max-w-none 2xl:max-w-6xl">
+      <div class="rounded-[28px] bg-slate-100/90 px-3 py-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:px-4 lg:px-6 lg:py-7">
+        <div class="flex items-start justify-between gap-4 lg:items-center">
+          <div>
+            <p class="text-sm font-medium text-slate-400">Cl\u00EDnica M\u00E9dica</p>
+            <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900 lg:text-[2.15rem]">Evolu\u00E7\u00F5es</h1>
+          </div>
+          <div class="h-10 w-10 overflow-hidden rounded-full border-2 border-white bg-slate-200 shadow-sm">
+            <img
+              alt="${colaboradorNome}"
+              class="h-full w-full object-cover"
+              src="${colaboradorFoto}"
+              onerror="this.onerror=null;this.src='${escapeAttribute(getFallbackFotoUrl())}';"
+            >
+          </div>
         </div>
-        <button type="button" id="btn-nova-evolucao" class="rounded-xl bg-monday-blue px-4 py-2 text-sm font-medium text-white" ${temPacienteSelecionado ? '' : 'disabled'}>Nova evolução</button>
-      </div>
-      <div class="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-4">
-        <div class="relative md:col-span-4">
-          <label class="mb-1 block text-sm font-medium text-slate-700">Beneficiário</label>
-          <input type="hidden" id="filtro-aluno" value="${escapeHtml(opts.aluno_id || '')}">
-          <input type="search" id="filtro-paciente-busca" class="w-full rounded-xl border border-slate-300 px-4 py-3" placeholder="Digite nome, CPF ou contato do beneficiário" value="${escapeHtml(pacienteSelecionado?.Nome || '')}" autocomplete="off">
-          <div id="filtro-paciente-resultados" class="absolute z-30 mt-2 hidden max-h-72 w-full overflow-auto rounded-2xl border border-slate-200 bg-white shadow-xl"></div>
-          <p id="filtro-paciente-meta" class="mt-2 text-xs text-slate-500">${pacienteSelecionado ? escapeHtml(pacienteMeta(pacienteSelecionado)) : 'Selecione um beneficiário para carregar o histórico.'}</p>
+        <div class="lg:mt-6 lg:flex lg:items-end lg:justify-between lg:gap-5">
+          <div class="lg:max-w-4xl lg:flex-1">
+            <div class="mt-6 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4 lg:mt-0">
+              <label class="relative block sm:col-span-2 xl:col-span-4">
+                <span class="mb-2 block px-1 text-sm font-medium text-slate-500">Benefici\u00E1rio</span>
+                <input type="hidden" id="filtro-aluno" value="${escapeHtml(opts.aluno_id || '')}">
+                <input type="search" id="filtro-paciente-busca" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20" placeholder="Digite nome, CPF ou contato do benefici\u00E1rio" value="${escapeHtml(pacienteSelecionado?.Nome || '')}" autocomplete="off">
+                <div id="filtro-paciente-resultados" class="absolute z-30 mt-2 hidden max-h-72 w-full overflow-auto rounded-2xl border border-slate-200 bg-white shadow-xl"></div>
+                <p id="filtro-paciente-meta" class="mt-2 px-1 text-xs text-slate-500">${pacienteSelecionado ? escapeHtml(pacienteMeta(pacienteSelecionado)) : 'Selecione um benefici\u00E1rio para carregar o hist\u00F3rico.'}</p>
+              </label>
+              <label class="block">
+                <span class="mb-2 block px-1 text-sm font-medium text-slate-500">Data</span>
+                <input type="date" id="filtro-data" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20" value="${escapeHtml(opts.data || '')}">
+              </label>
+              <label class="block">
+                <span class="mb-2 block px-1 text-sm font-medium text-slate-500">Profissional</span>
+                <select id="filtro-profissional" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <option value="">Todos</option>
+                  ${profissionais.map((item) => `<option value="${item.id}" ${String(opts.profissional_id || '') === String(item.id) ? 'selected' : ''}>${escapeHtml(item.nome)}</option>`).join('')}
+                </select>
+              </label>
+              <label class="block">
+                <span class="mb-2 block px-1 text-sm font-medium text-slate-500">Especialidade</span>
+                <select id="filtro-especialidade" class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3.5 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20">
+                  <option value="">Todas</option>
+                  ${especialidades.map((item) => `<option value="${item.id}" ${String(opts.especialidade_id || '') === String(item.id) ? 'selected' : ''}>${escapeHtml(item.nome)}</option>`).join('')}
+                </select>
+              </label>
+              <div class="flex items-end gap-2 sm:col-span-2 xl:col-span-1">
+                <button type="button" id="btn-pesquisar-filtros" class="min-h-touch rounded-xl bg-monday-blue px-4 py-3 text-sm font-semibold text-white" ${temPacienteSelecionado ? '' : 'disabled'}>Pesquisar</button>
+                <button type="button" id="btn-limpar-filtros" class="min-h-touch rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-600">Limpar</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <input type="date" id="filtro-data" class="rounded-xl border border-slate-300 px-4 py-3" value="${escapeHtml(opts.data || '')}">
-        <select id="filtro-profissional" class="rounded-xl border border-slate-300 px-4 py-3">
-          <option value="">Todos profissionais</option>
-          ${profissionais.map((item) => `<option value="${item.id}" ${String(opts.profissional_id || '') === String(item.id) ? 'selected' : ''}>${escapeHtml(item.nome)}</option>`).join('')}
-        </select>
-        <select id="filtro-especialidade" class="rounded-xl border border-slate-300 px-4 py-3">
-          <option value="">Todas especialidades</option>
-          ${especialidades.map((item) => `<option value="${item.id}" ${String(opts.especialidade_id || '') === String(item.id) ? 'selected' : ''}>${escapeHtml(item.nome)}</option>`).join('')}
-        </select>
-      </div>
-      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="px-4 py-3 text-left font-semibold text-slate-600">Paciente</th>
-              <th class="px-4 py-3 text-left font-semibold text-slate-600">Data</th>
-              <th class="px-4 py-3 text-left font-semibold text-slate-600">Profissional</th>
-              <th class="px-4 py-3 text-left font-semibold text-slate-600">Tipo/Status</th>
-              <th class="px-4 py-3 text-left font-semibold text-slate-600">Resumo</th>
-              <th class="px-4 py-3 text-right font-semibold text-slate-600">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${!temPacienteSelecionado ? '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">Busque e selecione um beneficiário para listar o histórico.</td></tr>' : evolucoes.length === 0 ? '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">Nenhum atendimento encontrado para este beneficiário.</td></tr>' : evolucoes.map((item) => `
-              <tr class="border-t border-slate-100">
-                <td class="px-4 py-3">${escapeHtml(item.paciente_nome || '')}</td>
-                <td class="px-4 py-3">${fmtDate(item.data_evolucao)} ${escapeHtml(String(item.hora_evolucao || '').slice(0, 5))}</td>
-                <td class="px-4 py-3">${escapeHtml(item.profissional_nome || '')}</td>
-                <td class="px-4 py-3">${escapeHtml(item.tipo_nome || item.registro_tipo || 'Consulta')}</td>
-                <td class="px-4 py-3">${escapeHtml(resumoAtendimento(item))}</td>
-                <td class="px-4 py-3 text-right">
-                  <div class="flex flex-wrap justify-end gap-1">
-                    ${item.tem_evolucao ? `<button type="button" class="btn-ver-evolucao rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700" data-id="${item.evolucao_id}" data-autor="${item.profissional_id}">Evolução</button>` : ''}
-                    ${(item.tem_anamnese_adulto || item.tem_anamnese_infantojuvenil) ? `<button type="button" class="btn-ver-anamnese rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700" data-consulta-id="${item.consulta_id}" data-aluno-id="${item.aluno_id}">Anamnese</button>` : ''}
-                    ${item.tem_prontuario ? `<button type="button" class="btn-ver-prontuario rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700" data-aluno-id="${item.aluno_id}">Prontuário</button>` : ''}
-                    ${!item.tem_evolucao && !item.tem_anamnese_adulto && !item.tem_anamnese_infantojuvenil && !item.tem_prontuario ? '<span class="text-xs text-slate-400">Sem registros</span>' : ''}
-                  </div>
-                </td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+        <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-semibold text-slate-800">Registros cl\u00EDnicos</h2>
+            <p class="text-sm text-slate-500">Hist\u00F3rico consolidado de consultas, anamneses, prontu\u00E1rios e evolu\u00E7\u00F5es do paciente.</p>
+          </div>
+          <button type="button" id="btn-nova-evolucao" class="rounded-xl bg-monday-blue px-4 py-2 text-sm font-medium text-white ${temPacienteSelecionado ? '' : 'opacity-50 cursor-not-allowed'}" ${temPacienteSelecionado ? '' : 'disabled'}>Nova evolu\u00E7\u00E3o</button>
+        </div>
+        <div class="mt-5">
+          ${listaHtml}
+        </div>
       </div>
     </section>
   `;
@@ -291,6 +352,8 @@ export async function renderEvolucoes(container, opts = {}) {
   const pacienteResultadosEl = container.querySelector('#filtro-paciente-resultados');
   const pacienteMetaEl = container.querySelector('#filtro-paciente-meta');
   const pacienteIdEl = container.querySelector('#filtro-aluno');
+  const btnPesquisarFiltros = container.querySelector('#btn-pesquisar-filtros');
+  const btnLimparFiltros = container.querySelector('#btn-limpar-filtros');
   let pacienteSearchTimer = null;
 
   const esconderResultadosPaciente = () => {
@@ -300,10 +363,23 @@ export async function renderEvolucoes(container, opts = {}) {
     }
   };
 
+  const executarBusca = async () => {
+    if (!btnPesquisarFiltros) return;
+    btnPesquisarFiltros.disabled = true;
+    btnPesquisarFiltros.innerHTML = `${getButtonSpinnerHtml()} Pesquisando...`;
+    try {
+      reload();
+    } finally {
+      btnPesquisarFiltros.disabled = false;
+      btnPesquisarFiltros.textContent = 'Pesquisar';
+    }
+  };
+
   pacienteBuscaEl?.addEventListener('input', () => {
     const term = String(pacienteBuscaEl.value || '').trim();
     if (pacienteIdEl) pacienteIdEl.value = '';
-    if (pacienteMetaEl) pacienteMetaEl.textContent = 'Selecione um beneficiário para carregar o histórico.';
+    if (pacienteMetaEl) pacienteMetaEl.textContent = 'Selecione um benefici\u00E1rio para carregar o hist\u00F3rico.';
+    if (btnPesquisarFiltros) btnPesquisarFiltros.disabled = true;
     clearTimeout(pacienteSearchTimer);
     if (term.length < 2) {
       esconderResultadosPaciente();
@@ -314,7 +390,7 @@ export async function renderEvolucoes(container, opts = {}) {
         const { pacientes } = await getPacientes(term, { limit: 8 });
         if (!pacienteResultadosEl) return;
         if (!Array.isArray(pacientes) || pacientes.length === 0) {
-          pacienteResultadosEl.innerHTML = '<div class="px-4 py-3 text-sm text-slate-500">Nenhum beneficiário encontrado.</div>';
+          pacienteResultadosEl.innerHTML = '<div class="px-4 py-3 text-sm text-slate-500">Nenhum benefici\u00E1rio encontrado.</div>';
           pacienteResultadosEl.classList.remove('hidden');
           return;
         }
@@ -329,6 +405,11 @@ export async function renderEvolucoes(container, opts = {}) {
           button.addEventListener('click', () => {
             if (pacienteIdEl) pacienteIdEl.value = button.dataset.id || '';
             if (pacienteBuscaEl) pacienteBuscaEl.value = button.dataset.nome || '';
+            if (pacienteMetaEl) {
+              const paciente = pacientes.find((item) => String(item.IdUsuario) === String(button.dataset.id || ''));
+              pacienteMetaEl.textContent = paciente ? pacienteMeta(paciente) : '';
+            }
+            if (btnPesquisarFiltros) btnPesquisarFiltros.disabled = false;
             esconderResultadosPaciente();
             reload({ aluno_id: Number(button.dataset.id || 0) });
           });
@@ -346,12 +427,31 @@ export async function renderEvolucoes(container, opts = {}) {
     }
   });
 
+  pacienteBuscaEl?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && pacienteIdEl?.value) {
+      event.preventDefault();
+      executarBusca();
+    }
+  });
+
   document.addEventListener('click', (event) => {
     if (!container.contains(event.target)) esconderResultadosPaciente();
   }, { once: true });
 
-  container.querySelectorAll('#filtro-data, #filtro-profissional, #filtro-especialidade').forEach((el) => {
-    el.addEventListener('change', () => reload());
+  [container.querySelector('#filtro-data'), container.querySelector('#filtro-profissional'), container.querySelector('#filtro-especialidade')].forEach((el) => {
+    el?.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') executarBusca();
+    });
+  });
+
+  btnPesquisarFiltros?.addEventListener('click', executarBusca);
+  btnLimparFiltros?.addEventListener('click', () => {
+    reload({
+      aluno_id: undefined,
+      data: undefined,
+      profissional_id: undefined,
+      especialidade_id: undefined,
+    });
   });
 
   container.querySelectorAll('.btn-ver-evolucao').forEach((button) => {

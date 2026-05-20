@@ -1,8 +1,8 @@
 import { renderPacientes } from './pages/pacientes.js?v=20260302a';
 import { renderAgenda } from './pages/agenda.js?v=20260311a';
-import { renderProntuarios } from './pages/prontuarios.js?v=20260502a';
+import { renderProntuarios } from './pages/prontuarios.js?v=20260520c';
 import { renderAtendimento } from './pages/atendimento.js?v=20260311a';
-import { renderEvolucoes } from './pages/evolucoes.js?v=20260517b';
+import { renderEvolucoes } from './pages/evolucoes.js?v=20260520b';
 import { renderConfiguracoes } from './pages/configuracoes.js?v=20260516a';
 import { getSpinnerHtml } from './utils/loading.js?v=20260302a';
 
@@ -70,6 +70,9 @@ function buildQueryParams(page, options = {}) {
   if (page === 'evolucoes') {
     if (options?.aluno_id) params.set('aluno_id', String(options.aluno_id));
     if (options?.consulta_id) params.set('consulta_id', String(options.consulta_id));
+    if (options?.data) params.set('data', String(options.data));
+    if (options?.profissional_id) params.set('profissional_id', String(options.profissional_id));
+    if (options?.especialidade_id) params.set('especialidade_id', String(options.especialidade_id));
     if (options?.nova) params.set('nova', '1');
   }
   return params;
@@ -106,8 +109,14 @@ function getOptionsFromLocation(page) {
     const options = {};
     const alunoId = parseInt(params.get('aluno_id') || '', 10);
     const consultaId = parseInt(params.get('consulta_id') || '', 10);
+    const data = (params.get('data') || '').trim();
+    const profissionalId = (params.get('profissional_id') || '').trim();
+    const especialidadeId = (params.get('especialidade_id') || '').trim();
     if (Number.isFinite(alunoId) && alunoId > 0) options.aluno_id = alunoId;
     if (Number.isFinite(consultaId) && consultaId > 0) options.consulta_id = consultaId;
+    if (data !== '') options.data = data;
+    if (profissionalId !== '') options.profissional_id = profissionalId;
+    if (especialidadeId !== '') options.especialidade_id = especialidadeId;
     if (params.get('nova') === '1') options.nova = true;
     return options;
   }

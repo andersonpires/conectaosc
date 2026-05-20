@@ -409,7 +409,7 @@ export async function renderProntuarios(container, opts = {}) {
     prontuariosSelecionados = new Set(Array.from(prontuariosSelecionados).filter((id) => idsAtuais.has(Number(id))));
   } catch (e) {
     if (String(e?.message || '').toLowerCase().includes('autentic')) throw e;
-    console.error('Erro ao carregar prontuários:', e);
+    console.error('Erro ao carregar prontu?rios:', e);
   }
 
   if (alunoIdFiltro && !prontuariosFiltroNome && prontuarios.length > 0) {
@@ -426,7 +426,7 @@ export async function renderProntuarios(container, opts = {}) {
     .join('');
 
   const colaborador = getCurrentUser();
-  const colaboradorNome = escapeAttribute(colaborador.nome || 'Perfil do Médico');
+  const colaboradorNome = escapeAttribute(colaborador.nome || 'Perfil do M?dico');
   const colaboradorFoto = escapeAttribute(colaborador.fotoUrl || getFallbackFotoUrl());
 
   const shellPrefix = `
@@ -443,10 +443,6 @@ export async function renderProntuarios(container, opts = {}) {
         </div>
         <div class="lg:mt-6 lg:flex lg:items-end lg:justify-between lg:gap-5">
           <div class="lg:flex-1 lg:max-w-3xl"></div>
-          <div class="hidden lg:block lg:w-80 lg:rounded-3xl lg:bg-white/80 lg:px-5 lg:py-4 lg:shadow-sm lg:ring-1 lg:ring-slate-200">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Organização</p>
-            <p class="mt-2 text-sm leading-6 text-slate-500">A visualização de prontuários segue o mesmo padrão da tela de pacientes para manter leitura e navegação consistentes.</p>
-          </div>
         </div>
   `;
 
@@ -456,11 +452,11 @@ export async function renderProntuarios(container, opts = {}) {
   `;
 
   const tabHtml = `
-    <h2 class="text-lg font-semibold text-gray-800 mb-3">Prontuários</h2>
+    <h2 class="text-lg font-semibold text-gray-800 mb-3">Prontu&aacute;rios</h2>
     ${filtroSelectHtml}
     <div class="flex flex-nowrap gap-2 border-b-2 border-gray-200 mb-4 overflow-x-auto">
-      <button type="button" data-tab="prontuarios" class="tab-pront shrink-0 px-4 py-3 font-medium text-monday-blue border-b-2 border-monday-blue -mb-0.5 min-h-touch">Prontuários salvos</button>
-      <button type="button" data-tab="aguardando" class="tab-pront shrink-0 px-4 py-3 font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 min-h-touch flex items-center gap-1">Aguardando prontuário <span class="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">${consultasAguardando.length}</span></button>
+      <button type="button" data-tab="prontuarios" class="tab-pront shrink-0 px-4 py-3 font-medium text-monday-blue border-b-2 border-monday-blue -mb-0.5 min-h-touch">Prontu&aacute;rios salvos</button>
+      <button type="button" data-tab="aguardando" class="tab-pront shrink-0 px-4 py-3 font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 min-h-touch flex items-center gap-1">Aguardando prontu&aacute;rio <span class="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">${consultasAguardando.length}</span></button>
     </div>
   `;
 
@@ -469,8 +465,8 @@ export async function renderProntuarios(container, opts = {}) {
       <div class="rounded-[28px] bg-slate-100/90 px-3 py-6 shadow-[0_18px_45px_rgba(15,23,42,0.08)] sm:px-4 lg:px-6 lg:py-7">
         <div class="flex items-start justify-between gap-4 lg:items-center">
           <div>
-            <p class="text-sm font-medium text-slate-400">Clínica Médica</p>
-            <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900 lg:text-[2.15rem]">Prontuários</h1>
+            <p class="text-sm font-medium text-slate-400">Cl&iacute;nica M&eacute;dica</p>
+            <h1 class="mt-1 text-2xl font-bold tracking-tight text-slate-900 lg:text-[2.15rem]">Prontu&aacute;rios</h1>
           </div>
           <div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center overflow-hidden border-2 border-white shadow-sm">
             <img
@@ -528,24 +524,20 @@ export async function renderProntuarios(container, opts = {}) {
               </div>
             </div>
           </div>
-          <div class="hidden lg:block lg:w-80 lg:rounded-3xl lg:bg-white/80 lg:px-5 lg:py-4 lg:shadow-sm lg:ring-1 lg:ring-slate-200">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Organização</p>
-            <p class="mt-2 text-sm leading-6 text-slate-500">A visualização de prontuários segue o mesmo padrão da tela de pacientes para manter leitura e navegação consistentes.</p>
-          </div>
         </div>
   `;
 
   const tabsShellHtml = `
         <div class="mt-6 flex flex-nowrap gap-2 overflow-x-auto border-b border-slate-200 pb-1">
-          <button type="button" data-tab="prontuarios" class="tab-pront shrink-0 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm min-h-touch">Prontuários salvos</button>
-          <button type="button" data-tab="aguardando" class="tab-pront shrink-0 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-slate-500 ring-1 ring-slate-200 transition hover:text-slate-700 min-h-touch flex items-center gap-1.5">Aguardando prontuário <span class="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">${consultasAguardando.length}</span></button>
+          <button type="button" data-tab="prontuarios" class="tab-pront shrink-0 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm min-h-touch">Prontu&aacute;rios salvos</button>
+          <button type="button" data-tab="aguardando" class="tab-pront shrink-0 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-slate-500 ring-1 ring-slate-200 transition hover:text-slate-700 min-h-touch flex items-center gap-1.5">Aguardando prontu&aacute;rio <span class="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-semibold">${consultasAguardando.length}</span></button>
         </div>
   `;
 
   const prontuariosHtml = !prontuariosBuscaRealizada
-    ? '<p class="text-gray-500 py-8 text-center">Clique em "Pesquisar" para listar os prontuários.</p>'
+    ? '<p class="text-gray-500 py-8 text-center">Clique em "Pesquisar" para listar os prontu&aacute;rios.</p>'
     : prontuarios.length === 0
-      ? '<p class="text-gray-500 py-8 text-center">Nenhum prontuário registrado.</p>'
+      ? '<p class="text-gray-500 py-8 text-center">Nenhum prontu&aacute;rio registrado.</p>'
       : `
       <div class="mb-3 flex flex-wrap items-center gap-2">
         <button type="button" id="btn-selecionar-todos-pront" class="px-3 py-2 text-sm border border-slate-300 rounded-xl hover:bg-slate-50">Selecionar todos</button>
@@ -759,7 +751,7 @@ export async function renderProntuarios(container, opts = {}) {
   });
   container.querySelectorAll('.btn-excluir').forEach((btn) => {
     btn.onclick = async () => {
-      if (!confirm('Excluir este prontuário?')) return;
+      if (!confirm('Excluir este prontu?rio?')) return;
       btn.disabled = true;
       container.innerHTML = getSpinnerHtml('Excluindo...');
       try {
@@ -801,21 +793,21 @@ async function openModalGerarProntuario(consulta, container) {
     modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto';
     modal.innerHTML = `
       <div class="bg-white rounded-2xl shadow-monday-lg max-w-2xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-semibold mb-2">Gerar prontuário — ${escapeHtml(consulta.paciente_nome || '')}</h3>
-        <p class="text-sm text-gray-500 mb-4">${dataConsulta} ${fmtTime(consulta.hora_inicio_prevista)} — ${escapeHtml(consulta.especialidade_nome || '')}</p>
-        <p class="text-sm text-gray-600 mb-4">O prontuário será gerado com base em todos os dados do cadastro e da anamnese, seguindo os modelos do sistema.</p>
+        <h3 class="text-lg font-semibold mb-2">Gerar prontu?rio ? ${escapeHtml(consulta.paciente_nome || '')}</h3>
+        <p class="text-sm text-gray-500 mb-4">${dataConsulta} ${fmtTime(consulta.hora_inicio_prevista)} ? ${escapeHtml(consulta.especialidade_nome || '')}</p>
+        <p class="text-sm text-gray-600 mb-4">O prontu?rio ser? gerado com base em todos os dados do cadastro e da anamnese, seguindo os modelos do sistema.</p>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Instruções adicionais (opcional)</label>
-          <textarea id="modal-dados-clinicos" rows="2" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Parâmetros, pedidos ou instruções para IA..."></textarea>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Instru??es adicionais (opcional)</label>
+          <textarea id="modal-dados-clinicos" rows="2" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Par?metros, pedidos ou instru??es para IA..."></textarea>
         </div>
         <button type="button" id="modal-btn-gerar" class="mt-3 w-full min-h-touch py-3 bg-purple-accent text-white rounded-xl font-medium hover:bg-purple-accent-hover transition">
-          Gerar prontuário com IA
+          Gerar prontu?rio com IA
         </button>
         <div id="modal-resultado-ia" class="hidden mt-4">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Prontuário gerado (edite se necessário antes de salvar)</label>
-          <textarea id="modal-pront-texto" rows="14" class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm" placeholder="O prontuário gerado pela IA aparecerá aqui."></textarea>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Prontu?rio gerado (edite se necess?rio antes de salvar)</label>
+          <textarea id="modal-pront-texto" rows="14" class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm" placeholder="O prontu?rio gerado pela IA aparecer? aqui."></textarea>
           <div class="flex gap-2 mt-3">
-            <button type="button" id="modal-btn-salvar" class="flex-1 py-3 bg-monday-blue text-white rounded-lg font-medium">Salvar prontuário</button>
+            <button type="button" id="modal-btn-salvar" class="flex-1 py-3 bg-monday-blue text-white rounded-lg font-medium">Salvar prontu?rio</button>
             <button type="button" class="modal-btn-fechar px-4 py-3 border border-gray-300 rounded-lg">Fechar</button>
           </div>
         </div>
@@ -863,14 +855,14 @@ async function openModalGerarProntuario(consulta, container) {
             textoEl.value = markdownToHtml(conteudo);
             initTinyMCEPront('modal-pront-texto');
           },
-            onError: (msg) => { alert(msg || 'Erro ao gerar prontuário.'); }
+            onError: (msg) => { alert(msg || 'Erro ao gerar prontu?rio.'); }
           }
         );
       } catch (err) {
-        alert(err.message || 'Erro ao gerar prontuário.');
+        alert(err.message || 'Erro ao gerar prontu?rio.');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Gerar prontuário com IA';
+        btn.innerHTML = 'Gerar prontu?rio com IA';
       }
     };
 
@@ -879,7 +871,7 @@ async function openModalGerarProntuario(consulta, container) {
         ? tinymce.get('modal-pront-texto').getContent().trim()
         : modal.querySelector('#modal-pront-texto')?.value?.trim() || '';
       if (!conteudo) {
-        alert('O prontuário está vazio. Gere primeiro com IA ou edite o texto.');
+        alert('O prontu?rio est? vazio. Gere primeiro com IA ou edite o texto.');
         return;
       }
       const btn = modal.querySelector('#modal-btn-salvar');
@@ -900,7 +892,7 @@ async function openModalGerarProntuario(consulta, container) {
         alert(err.message || 'Erro ao salvar.');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Salvar prontuário';
+        btn.innerHTML = 'Salvar prontu?rio';
       }
     };
 
@@ -911,7 +903,7 @@ async function openModalGerarProntuario(consulta, container) {
 }
 
 async function openModalEditarProntuario(id, container) {
-  showLoadingOverlay('Carregando prontuário...');
+  showLoadingOverlay('Carregando prontu?rio...');
   try {
   const p = await getProntuario(id);
   const canEdit = p.can_edit === true;
@@ -923,10 +915,10 @@ async function openModalEditarProntuario(id, container) {
     <div class="bg-white rounded-2xl shadow-monday-lg max-w-2xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
       <h3 class="text-lg font-semibold mb-2">${escapeHtml(p.paciente_nome || '')}</h3>
       <p class="text-sm text-gray-500 mb-4">${p.created_at ? new Date(p.created_at).toLocaleString('pt-BR') : ''} - ${escapeHtml(p.profissional_nome || '')}</p>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Conteúdo do prontuário</label>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Conte?do do prontu?rio</label>
       <textarea id="pront-edit-conteudo" rows="14" class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm" ${canEdit ? '' : 'readonly disabled'}></textarea>
       <div class="flex gap-2 mt-4">
-        ${canEdit ? `<button type="button" id="pront-btn-salvar" class="px-4 py-2 bg-monday-blue text-white rounded-lg">Salvar alterações</button>` : ''}
+        ${canEdit ? `<button type="button" id="pront-btn-salvar" class="px-4 py-2 bg-monday-blue text-white rounded-lg">Salvar altera??es</button>` : ''}
         <button type="button" class="pront-btn-pdf px-4 py-2 bg-gray-200 rounded-lg">Imprimir PDF</button>
         <button type="button" class="pront-btn-fechar px-4 py-2 border border-gray-300 rounded-lg">Fechar</button>
       </div>
