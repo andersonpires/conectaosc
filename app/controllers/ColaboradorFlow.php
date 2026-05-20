@@ -17,7 +17,7 @@ final class ColaboradorFlow
     {
         $this->bootstrapDependencies();
 
-        $colaboradoresRoute = rtrim($this->baseUrl, '/') . '/colaboradores';
+        $colaboradoresRoute = $this->buildInternalRoute('/colaboradores');
         $acao = $_POST['acao'] ?? null;
         $idColaboradorAlt = isset($_SESSION['Cod']) ? (int) $_SESSION['Cod'] : null;
         $timeAlterado = date('Y-m-d H:i:s');
@@ -91,17 +91,17 @@ final class ColaboradorFlow
         if ($acao === 'excluir') {
             $id = (int) ($_POST['IdColaborador'] ?? 0);
             if ($id > 0 && \ColaboradorModel::inativar($id, $idColaboradorAlt, $timeAlterado)) {
-                $this->redirect("{$colaboradoresRoute}/?msg=" . urlencode('Usuario inativado com sucesso.'));
+                $this->redirect("{$colaboradoresRoute}?msg=" . urlencode('Usuario inativado com sucesso.'));
             }
-            $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('Erro ao inativar usuario.'));
+            $this->redirect("{$colaboradoresRoute}?erro=" . urlencode('Erro ao inativar usuario.'));
         }
 
         if ($acao === 'reativar') {
             $id = (int) ($_POST['IdColaborador'] ?? 0);
             if ($id > 0 && \ColaboradorModel::reativar($id, $idColaboradorAlt, $timeAlterado)) {
-                $this->redirect("{$colaboradoresRoute}/?status=inativos&msg=" . urlencode('Usuario reativado com sucesso.'));
+                $this->redirect("{$colaboradoresRoute}?status=inativos&msg=" . urlencode('Usuario reativado com sucesso.'));
             }
-            $this->redirect("{$colaboradoresRoute}/?status=inativos&erro=" . urlencode('Erro ao reativar usuario.'));
+            $this->redirect("{$colaboradoresRoute}?status=inativos&erro=" . urlencode('Erro ao reativar usuario.'));
         }
 
         if ($acao !== 'salvar') {
@@ -117,13 +117,14 @@ final class ColaboradorFlow
         $nascimento = $this->normalizarNascimento($_POST['Nascimento'] ?? null);
         $cargo = trim((string) ($_POST['Cargo'] ?? ''));
         $email = trim((string) ($_POST['Email'] ?? ''));
+        $senha = trim((string) ($_POST['Senha'] ?? ''));
         if ($nome === '' || $sobrenome === '' || $email === '' || $idPermissao <= 0) {
-            $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('Preencha os campos obrigatorios.'));
+            $this->redirect("{$colaboradoresRoute}?erro=" . urlencode('Preencha os campos obrigatorios.'));
         }
 
         $tipo = \ColaboradorModel::getTipoPermissao($idPermissao);
         if (!$tipo) {
-            $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('Permissao invalida.'));
+            $this->redirect("{$colaboradoresRoute}?erro=" . urlencode('Permissao invalida.'));
         }
 
         $podeDefinirClinica = $this->currentUserIsAdmin();
@@ -182,7 +183,7 @@ final class ColaboradorFlow
     ): void {
         $registro = \ColaboradorModel::getById($id);
         if (!$registro) {
-            $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('Usuario nao encontrado para edicao.'));
+            $this->redirect("{$colaboradoresRoute}?erro=" . urlencode('Usuario nao encontrado para edicao.'));
         }
 
         $fotoAtual = $registro['Foto'] ?? 'padrao.jfif';
@@ -213,11 +214,11 @@ final class ColaboradorFlow
         ];
 
         if (!\ColaboradorModel::update($dados)) {
-            $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('Nao foi possivel alterar o registro.'));
+            $this->redirect("{$colaboradoresRoute}?erro=" . urlencode('Nao foi possivel alterar o registro.'));
         }
 
         if (!\EspecialidadeProfissionalModel::replaceForColaborador($id, $especialidadesInput)) {
-            $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('Registro salvo, mas houve erro ao salvar especialidades.'));
+            $this->redirect("{$colaboradoresRoute}?erro=" . urlencode('Registro salvo, mas houve erro ao salvar especialidades.'));
         }
 
         $mensagem = "
@@ -232,7 +233,7 @@ final class ColaboradorFlow
             </html>
         ";
         \enviarEmail($nome, $email, $mensagem);
-        $this->redirect("{$colaboradoresRoute}/?msg=" . urlencode('Registro alterado com sucesso.'));
+        $this->redirect("{$colaboradoresRoute}?msg=" . urlencode('Registro alterado com sucesso.'));
     }
 
     private function cadastrarColaborador(
@@ -252,7 +253,7 @@ final class ColaboradorFlow
         bool $podeDefinirClinica
     ): void {
         if ($cpf === '' || $senha === '') {
-            $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('CPF e senha sao obrigatorios.'));
+            $this->redirect("{$colaboradoresRoute}?erro=" . urlencode('CPF e senha sao obrigatorios.'));
         }
 
         $foto = $this->tratarUploadFoto($_FILES['foto'] ?? null, 'padrao.jfif');
@@ -287,11 +288,11 @@ final class ColaboradorFlow
 
         $novoId = \ColaboradorModel::create($dados);
         if (!$novoId) {
-            $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('Erro ao cadastrar registro.'));
+            $this->redirect("{$colaboradoresRoute}?erro=" . urlencode('Erro ao cadastrar registro.'));
         }
 
         if (!\EspecialidadeProfissionalModel::replaceForColaborador((int) $novoId, $especialidadesInput)) {
-            $this->redirect("{$colaboradoresRoute}/?erro=" . urlencode('Registro salvo, mas houve erro ao salvar especialidades.'));
+            $this->redirect("{$colaboradoresRoute}?erro=" . urlencode('Registro salvo, mas houve erro ao salvar especialidades.'));
         }
 
         $confirma = base64_encode(json_encode([
@@ -314,7 +315,7 @@ final class ColaboradorFlow
         ";
         \enviarEmail($nome, $email, $mensagem);
 
-        $this->redirect("{$colaboradoresRoute}/?msg=" . urlencode('Colaborador cadastrado com sucesso.'));
+        $this->redirect("{$colaboradoresRoute}?msg=" . urlencode('Colaborador cadastrado com sucesso.'));
     }
 
     private function tratarUploadFoto(mixed $arquivo, ?string $fotoAtual = null): string
@@ -425,6 +426,21 @@ final class ColaboradorFlow
             'licenca_administrativa' => [0, 1],
             default => [0, 0],
         };
+    }
+
+    private function buildInternalRoute(string $suffix): string
+    {
+        $baseUrl = trim($this->baseUrl);
+        if ($baseUrl === '') {
+            return $suffix;
+        }
+
+        $path = parse_url($baseUrl, PHP_URL_PATH);
+        if (!is_string($path) || $path === '') {
+            $path = $baseUrl;
+        }
+
+        return rtrim($path, '/') . $suffix;
     }
 
     private function redirect(string $location): never

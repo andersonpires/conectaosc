@@ -10,6 +10,11 @@ $statusFiltro = $statusFiltro ?? 'ativos';
 $especialidadesProfissionais = $especialidadesProfissionais ?? [];
 $podeDefinirClinicaForm = ((int)($_SESSION['IdPermissao'] ?? 0) === 4)
     || in_array((string)($_SESSION['Tipo'] ?? ''), ['Administrador', 'Superadministrador'], true);
+$basePathUrl = parse_url((string) $BASE_para_URL, PHP_URL_PATH);
+if (!is_string($basePathUrl) || $basePathUrl === '') {
+    $basePathUrl = (string) $BASE_para_URL;
+}
+$colaboradoresPath = rtrim($basePathUrl, '/') . '/colaboradores';
 $ufs = [
     'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'
 ];
@@ -109,7 +114,7 @@ $ufs = [
                         <div class="col-12">
                             <div class="card">
                                 <div class="card-body">
-                                    <form action="<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/colaboradores/" enctype="multipart/form-data" method="post" onsubmit="mostrarOverlay({ mensagem: 'Alterando dados...', carregando: true })">
+                                    <form action="<?php echo htmlspecialchars($colaboradoresPath, ENT_QUOTES, 'UTF-8'); ?>" enctype="multipart/form-data" method="post" onsubmit="mostrarOverlay({ mensagem: 'Alterando dados...', carregando: true })">
                                         <input type="hidden" name="IdColaborador" value="<?php echo htmlspecialchars($colaborador['IdColaborador']); ?>">
                                         <div class="row mb-3">
                                             <div class="col-5">
@@ -265,7 +270,7 @@ $ufs = [
                         <div class="col-12">
                             <div class="card">
                                 <div class="card-body">
-                                    <form action="<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/colaboradores/" enctype="multipart/form-data" method="post" onsubmit="mostrarOverlay({ mensagem: 'Salvando dados...', carregando: true })">
+                                    <form action="<?php echo htmlspecialchars($colaboradoresPath, ENT_QUOTES, 'UTF-8'); ?>" enctype="multipart/form-data" method="post" onsubmit="mostrarOverlay({ mensagem: 'Salvando dados...', carregando: true })">
                                         <div class="row mb-3">
                                             <div class="col-5">
                                                 <label for="Nome" class="form-label">Nome</label>
@@ -412,8 +417,8 @@ $ufs = [
                         <div class="card-header d-flex flex-wrap align-items-center gap-2">
                             <h5 class="mb-0">Colaboradores cadastrados</h5>
                             <div class="btn-group ms-auto" role="group" aria-label="Filtro de status">
-                                <a href="<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/colaboradores/?status=ativos" class="btn btn-sm <?php echo ($statusFiltro ?? 'ativos') === 'ativos' ? 'btn-primary' : 'btn-outline-primary'; ?>">Ativos</a>
-                                <a href="<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/colaboradores/?status=inativos" class="btn btn-sm <?php echo ($statusFiltro ?? 'ativos') === 'inativos' ? 'btn-primary' : 'btn-outline-primary'; ?>">Inativos</a>
+                                <a href="<?php echo htmlspecialchars($colaboradoresPath, ENT_QUOTES, 'UTF-8'); ?>?status=ativos" class="btn btn-sm <?php echo ($statusFiltro ?? 'ativos') === 'ativos' ? 'btn-primary' : 'btn-outline-primary'; ?>">Ativos</a>
+                                <a href="<?php echo htmlspecialchars($colaboradoresPath, ENT_QUOTES, 'UTF-8'); ?>?status=inativos" class="btn btn-sm <?php echo ($statusFiltro ?? 'ativos') === 'inativos' ? 'btn-primary' : 'btn-outline-primary'; ?>">Inativos</a>
                             </div>
                         </div>
                         <div class="card-body">
@@ -501,7 +506,7 @@ $ufs = [
                                                                 <i class="fa-solid fa-trash" data-feather="trash-2"></i>
                                                             </button>
                                                         <?php else: ?>
-                                                            <form action="<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/colaboradores/" method="post" style="display:inline-block;">
+                                                            <form action="<?php echo htmlspecialchars($colaboradoresPath, ENT_QUOTES, 'UTF-8'); ?>" method="post" style="display:inline-block;">
                                                                 <input type="hidden" name="acao" value="reativar">
                                                                 <input type="hidden" name="IdColaborador" value="<?php echo (int) $IdColaborador; ?>">
                                                                 <button type="submit" class="btn btn-success btn-sm">Reativar</button>
@@ -918,7 +923,7 @@ $ufs = [
     function alterarColaborador(id) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/colaboradores/';
+        form.action = '<?php echo htmlspecialchars($colaboradoresPath, ENT_QUOTES, 'UTF-8'); ?>';
 
         const input = document.createElement('input');
         input.type = 'hidden';
