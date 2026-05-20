@@ -233,6 +233,90 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             border: 1px solid rgba(15, 23, 42, .2);
             display: inline-block;
         }
+
+        .chamada-view-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: .35rem;
+            margin: .75rem 0 .25rem;
+        }
+
+        .chamada-view-toggle {
+            display: inline-flex;
+            border: 1px solid #cbd5e1;
+            border-radius: .45rem;
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .chamada-view-toggle button {
+            width: 42px;
+            min-height: 40px;
+            border: 0;
+            background: #fff;
+            color: #64748b;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .chamada-view-toggle button.is-active,
+        .chamada-view-toggle button[aria-pressed="true"] {
+            background: #0d6efd;
+            color: #fff;
+        }
+
+        .chamada-list-container {
+            padding-left: .75rem;
+            padding-right: .75rem;
+        }
+
+        .chamada-list-wrapper {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .chamada-list-table {
+            min-width: 760px;
+            background: #fff;
+        }
+
+        .chamada-list-table th,
+        .chamada-list-table td {
+            vertical-align: middle;
+        }
+
+        .chamada-list-foto {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .chamada-list-nome {
+            min-width: 180px;
+            font-weight: 600;
+        }
+
+        .chamada-list-table .button-container {
+            display: flex;
+            gap: .35rem;
+            white-space: nowrap;
+        }
+
+        .chamada-list-table .button-container .btn {
+            min-width: 38px;
+        }
+
+        @media (min-width: 768px) {
+            .chamada-list-container {
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+        }
     </style>
 
 
@@ -265,6 +349,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                 $NNomeTurma = $_GET['NNomeTurma'] ?? null;
                 $Id__Curso = $_GET['NNomeCurso'] ?? null;
                 $Id__Turma = $_GET['NNomeTurma'] ?? null;
+                $viewChamada = isset($_GET['view']) && $_GET['view'] === 'list' ? 'list' : 'grid';
                 $nomeCurso = '';
                 $nomeTurma = '';
                 $cursosAtivos = $pdo->query("SELECT IdCurso, NomeCurso FROM tbCurso WHERE Habilitado = 1 ORDER BY NomeCurso ASC")->fetchAll(PDO::FETCH_ASSOC);
@@ -282,7 +367,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                         $nomeTurma = $rowCursoTurma['NomeTurma'];
                     }
                 }
-                $resultado = turma_foto($pdo, $dataSelecionada, $dataSelecionada, $NNomeCurso, $NNomeTurma, (string)$BASE_para_URL);
+                $resultado = turma_foto($pdo, $dataSelecionada, $dataSelecionada, $NNomeCurso, $NNomeTurma, (string)$BASE_para_URL, $viewChamada);
                 $TotalCards = $resultado['totalCards'];
                 ?>
                 <div class="info-container">
@@ -309,6 +394,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                             <label for="dataSelecionada"><strong>Data da chamada:</strong></label>
                             <input type="text" id="dataSelecionada" name="dataSelecionada" value="<?= htmlspecialchars($dataSelecionada) ?>" class="datepicker form-control" autocomplete="off">
                         </div>
+                        <input type="hidden" id="viewChamadaInput" name="view" value="<?= htmlspecialchars($viewChamada, ENT_QUOTES, 'UTF-8') ?>">
                         <button type="submit" id="turma-nome" class="btn btn-primary">Ir</button>
 
                     </form>
@@ -342,10 +428,30 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                             </a>
                         </div>
                     </div>
+                    <div class="chamada-view-toolbar">
+                        <div class="chamada-view-toggle" role="group" aria-label="Alternar visualização da chamada">
+                            <button type="button"
+                                    class="<?= $viewChamada === 'grid' ? 'is-active' : '' ?>"
+                                    data-view="grid"
+                                    aria-label="Visualização em bloco"
+                                    aria-pressed="<?= $viewChamada === 'grid' ? 'true' : 'false' ?>"
+                                    title="Visualização em bloco">
+                                <i class="bi bi-grid-fill" aria-hidden="true"></i>
+                            </button>
+                            <button type="button"
+                                    class="<?= $viewChamada === 'list' ? 'is-active' : '' ?>"
+                                    data-view="list"
+                                    aria-label="Visualização em lista"
+                                    aria-pressed="<?= $viewChamada === 'list' ? 'true' : 'false' ?>"
+                                    title="Visualização em lista">
+                                <i class="bi bi-list-ul" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
                     <p style="text-align: center;">Total de alunos na chamada: <?php echo $TotalCards ?></p>
                 </div>
             </main>
-            <div class="card-container">
+            <div class="<?= $viewChamada === 'list' ? 'chamada-list-container' : 'card-container' ?>">
                 <?php
                 // Chama a função turma_foto passando a conexão PDO ($pdo) e a data selecionada.
                 echo $resultado['html'];
@@ -443,7 +549,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
     document.addEventListener("DOMContentLoaded", function() {
         let dadosParaExcluir = null;
 
-        document.querySelectorAll('.card-container .card[id^="card_"]').forEach(card => {
+        getStudentCards().forEach(card => {
             card.addEventListener('dblclick', function(e) {
                 e.preventDefault();
 
@@ -641,6 +747,35 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.chamada-view-toggle [data-view]').forEach(button => {
+            button.addEventListener('click', function() {
+                const view = this.dataset.view === 'list' ? 'list' : 'grid';
+                localStorage.setItem('chamadaView', view);
+
+                const url = new URL(window.location.href);
+                url.searchParams.set('view', view);
+                const currentHash = window.location.hash;
+                window.location.href = `${url.pathname}${url.search}${currentHash}`;
+            });
+        });
+
+        const viewInput = document.getElementById('viewChamadaInput');
+        const currentUrl = new URL(window.location.href);
+        if (viewInput && !currentUrl.searchParams.has('view')) {
+            const savedView = localStorage.getItem('chamadaView');
+            if (savedView === 'grid' || savedView === 'list') {
+                viewInput.value = savedView;
+                if (savedView !== '<?= $viewChamada ?>') {
+                    currentUrl.searchParams.set('view', savedView);
+                    window.location.replace(`${currentUrl.pathname}${currentUrl.search}${window.location.hash}`);
+                }
+            }
+        }
+    });
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
         const buttons = {
             presenca: document.getElementById('btn-presenca'),
             falta: document.getElementById('btn-falta'),
@@ -771,7 +906,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             // Extrai apenas as letras antes do tra?o (-)
             const action = buttonId.split('-')[0];
 
-            const card = $(this).closest('.card');
+            const card = $(this).closest('.chamada-student-item');
 
             const id = card.attr('id'); // Exemplo: card_123_45_67
 
@@ -816,10 +951,16 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                             try {
                                 let faltasData = JSON.parse(faltasResponse);
                                 if (faltasData.totalFaltas !== undefined) {
-                                    let h4 = card.find('h4');
-                                    let nomeAluno = h4.clone().children().remove().end().text().trim(); // Remove link anterior
                                     let link = `<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/faltas?idAluno=${idAluno}&dataSelecionada=${encodeURIComponent(dataSelecionada)}&NNomeCurso=${encodeURIComponent(NNomeCurso)}&NNomeTurma=${encodeURIComponent(NNomeTurma)}`;
-                                    h4.html(`${nomeAluno} <a href="${link}" class="text-decoration-none">(${faltasData.totalFaltas} faltas)</a>`);
+                                    let h4 = card.find('h4');
+                                    if (h4.length) {
+                                        let nomeAluno = h4.clone().children().remove().end().text().trim(); // Remove link anterior
+                                        h4.html(`${nomeAluno} <a href="${link}" class="text-decoration-none js-faltas-link">(${faltasData.totalFaltas} faltas)</a>`);
+                                    } else {
+                                        card.find('.js-faltas-link')
+                                            .attr('href', link)
+                                            .text(`${faltasData.totalFaltas} faltas`);
+                                    }
                                 }
                             } catch (e) {
                                 console.error('Erro ao processar resposta:', e);
@@ -844,11 +985,12 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
 <script>
     function getStudentCards() {
-        return document.querySelectorAll('.card-container .card[id^="card_"]');
+        return document.querySelectorAll('.chamada-student-item[id^="card_"]');
     }
 
     function alterarCor(botao, cor) {
-        const card = botao.closest('.card');
+        const card = botao.closest('.chamada-student-item');
+        if (!card) return;
         const botoes = card.querySelectorAll('.btn');
 
         if (botao.id.includes('Obs')) {
@@ -1074,8 +1216,8 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
         cards2.forEach(card => {
             if (getComputedStyle(card).display !== 'none') {
-                const h4 = card.querySelector('h4');
-                if (h4 && normalizeText(h4.textContent).includes(filter)) {
+                const searchableText = card.dataset.search || card.textContent || '';
+                if (normalizeText(searchableText).includes(filter)) {
                     card.style.display = ''; // Exibe o card se o texto corresponder
                 } else {
                     card.style.display = 'none';
@@ -1096,6 +1238,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
     function filterCardsGray(display) {
         const cards3 = getStudentCards();
+        const displayValue = display === 'block' ? '' : display;
 
         const cardsToFilter = Array.from(cards3).filter(card => {
             const buttons_card = card.querySelectorAll('.btnp');
@@ -1108,7 +1251,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
         // Aplica display none ou block apenas nos cards que precisam ser filtrados
         cardsToFilter.forEach(card => {
-            card.style.display = display;
+            card.style.display = displayValue;
         });
     }
 
@@ -1157,7 +1300,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 </script>
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll('.card-container .card[id^="card_"] button').forEach(button => {
+        document.querySelectorAll('.chamada-student-item[id^="card_"] button').forEach(button => {
             button.addEventListener('click', () => {
                 const tooltips = bootstrap.Tooltip.getInstance(button);
                 if (tooltips) {
