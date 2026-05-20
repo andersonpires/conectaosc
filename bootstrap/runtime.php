@@ -180,6 +180,46 @@ if (!function_exists('bootstrap_runtime')) {
         return 'login_v43';
     }
 
+    function bootstrap_auth_session_keys(): array
+    {
+        return [
+            'token',
+            'Cod',
+            'Foto',
+            'Nome',
+            'Sobrenome',
+            'Tipo',
+            'IdPermissao',
+            'PaginasPermitidas',
+            'ultimoAcessoData',
+            'profissional_saude',
+            'licenca_administrativa',
+            'auth_cookie_name',
+        ];
+    }
+
+    function bootstrap_clear_auth_session(): void
+    {
+        foreach (bootstrap_auth_session_keys() as $key) {
+            unset($_SESSION[$key]);
+        }
+    }
+
+    function bootstrap_validate_auth_session_cookie_name(string $basePath): void
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE || empty($_SESSION['Cod'])) {
+            return;
+        }
+
+        $currentCookieName = bootstrap_auth_cookie_name($basePath);
+        $sessionCookieName = trim((string)($_SESSION['auth_cookie_name'] ?? ''));
+        if ($sessionCookieName === $currentCookieName) {
+            return;
+        }
+
+        bootstrap_clear_auth_session();
+    }
+
     function bootstrap_runtime(): array
     {
         $basePath = realpath(__DIR__ . '/..') ?: dirname(__DIR__);
@@ -214,6 +254,8 @@ if (!function_exists('bootstrap_runtime')) {
                 $sessionActive = session_status() === PHP_SESSION_ACTIVE;
             }
         }
+
+        bootstrap_validate_auth_session_cookie_name($basePath);
 
         date_default_timezone_set('America/Sao_Paulo');
 

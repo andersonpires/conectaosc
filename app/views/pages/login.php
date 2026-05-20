@@ -29,6 +29,7 @@ $authSessionKeys = [
     'IdPermissao',
     'PaginasPermitidas',
     'ultimoAcessoData',
+    'auth_cookie_name',
 ];
 
 function clearAuthState($keys, $cookieName, $baseUrl = '') {
@@ -70,6 +71,143 @@ function redirectWithError($message, $keys, $cookieName, $baseUrl = '') {
     exit();
 }
 
+function loginProfileMissingFields(array $colaborador): array
+{
+    $missing = [];
+    $required = [
+        'Nascimento' => 'Data de nascimento',
+        'Sobrenome' => 'Sobrenome',
+        'Cargo' => 'Cargo',
+        'WhatsApp' => 'WhatsApp',
+    ];
+
+    foreach ($required as $field => $label) {
+        if (trim((string)($colaborador[$field] ?? '')) === '') {
+            $missing[] = $label;
+        }
+    }
+
+    $foto = strtolower(trim((string)($colaborador['Foto'] ?? '')));
+    if ($foto === '' || in_array($foto, ['padrao.jfif', 'padrao.jpg', 'padrao.png'], true)) {
+        $missing[] = 'Foto';
+    }
+
+    return $missing;
+}
+
+function loginProfileMissingFieldNames(array $colaborador): array
+{
+    $missing = [];
+    foreach ([
+        'Nascimento',
+        'Sobrenome',
+        'Cargo',
+        'WhatsApp',
+    ] as $field) {
+        if (trim((string)($colaborador[$field] ?? '')) === '') {
+            $missing[] = $field;
+        }
+    }
+
+    $foto = strtolower(trim((string)($colaborador['Foto'] ?? '')));
+    if ($foto === '' || in_array($foto, ['padrao.jfif', 'padrao.jpg', 'padrao.png'], true)) {
+        $missing[] = 'Foto';
+    }
+
+    return $missing;
+}
+
+function loginNormalizeDate(?string $value): ?string
+{
+    $value = trim((string)$value);
+    if ($value === '') {
+        return null;
+    }
+
+    $date = DateTime::createFromFormat('Y-m-d', $value);
+    if ($date && $date->format('Y-m-d') === $value) {
+        return $value;
+    }
+
+    return null;
+}
+
+function loginUploadProfilePhoto(?array $file, string $currentPhoto): string
+{
+    if (!is_array($file) || (int)($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return $currentPhoto;
+    }
+
+    if ((int)($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        throw new RuntimeException('Não foi possível enviar a foto.');
+    }
+
+    if ((int)($file['size'] ?? 0) > 5 * 1024 * 1024) {
+        throw new RuntimeException('A foto deve ter no máximo 5 MB.');
+    }
+
+    $tmpName = (string)($file['tmp_name'] ?? '');
+    $mime = '';
+    if (is_file($tmpName) && function_exists('finfo_open')) {
+        $finfo = finfo_open(FILEINFO_MIME_TYPE);
+        if ($finfo) {
+            $mime = (string)finfo_file($finfo, $tmpName);
+            finfo_close($finfo);
+        }
+    }
+
+    $extensions = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+    ];
+    if (!isset($extensions[$mime])) {
+        throw new RuntimeException('Envie uma foto em JPG ou PNG.');
+    }
+
+    $dir = bootstrap_assets_img_path() . DIRECTORY_SEPARATOR . 'fotos';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0777, true);
+    }
+
+    $filename = md5(uniqid((string)time(), true)) . '.' . $extensions[$mime];
+    $target = $dir . DIRECTORY_SEPARATOR . $filename;
+    if (!move_uploaded_file($tmpName, $target)) {
+        throw new RuntimeException('Não foi possível salvar a foto.');
+    }
+
+    $currentPhoto = trim($currentPhoto);
+    if ($currentPhoto !== '' && !in_array(strtolower($currentPhoto), ['padrao.jfif', 'padrao.jpg', 'padrao.png'], true)) {
+        $oldPath = $dir . DIRECTORY_SEPARATOR . basename($currentPhoto);
+        if (is_file($oldPath)) {
+            @unlink($oldPath);
+        }
+    }
+
+    return $filename;
+}
+
+function loginPreparePendingProfile(array $colaborador, array $missing, string $redirectUrl = ''): void
+{
+    $_SESSION['pending_profile_user_id'] = (int)$colaborador['IdColaborador'];
+    $_SESSION['pending_profile_token'] = bin2hex(random_bytes(16));
+    $_SESSION['pending_profile_redirect'] = $redirectUrl;
+    unset($_SESSION['pending_profile_photo']);
+}
+
+function loginLoadPendingProfile(PDO $pdo): ?array
+{
+    $id = (int)($_SESSION['pending_profile_user_id'] ?? 0);
+    if ($id <= 0) {
+        return null;
+    }
+
+    $stmt = $pdo->prepare("SELECT IdColaborador, Nome, Sobrenome, Nascimento, Cargo, WhatsApp, Foto FROM tbUser WHERE IdColaborador = ? AND Habilitado = 1");
+    $stmt->execute([$id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    return is_array($row) ? $row : null;
+}
+
 if (isset($_GET['erro']) && $_GET['erro'] !== '') {
     clearAuthState($authSessionKeys, $authCookieName, $BASE_para_URL);
 }
@@ -105,6 +243,10 @@ require_once $ROOT_PATH . '/app/config/legacy_config.php';
 require_once $ROOT_PATH . '/api/legacy/funcoes.php';
 require_once $ROOT_PATH . '/api/conectabd/conexao.php';
 $appJsVersion = @filemtime($ROOT_PATH . '/app/assets/js/app.js') ?: time();
+$showProfileModal = false;
+$profileModalData = null;
+$profileModalMissing = [];
+$profileModalErrors = [];
 $config = $pdo->query("SELECT * FROM tbConfig LIMIT 1")->fetch(PDO::FETCH_ASSOC);
 $shortcutIcon = (string) ($config['ShortcutIcon'] ?? 'icon-48x48.png');
 $shortcutIcon = trim($shortcutIcon);
@@ -122,6 +264,91 @@ if (!is_file($iconFullPath)) {
 }
 bootstrap_apply_php_runtime();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'complete_profile') {
+    $profileModalData = loginLoadPendingProfile($pdo);
+    $sessionToken = (string)($_SESSION['pending_profile_token'] ?? '');
+    $postedToken = (string)($_POST['profile_token'] ?? '');
+
+    if (!$profileModalData || $sessionToken === '' || !hash_equals($sessionToken, $postedToken)) {
+        redirectWithError('Não foi possível validar a atualização cadastral. Faça login novamente.', $authSessionKeys, $authCookieName, $BASE_para_URL);
+    }
+
+    $missingFieldNames = loginProfileMissingFieldNames($profileModalData);
+    $sobrenome = in_array('Sobrenome', $missingFieldNames, true)
+        ? trim((string)($_POST['Sobrenome'] ?? ''))
+        : trim((string)($profileModalData['Sobrenome'] ?? ''));
+    $cargo = in_array('Cargo', $missingFieldNames, true)
+        ? trim((string)($_POST['Cargo'] ?? ''))
+        : trim((string)($profileModalData['Cargo'] ?? ''));
+    $whatsApp = in_array('WhatsApp', $missingFieldNames, true)
+        ? trim((string)($_POST['WhatsApp'] ?? ''))
+        : trim((string)($profileModalData['WhatsApp'] ?? ''));
+    $nascimento = in_array('Nascimento', $missingFieldNames, true)
+        ? loginNormalizeDate((string)($_POST['Nascimento'] ?? ''))
+        : loginNormalizeDate((string)($profileModalData['Nascimento'] ?? ''));
+    $foto = (string)($_SESSION['pending_profile_photo'] ?? ($profileModalData['Foto'] ?? ''));
+
+    if ($sobrenome === '') {
+        $profileModalErrors[] = 'Informe o sobrenome.';
+    }
+    if ($cargo === '') {
+        $profileModalErrors[] = 'Informe o cargo.';
+    }
+    if ($whatsApp === '') {
+        $profileModalErrors[] = 'Informe o WhatsApp.';
+    }
+    if ($nascimento === null) {
+        $profileModalErrors[] = 'Informe a data de nascimento.';
+    }
+
+    if (in_array('Foto', $missingFieldNames, true)) {
+        try {
+            $foto = loginUploadProfilePhoto($_FILES['foto'] ?? null, $foto);
+            $_SESSION['pending_profile_photo'] = $foto;
+        } catch (RuntimeException $e) {
+            $profileModalErrors[] = $e->getMessage();
+        }
+    }
+
+    $candidate = [
+        'Sobrenome' => $sobrenome,
+        'Cargo' => $cargo,
+        'WhatsApp' => $whatsApp,
+        'Nascimento' => $nascimento,
+        'Foto' => $foto,
+    ];
+    $profileModalMissing = loginProfileMissingFields($candidate);
+    if ($profileModalMissing !== []) {
+        $profileModalErrors[] = 'Preencha todos os dados obrigatórios para continuar.';
+    }
+
+    if ($profileModalErrors === []) {
+        $stmt = $pdo->prepare(
+            "UPDATE tbUser
+                SET Sobrenome = ?, Nascimento = ?, Cargo = ?, WhatsApp = ?, Foto = ?, IdColaboradorAlt = ?, TimeAlterado = ?
+              WHERE IdColaborador = ?"
+        );
+        $stmt->execute([
+            $sobrenome,
+            $nascimento,
+            $cargo,
+            $whatsApp,
+            $foto,
+            (int)$profileModalData['IdColaborador'],
+            date('Y-m-d H:i:s'),
+            (int)$profileModalData['IdColaborador'],
+        ]);
+
+        unset($_SESSION['pending_profile_user_id'], $_SESSION['pending_profile_token'], $_SESSION['pending_profile_redirect'], $_SESSION['pending_profile_photo']);
+        clearAuthState($authSessionKeys, $authCookieName, $BASE_para_URL);
+        header('Location: ' . rtrim((string)$BASE_para_URL, '/') . '/login/?sucesso=' . urlencode('Cadastro atualizado. Faça login novamente para continuar.'));
+        exit();
+    }
+
+    $profileModalData = array_merge($profileModalData, $candidate);
+    $showProfileModal = true;
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['confirma'])) {
 
     // Decodifica o cookie para obter os dados
@@ -132,7 +359,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['confirma'])) {
     $senhaDigitada = $confirma['token'];
 
     // Prepara a consulta SQL para obter o hash da senha
-    $sql = "SELECT u.IdColaborador, u.IdPermissao, u.Foto, u.Nome, u.Sobrenome, u.Senha, p.NomePermissao 
+    $sql = "SELECT u.IdColaborador, u.IdPermissao, u.Foto, u.Nome, u.Sobrenome, u.Nascimento, u.Cargo, u.WhatsApp, u.Senha, p.NomePermissao
         FROM tbUser u 
         JOIN tbPermissao p ON u.IdPermissao = p.IdPermissao 
         WHERE u.Email = ? AND u.Habilitado = 1";
@@ -159,6 +386,14 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['confirma'])) {
                 exit;
             }
 
+            $profileModalMissing = loginProfileMissingFields($result);
+            if ($profileModalMissing !== []) {
+                $redirectUrl = isset($_GET['redirect']) ? urldecode((string)$_GET['redirect']) : $BASE_para_URL . "/dashboard/";
+                loginPreparePendingProfile($result, $profileModalMissing, $redirectUrl);
+                clearAuthState($authSessionKeys, $authCookieName, $BASE_para_URL);
+                $profileModalData = $result;
+                $showProfileModal = true;
+            } else {
             $_SESSION['token'] = $token;
             $_SESSION['Cod'] = $IdColaborador;
             $_SESSION['Foto'] = $result['Foto'];
@@ -179,6 +414,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['confirma'])) {
 
             // Comentário ajustado para UTF-8.
             $_SESSION['ultimoAcessoData'] = "Agora";
+            $_SESSION['auth_cookie_name'] = $authCookieName;
 
             setcookie($authCookieName, '', time() - 3600, "/");
             setcookie($authCookieName, '', time() - 3600, "/", "", false, false); // Sem secure e httponly
@@ -203,6 +439,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['confirma'])) {
             $redirect_url = isset($_GET['redirect']) ? urldecode($_GET['redirect']) : $BASE_para_URL . "/dashboard/";
             header("Location: " . $redirect_url);
             exit();
+            }
         } else {
             // Comentário ajustado para UTF-8.
             redirectWithError('E-mail ou senha incorretos. Tente novamente.', $authSessionKeys, $authCookieName, $BASE_para_URL);
@@ -216,7 +453,7 @@ if ($_SERVER["REQUEST_METHOD"] == "GET" && isset($_GET['confirma'])) {
 }
 
 // Verifica se o cookie de login existe
-if (isset($_COOKIE[$authCookieName]) && !isset($_GET['logout'])) {
+if (!$showProfileModal && isset($_COOKIE[$authCookieName]) && !isset($_GET['logout'])) {
     // Decodifica o cookie para obter os dados
     $cookie_data = json_decode(base64_decode($_COOKIE[$authCookieName]), true);
 
@@ -228,7 +465,7 @@ if (isset($_COOKIE[$authCookieName]) && !isset($_GET['logout'])) {
     $token = $cookie_data['token'];
 
     // Comentário ajustado para UTF-8.
-    $sql = "SELECT u.IdColaborador, u.IdPermissao, u.Foto, u.Nome, u.Sobrenome, u.Senha, p.NomePermissao 
+    $sql = "SELECT u.IdColaborador, u.IdPermissao, u.Foto, u.Nome, u.Sobrenome, u.Nascimento, u.Cargo, u.WhatsApp, u.Senha, p.NomePermissao
         FROM tbUser u 
         JOIN tbPermissao p ON u.IdPermissao = p.IdPermissao 
         WHERE IdColaborador = ? AND u.Habilitado = 1";
@@ -239,6 +476,14 @@ if (isset($_COOKIE[$authCookieName]) && !isset($_GET['logout'])) {
     $result = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($result) {
+        $profileModalMissing = loginProfileMissingFields($result);
+        if ($profileModalMissing !== []) {
+            $redirectUrl = isset($_GET['redirect']) ? urldecode((string)$_GET['redirect']) : $BASE_para_URL . '/dashboard/';
+            loginPreparePendingProfile($result, $profileModalMissing, $redirectUrl);
+            clearAuthState($authSessionKeys, $authCookieName, $BASE_para_URL);
+            $profileModalData = $result;
+            $showProfileModal = true;
+        } else {
         // Comentário ajustado para UTF-8.
         // Comentário ajustado para UTF-8.
         $_SESSION['token'] = $token;
@@ -261,6 +506,7 @@ if (isset($_COOKIE[$authCookieName]) && !isset($_GET['logout'])) {
 
         // Comentário ajustado para UTF-8.
         $_SESSION['ultimoAcessoData'] = "Agora";
+        $_SESSION['auth_cookie_name'] = $authCookieName;
 
         // Comentário ajustado para UTF-8.
         if (!verificaHorarioPermissao($pdo, $result['IdPermissao'])) {
@@ -273,13 +519,14 @@ if (isset($_COOKIE[$authCookieName]) && !isset($_GET['logout'])) {
         $redirect_url = isset($_GET['redirect']) ? urldecode($_GET['redirect']) : $BASE_para_URL . '/dashboard/';
         header("Location: " . $redirect_url . $erro);
         exit();
+        }
     } else {
         redirectWithError('Sessão expirada. Faça login novamente.', $authSessionKeys, $authCookieName, $BASE_para_URL);
     }
 }
 
 // Verifica se os dados foram submetidos via POST
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+if (!$showProfileModal && $_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Verifica se os campos de e-mail e senha foram preenchidos
     if (!empty($_POST['email']) && !empty($_POST['password'])) {
@@ -288,7 +535,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $senhaDigitada = $_POST['password'];
 
         // Prepara a consulta SQL para obter o hash da senha
-        $sql = "SELECT u.IdColaborador, u.IdPermissao, u.Foto, u.Nome, u.Sobrenome, u.Senha, p.NomePermissao 
+        $sql = "SELECT u.IdColaborador, u.IdPermissao, u.Foto, u.Nome, u.Sobrenome, u.Nascimento, u.Cargo, u.WhatsApp, u.Senha, p.NomePermissao
         FROM tbUser u 
         JOIN tbPermissao p ON u.IdPermissao = p.IdPermissao 
         WHERE u.Email = ? AND u.Habilitado = 1";
@@ -315,6 +562,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     exit;
                 }
 
+                $profileModalMissing = loginProfileMissingFields($result);
+                if ($profileModalMissing !== []) {
+                    $redirectUrl = isset($_GET['redirect']) ? urldecode((string)$_GET['redirect']) : $BASE_para_URL . "/dashboard/";
+                    loginPreparePendingProfile($result, $profileModalMissing, $redirectUrl);
+                    clearAuthState($authSessionKeys, $authCookieName, $BASE_para_URL);
+                    $profileModalData = $result;
+                    $showProfileModal = true;
+                } else {
                 $_SESSION['token'] = $token;
                 $_SESSION['Cod'] = $IdColaborador;
                 $_SESSION['Foto'] = $result['Foto'];
@@ -335,6 +590,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                 // Comentário ajustado para UTF-8.
                 $_SESSION['ultimoAcessoData'] = "Agora";
+                $_SESSION['auth_cookie_name'] = $authCookieName;
 
                 setcookie($authCookieName, '', time() - 3600, "/");
                 setcookie($authCookieName, '', time() - 3600, "/", "", false, false); // Sem secure e httponly
@@ -353,6 +609,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 $redirect_url = isset($_GET['redirect']) ? urldecode($_GET['redirect']) : $BASE_para_URL . "/dashboard/";
                 header("Location: " . $redirect_url);
                 exit();
+                }
             } else {
                 // Comentário ajustado para UTF-8.
                 redirectWithError('E-mail ou senha incorretos. Tente novamente.', $authSessionKeys, $authCookieName, $BASE_para_URL);
@@ -482,10 +739,64 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .login-alert-success .bi {
             fill: currentColor;
         }
+
+        body.profile-modal-open {
+            overflow: hidden;
+        }
+
+        .profile-completion-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 1050;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: rgba(15, 23, 42, 0.82);
+        }
+
+        .profile-completion-panel {
+            width: min(100%, 560px);
+            max-height: calc(100vh - 2rem);
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 0.5rem;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+        }
+
+        .profile-completion-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .profile-completion-body {
+            padding: 1.5rem;
+        }
+
+        .profile-completion-footer {
+            padding: 1.25rem 1.5rem;
+            border-top: 1px solid #dee2e6;
+            background: #f8f9fa;
+        }
+
+        .profile-completion-title {
+            margin: 0;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .profile-completion-text {
+            color: #495057;
+        }
+
+        .profile-completion-required {
+            color: #dc3545;
+        }
     </style>
 </head>
 
-<body>
+<body class="<?php echo $showProfileModal ? 'profile-modal-open' : ''; ?>">
     <svg xmlns="http://www.w3.org/2000/svg" class="d-none">
         <symbol id="check-circle-fill" viewBox="0 0 16 16">
             <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.97 11.03a.75.75 0 0 0 1.08.022l3.992-4.99a.75.75 0 1 0-1.17-.94L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06l2.646 2.647z"/>
@@ -563,6 +874,74 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
         </div>
     </main>
+    <?php if ($showProfileModal && is_array($profileModalData)) {
+        $camposPendentesPerfil = loginProfileMissingFieldNames($profileModalData);
+        $fotoAtualPerfil = (string)($profileModalData['Foto'] ?? '');
+        $fotoObrigatoria = in_array(strtolower(trim($fotoAtualPerfil)), ['', 'padrao.jfif', 'padrao.jpg', 'padrao.png'], true);
+        $nascimentoPerfil = '';
+        if (!empty($profileModalData['Nascimento'])) {
+            $dtPerfil = DateTime::createFromFormat('Y-m-d', (string)$profileModalData['Nascimento']);
+            $nascimentoPerfil = $dtPerfil ? $dtPerfil->format('Y-m-d') : '';
+        }
+    ?>
+        <div class="profile-completion-overlay" id="completeProfileModal" role="dialog" aria-modal="true" aria-labelledby="completeProfileModalLabel">
+            <div class="profile-completion-panel">
+                    <form method="post" action="<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/login/" enctype="multipart/form-data" novalidate>
+                        <input type="hidden" name="action" value="complete_profile">
+                        <input type="hidden" name="profile_token" value="<?php echo htmlspecialchars((string)($_SESSION['pending_profile_token'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
+                        <div class="profile-completion-header">
+                            <h5 class="profile-completion-title" id="completeProfileModalLabel">Conclua seu cadastro</h5>
+                        </div>
+                        <div class="profile-completion-body">
+                            <p class="profile-completion-text mb-3">Para acessar o sistema, atualize seus dados pessoais obrigatórios.</p>
+                            <?php if ($profileModalMissing !== []) { ?>
+                                <div class="alert alert-warning py-2">
+                                    Pendências: <?php echo htmlspecialchars(implode(', ', $profileModalMissing), ENT_QUOTES, 'UTF-8'); ?>.
+                                </div>
+                            <?php } ?>
+                            <?php if ($profileModalErrors !== []) { ?>
+                                <div class="alert alert-danger py-2">
+                                    <?php echo htmlspecialchars(implode(' ', $profileModalErrors), ENT_QUOTES, 'UTF-8'); ?>
+                                </div>
+                            <?php } ?>
+                            <?php if (in_array('Nascimento', $camposPendentesPerfil, true)) { ?>
+                            <div class="mb-3">
+                                <label for="profileNascimento" class="form-label">Data de nascimento <span class="profile-completion-required">*</span></label>
+                                <input type="date" class="form-control" id="profileNascimento" name="Nascimento" value="<?php echo htmlspecialchars($nascimentoPerfil, ENT_QUOTES, 'UTF-8'); ?>" required>
+                            </div>
+                            <?php } ?>
+                            <?php if (in_array('Sobrenome', $camposPendentesPerfil, true)) { ?>
+                            <div class="mb-3">
+                                <label for="profileSobrenome" class="form-label">Sobrenome <span class="profile-completion-required">*</span></label>
+                                <input type="text" class="form-control" id="profileSobrenome" name="Sobrenome" value="<?php echo htmlspecialchars((string)($profileModalData['Sobrenome'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required autocomplete="family-name">
+                            </div>
+                            <?php } ?>
+                            <?php if (in_array('Cargo', $camposPendentesPerfil, true)) { ?>
+                            <div class="mb-3">
+                                <label for="profileCargo" class="form-label">Cargo <span class="profile-completion-required">*</span></label>
+                                <input type="text" class="form-control" id="profileCargo" name="Cargo" value="<?php echo htmlspecialchars((string)($profileModalData['Cargo'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required maxlength="120" autocomplete="organization-title">
+                            </div>
+                            <?php } ?>
+                            <?php if (in_array('WhatsApp', $camposPendentesPerfil, true)) { ?>
+                            <div class="mb-3">
+                                <label for="profileWhatsApp" class="form-label">WhatsApp <span class="profile-completion-required">*</span></label>
+                                <input type="text" class="form-control" id="profileWhatsApp" name="WhatsApp" value="<?php echo htmlspecialchars((string)($profileModalData['WhatsApp'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>" required autocomplete="tel">
+                            </div>
+                            <?php } ?>
+                            <?php if (in_array('Foto', $camposPendentesPerfil, true)) { ?>
+                            <div class="mb-0">
+                                <label for="profileFoto" class="form-label">Foto <?php echo $fotoObrigatoria ? '<span class="profile-completion-required">*</span>' : ''; ?></label>
+                                <input type="file" class="form-control" id="profileFoto" name="foto" accept="image/png,image/jpeg" <?php echo $fotoObrigatoria ? 'required' : ''; ?>>
+                            </div>
+                            <?php } ?>
+                        </div>
+                        <div class="profile-completion-footer">
+                            <button type="submit" class="btn btn-primary w-100">Salvar dados obrigatórios</button>
+                        </div>
+                    </form>
+            </div>
+        </div>
+    <?php } ?>
     <footer class="footer">
         <?php require_once $BASE_para_PATH . '/app/views/partials/footer.php' ?>
     </footer>
@@ -590,6 +969,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     });
     }
 </script>
+<?php if ($showProfileModal) { ?>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const firstInvalidOrEmpty = document.querySelector('#completeProfileModal input:invalid, #completeProfileModal input:not([type="hidden"])');
+        if (firstInvalidOrEmpty) {
+            firstInvalidOrEmpty.focus();
+        }
+    });
+</script>
+<?php } ?>
 
 </html>
 

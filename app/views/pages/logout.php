@@ -1,12 +1,13 @@
 <?php
-require_once dirname(__DIR__, 2) . '/bootstrap/runtime.php';
+$projectRoot = dirname(__DIR__, 3);
+require_once $projectRoot . '/bootstrap/runtime.php';
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_name('PHPSESSID3');
     session_start();
 }
 
-$authCookieName = bootstrap_auth_cookie_name(dirname(__DIR__, 2));
+$authCookieName = bootstrap_auth_cookie_name($projectRoot);
 
 session_destroy();
 

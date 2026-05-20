@@ -5,6 +5,8 @@ use BackEnd\Core\ErrorHandler;
 use BackEnd\Core\Request;
 use BackEnd\Core\Router;
 
+require_once dirname(__DIR__, 2) . '/bootstrap/runtime.php';
+
 $errorHandlerNew = __DIR__ . '/../core/ErrorHandler.php';
 $errorHandlerLegacy = __DIR__ . '/../src/Core/ErrorHandler.php';
 if (is_file($errorHandlerNew)) {
@@ -44,25 +46,7 @@ function apiRestoreLegacyAuthFromCookie(): void
 
     $rootPath = dirname(__DIR__);
     $projectRoot = dirname($rootPath);
-    $authCookieName = trim((string) (getenv('AUTH_COOKIE_NAME') ?: getenv('LOGIN_COOKIE_NAME') ?: ''));
-    if ($authCookieName === '') {
-        $cookieConfigPath = $projectRoot . '/temp/setCookie.env';
-        if (is_file($cookieConfigPath)) {
-            $rawCookieName = trim((string) file_get_contents($cookieConfigPath));
-            if ($rawCookieName !== '') {
-                if (str_contains($rawCookieName, '=')) {
-                    $parts = explode('=', $rawCookieName, 2);
-                    $rawCookieName = trim((string) ($parts[1] ?? ''));
-                }
-                if ($rawCookieName !== '') {
-                    $authCookieName = $rawCookieName;
-                }
-            }
-        }
-    }
-    if ($authCookieName === '') {
-        $authCookieName = 'login_v43';
-    }
+    $authCookieName = bootstrap_auth_cookie_name($projectRoot);
 
     if (empty($_COOKIE[$authCookieName])) {
         return;
@@ -108,6 +92,7 @@ function apiRestoreLegacyAuthFromCookie(): void
     $_SESSION['IdPermissao'] = (int) ($result['IdPermissao'] ?? 0);
     $_SESSION['PaginasPermitidas'] = is_array($paginasPermitidas) ? $paginasPermitidas : [];
     $_SESSION['ultimoAcessoData'] = 'Agora';
+    $_SESSION['auth_cookie_name'] = $authCookieName;
 }
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -123,6 +108,7 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+bootstrap_validate_auth_session_cookie_name(dirname(__DIR__, 2));
 apiRestoreLegacyAuthFromCookie();
 
 $requestPath = (string) parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);

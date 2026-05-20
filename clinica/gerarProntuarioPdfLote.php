@@ -175,6 +175,7 @@ if (session_status() === PHP_SESSION_NONE) {
     }
     session_start();
 }
+bootstrap_validate_auth_session_cookie_name(dirname(__DIR__));
 date_default_timezone_set('America/Sao_Paulo');
 
 if (empty($_SESSION['Cod'])) {

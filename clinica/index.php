@@ -3,6 +3,8 @@
  * Bootstrap do App Clinica - garante sessao antes de carregar o SPA
  * Acesse /{raiz-do-projeto}/clinica/ (com ou sem index.php)
  */
+require_once dirname(__DIR__) . '/bootstrap/runtime.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_name('PHPSESSID3');
     $scriptName = str_replace('\\', '/', (string)($_SERVER['SCRIPT_NAME'] ?? '/conecta/clinica/index.php'));
@@ -15,6 +17,8 @@ if (session_status() === PHP_SESSION_NONE) {
     ]);
     session_start();
 }
+
+bootstrap_validate_auth_session_cookie_name(dirname(__DIR__));
 
 function clinicaProjectBasePath(): string
 {

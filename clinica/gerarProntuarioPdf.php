@@ -19,6 +19,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 date_default_timezone_set('America/Sao_Paulo');
 require_once dirname(__DIR__) . '/bootstrap/runtime.php';
+bootstrap_validate_auth_session_cookie_name(dirname(__DIR__));
 
 $basePath = $_SESSION['BASE_para_PATH'] ?? dirname(__DIR__);
 $basePath = rtrim(str_replace('\\', '/', (string) $basePath), '/');

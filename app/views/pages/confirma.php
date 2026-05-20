@@ -2,6 +2,7 @@
 $runtime = require __DIR__ . '/../../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
+$authCookieName = bootstrap_auth_cookie_name($BASE_para_PATH);
 
 require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
 
@@ -33,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['Nome'] = $result['Nome'];
                 $_SESSION['Tipo'] = $result['Tipo'];
                 $_SESSION['ultimoAcessoData'] = 'Agora';
+                $_SESSION['auth_cookie_name'] = $authCookieName;
 
                 $update_sql = "UPDATE tbUser SET Email_confere = 1 WHERE IdColaborador = ?";
                 $update_stmt = $pdo->prepare($update_sql);

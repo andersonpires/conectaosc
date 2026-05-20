@@ -1,11 +1,14 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/bootstrap/runtime.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_name('PHPSESSID3');
     session_start();
 }
 
+bootstrap_validate_auth_session_cookie_name(dirname(__DIR__));
 date_default_timezone_set('America/Sao_Paulo');
 
 if (empty($_SESSION['Cod']) || (int)($_SESSION['profissional_saude'] ?? 0) !== 1) {

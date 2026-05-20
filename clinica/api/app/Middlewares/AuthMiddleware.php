@@ -3,6 +3,8 @@ namespace App\Middlewares;
 
 use App\Core\JsonResponse;
 
+require_once dirname(__DIR__, 4) . '/bootstrap/runtime.php';
+
 class AuthMiddleware
 {
     public static function requireAuth(): void
@@ -13,6 +15,10 @@ class AuthMiddleware
         }
 
         $basePath = $_SESSION['BASE_para_PATH'] ?? null;
+        if (is_string($basePath) && $basePath !== '') {
+            bootstrap_validate_auth_session_cookie_name($basePath);
+        }
+
         if (empty($_SESSION['Cod']) || empty($basePath)) {
             JsonResponse::error('Nao autenticado', [], 401);
         }

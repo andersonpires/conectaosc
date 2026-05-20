@@ -7,6 +7,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 date_default_timezone_set('America/Sao_Paulo');
+require_once dirname(__DIR__, 2) . '/bootstrap/runtime.php';
 
 $apiErrorHandler = function (Throwable $e) {
     header('Content-Type: application/json; charset=utf-8');
@@ -49,6 +50,8 @@ if (session_status() === PHP_SESSION_NONE) {
     ]);
     session_start();
 }
+
+bootstrap_validate_auth_session_cookie_name(dirname(__DIR__, 2));
 
 function clinicaApiProjectBasePath(): string
 {
