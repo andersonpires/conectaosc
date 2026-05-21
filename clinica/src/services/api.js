@@ -151,6 +151,11 @@ export async function postIniciarAtendimento(id) {
   await handleResponse(res);
 }
 
+export async function postConcluirAtendimento(id) {
+  const res = await fetch(`${API_BASE}/consultas/${id}/concluir-atendimento`, { method: 'POST', credentials: 'include' });
+  await handleResponse(res);
+}
+
 export async function postReverterAtendimento(id) {
   const res = await fetch(`${API_BASE}/consultas/${id}/reverter-atendimento`, { method: 'POST', credentials: 'include' });
   await handleResponse(res);

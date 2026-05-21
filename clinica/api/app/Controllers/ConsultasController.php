@@ -248,6 +248,38 @@ class ConsultasController
         $this->updateStatus($id, 'agendada');
     }
 
+    public function concluirAtendimento(string $id): void
+    {
+        AuthMiddleware::requireProfissionalSaude();
+        $consultaId = (int) $id;
+        if ($consultaId <= 0) JsonResponse::error('ID invalido', [], 400);
+
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("SELECT id, status FROM tb_consulta WHERE id = ? LIMIT 1");
+        $stmt->execute([$consultaId]);
+        $consulta = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$consulta) {
+            JsonResponse::error('Consulta nao encontrada', [], 404);
+        }
+
+        $statusAtual = strtolower((string) ($consulta['status'] ?? ''));
+        if ($statusAtual === 'concluida') {
+            JsonResponse::success(['id' => $consultaId], 'Atendimento ja estava concluido');
+        }
+        if ($statusAtual !== 'em_atendimento') {
+            JsonResponse::error('Somente consultas em atendimento podem ser concluidas', [], 422);
+        }
+        if (!$this->consultaTemRegistroClinico($pdo, $consultaId)) {
+            JsonResponse::error(
+                'Nao foi possivel concluir. Salve ao menos uma anamnese, evolucao ou prontuario antes de encerrar o atendimento.',
+                [],
+                422
+            );
+        }
+
+        $this->updateStatus($consultaId, 'concluida');
+    }
+
     public function excluirAtendimento(string $id): void
     {
         AuthMiddleware::requireProfissionalSaude();
@@ -318,6 +350,30 @@ class ConsultasController
                 // Tabelas opcionais em bases antigas nao devem bloquear a acao principal.
             }
         }
+    }
+
+    private function consultaTemRegistroClinico(\PDO $pdo, int $consultaId): bool
+    {
+        $tables = [
+            'tb_prontuario',
+            'tb_anamnese_psi',
+            'tb_anamnese_infantojuvenil',
+            'tb_evolucao_clinica',
+        ];
+
+        foreach ($tables as $table) {
+            try {
+                $stmt = $pdo->prepare("SELECT 1 FROM {$table} WHERE consulta_id = ? LIMIT 1");
+                $stmt->execute([$consultaId]);
+                if ($stmt->fetchColumn()) {
+                    return true;
+                }
+            } catch (\PDOException $e) {
+                // Bases antigas podem nao ter alguma tabela opcional.
+            }
+        }
+
+        return false;
     }
 
     private function updateStatus(int $id, string $status): void

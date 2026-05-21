@@ -5,6 +5,7 @@ import {
   postProntuarioStreamIa,
   postProntuario,
   postIniciarAtendimento,
+  postConcluirAtendimento,
   getAnamneseByConsulta,
   postAnamnese,
   putAnamnese,
@@ -29,6 +30,7 @@ function escapeHtml(s) {
 
 function statusLabel(status) {
   const s = (status || '').toLowerCase();
+  if (s.includes('concluida') || s.includes('concluída')) return 'Concluída';
   if (s.includes('em_atendimento')) return 'Em atendimento';
   if (s.includes('confirmacao')) return 'Confirmação solicitada';
   return 'Agendada';
@@ -622,6 +624,50 @@ function openAtendimentoSuccessModal({ title, message, onContinue, onClose }) {
   document.body.appendChild(modal);
 }
 
+function openAtendimentoConfirmModal({ title, message, confirmLabel = 'Confirmar', cancelLabel = 'Cancelar', onConfirm }) {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4';
+  modal.innerHTML = `
+    <div class="w-full max-w-md rounded-2xl bg-white shadow-monday-lg overflow-hidden">
+      <div class="px-5 py-4 border-b border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900">${escapeHtml(title)}</h3>
+      </div>
+      <div class="px-5 py-4">
+        <p class="text-sm leading-6 text-gray-600">${escapeHtml(message)}</p>
+      </div>
+      <div class="px-5 py-4 bg-gray-50 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <button type="button" data-action="cancel" class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition">${escapeHtml(cancelLabel)}</button>
+        <button type="button" data-action="confirm" class="px-4 py-2 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition">${escapeHtml(confirmLabel)}</button>
+      </div>
+    </div>
+  `;
+
+  const cleanup = () => modal.remove();
+  const btnConfirm = modal.querySelector('[data-action="confirm"]');
+  const btnCancel = modal.querySelector('[data-action="cancel"]');
+  btnCancel?.addEventListener('click', cleanup);
+  btnConfirm?.addEventListener('click', async () => {
+    if (btnConfirm) {
+      btnConfirm.disabled = true;
+      btnConfirm.innerHTML = `${getButtonSpinnerHtml()} Confirmando...`;
+    }
+    if (btnCancel) btnCancel.disabled = true;
+    try {
+      await onConfirm?.();
+      cleanup();
+    } catch (err) {
+      if (btnConfirm) {
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = confirmLabel;
+      }
+      if (btnCancel) btnCancel.disabled = false;
+      alert(err.message || 'Erro ao confirmar a ação.');
+    }
+  });
+  modal.addEventListener('click', (event) => { if (event.target === modal) cleanup(); });
+  document.body.appendChild(modal);
+}
+
 /* =========================================================
    RENDER PRINCIPAL
    ========================================================= */
@@ -673,11 +719,12 @@ export async function renderAtendimento(container, opts = {}) {
       <div class="grid gap-3 sm:grid-cols-2">
         ${consultasRender.map((c) => {
           const isAtendimento = (c.status || '').toLowerCase().includes('em_atendimento');
+          const isConcluida = (c.status || '').toLowerCase().includes('concluida') || (c.status || '').toLowerCase().includes('concluída');
           return `
           <button type="button" data-consulta-id="${c.id}" class="atend-consulta-card text-left bg-white rounded-xl shadow-monday p-4 hover:shadow-monday-lg hover:border-monday-blue border-2 border-transparent transition truncate overflow-hidden ${consultaSelecionada?.id === c.id ? 'ring-2 ring-monday-blue border-monday-blue' : ''}">
             <span class="font-medium text-gray-800 block truncate">${escapeHtml(c.paciente_nome || '')}</span>
             <span class="text-sm text-gray-500">${c.data_consulta} ${fmtTime(c.hora_inicio_prevista)} — ${escapeHtml(c.especialidade_nome || '')}</span>
-            <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${isAtendimento ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700'}">${statusLabel(c.status)}</span>
+            <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${isConcluida ? 'bg-emerald-100 text-emerald-800' : (isAtendimento ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-700')}">${statusLabel(c.status)}</span>
           </button>
           `;
         }).join('')}
@@ -697,6 +744,7 @@ export async function renderAtendimento(container, opts = {}) {
     </div>
   `;
   const statusConsultaSelecionada = String(consultaSelecionada?.status || '').toLowerCase();
+  const isConsultaEmAtendimento = !!consultaSelecionada && statusConsultaSelecionada.includes('em_atendimento');
   const podeIniciarAtendimento = !!consultaSelecionada
     && !statusConsultaSelecionada.includes('em_atendimento')
     && !statusConsultaSelecionada.includes('concluida')
@@ -745,6 +793,9 @@ export async function renderAtendimento(container, opts = {}) {
           <button type="button" id="btn-salvar-pront" class="mt-3 w-full py-3 bg-monday-blue text-white rounded-lg font-medium">Salvar prontuário</button>
         </div>
       </div>
+      <button type="button" id="btn-concluir-atendimento" class="w-full min-h-touch py-3 bg-emerald-700 text-white rounded-xl font-medium hover:bg-emerald-800 transition" ${isConsultaEmAtendimento ? '' : 'style="display:none"'}>
+        Concluir atendimento
+      </button>
       <button type="button" id="btn-iniciar-atendimento" class="w-full min-h-touch py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition" ${podeIniciarAtendimento ? '' : 'style="display:none"'}>
         Iniciar atendimento
       </button>
@@ -769,6 +820,7 @@ export async function renderAtendimento(container, opts = {}) {
 
   const consultaIdInput    = container.querySelector('#atend-consulta-id');
   const btnIniciar         = container.querySelector('#btn-iniciar-atendimento');
+  const btnConcluir        = container.querySelector('#btn-concluir-atendimento');
   const btnGerar           = container.querySelector('#btn-gerar-ia');
   const resultadoDiv       = container.querySelector('#resultado-ia');
   const prontTextarea      = container.querySelector('#prontuario-texto');
@@ -898,6 +950,24 @@ export async function renderAtendimento(container, opts = {}) {
   }
 
   // TinyMCE para prontuário
+  if (btnConcluir && isConsultaEmAtendimento) {
+    btnConcluir.onclick = () => {
+      openAtendimentoConfirmModal({
+        title: 'Concluir atendimento',
+        message: 'Confirme a conclusão deste atendimento. O sistema exigirá ao menos uma anamnese, evolução ou prontuário vinculado a esta consulta.',
+        confirmLabel: 'Concluir atendimento',
+        cancelLabel: 'Cancelar',
+        onConfirm: async () => {
+          await postConcluirAtendimento(consultaSelecionada.id);
+          await renderAtendimento(container, {
+            consultaId: Number(consultaSelecionada.id),
+            date: consultaSelecionada.data_consulta || dataConsulta
+          });
+        }
+      });
+    };
+  }
+
   const initTinyMCEAtend = () => {
     if (typeof tinymce === 'undefined' || tinymce.get('prontuario-texto')) return;
     tinymce.init({

@@ -15,7 +15,7 @@ let filterAgenda = {
   end_date: '',
   hora_inicio: '',
   hora_fim: '',
-  status_keys: ['futuro', 'atrasada', 'concluida']
+  status_keys: ['futuro', 'atrasada', 'em_atendimento', 'concluida']
 };
 const agendaAuxCache = {
   especialidades: null,
@@ -33,6 +33,7 @@ function getDefaultStatusKeys() {
 const STATUS_FILTER_OPTIONS = [
   { key: 'futuro', label: 'Amarelo: futuro', activeClass: 'bg-amber-100 text-amber-800 border-amber-200' },
   { key: 'atrasada', label: 'Vermelho: atrasado', activeClass: 'bg-red-100 text-red-800 border-red-200' },
+  { key: 'em_atendimento', label: 'Azul: em atendimento', activeClass: 'bg-blue-100 text-blue-800 border-blue-200' },
   { key: 'concluida', label: 'Verde: concluído', activeClass: 'bg-emerald-100 text-emerald-800 border-emerald-200' }
 ];
 
@@ -96,8 +97,11 @@ function getStatusAppearance(ev) {
   if (status.includes('cancelada')) {
     return { key: 'cancelada', label: 'Cancelada', accent: '#94a3b8', soft: '#f8fafc', chip: 'bg-slate-100 text-slate-700' };
   }
-  if (status.includes('concluida') || status.includes('concluída') || status.includes('em_atendimento')) {
+  if (status.includes('concluida') || status.includes('concluída')) {
     return { key: 'concluida', label: 'Concluído', accent: '#22c55e', soft: '#ecfdf3', chip: 'bg-emerald-100 text-emerald-800' };
+  }
+  if (status.includes('em_atendimento')) {
+    return { key: 'em_atendimento', label: 'Em atendimento', accent: '#2563eb', soft: '#eff6ff', chip: 'bg-blue-100 text-blue-800' };
   }
   const inicio = parseDateTime(ev);
   if (inicio && inicio < new Date()) {

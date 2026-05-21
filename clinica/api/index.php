@@ -312,6 +312,7 @@ $router->post('/consultas/{id}/confirmacao', [$con, 'confirmacao']);
 $router->post('/consultas/{id}/cancelar', [$con, 'cancelar']);
 $router->post('/consultas/{id}/excluir', [$con, 'excluir']);
 $router->post('/consultas/{id}/iniciar-atendimento', [$con, 'iniciarAtendimento']);
+$router->post('/consultas/{id}/concluir-atendimento', [$con, 'concluirAtendimento']);
 $router->post('/consultas/{id}/reverter-atendimento', [$con, 'reverterAtendimento']);
 $router->post('/consultas/{id}/excluir-atendimento', [$con, 'excluirAtendimento']);
 $router->post('/consultas/{id}/reverter-atendimento-completo', [$con, 'reverterAtendimentoCompleto']);
