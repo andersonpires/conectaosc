@@ -1,12 +1,19 @@
 const API_BASE = './api';
 const LEGACY_API_BASE = '../api/v1';
 
+function createApiError(message, extras = {}) {
+  const error = new Error(message);
+  Object.assign(error, extras);
+  return error;
+}
+
 async function handleResponse(res) {
   const text = await res.text();
   if (!text || text.trim() === '') {
-    throw new Error(
+    throw createApiError(
       res.status === 401 ? 'Sessão expirada. Faça login no ConectaOSC e acesse o App Clínica novamente.'
       : `Resposta vazia da API (status ${res.status}). Verifique se está logado e se o servidor está correto.`
+      , { status: res.status }
     );
   }
   let json;
@@ -14,14 +21,20 @@ async function handleResponse(res) {
     json = JSON.parse(text);
   } catch (e) {
     const preview = text.substring(0, 150).replace(/<[^>]+>/g, '');
-    throw new Error(
+    throw createApiError(
       res.status === 404 ? 'Rota da API não encontrada. Verifique se o mod_rewrite está ativo no Apache.'
       : `A API retornou conteúdo inválido (HTML/erro?). Início: ${preview}...`
+      , { status: res.status, responseText: text }
     );
   }
   if (!res.ok) {
     const msg = json.message || json.errors?.join('; ') || `Erro ${res.status}`;
-    throw new Error(msg);
+    throw createApiError(msg, {
+      status: res.status,
+      data: json.data,
+      errors: json.errors,
+      response: json,
+    });
   }
   return json;
 }

@@ -1354,6 +1354,9 @@ async function openModalEvento(id, container, dataConsulta) {
   ].filter(Boolean);
   const statusAtual = String(ev.status || '').toLowerCase();
   const isEmAtendimento = statusAtual.includes('em_atendimento');
+  const atendimentoHtml = isEmAtendimento
+    ? '<button type="button" class="modal-abrir-atendimento min-h-touch px-4 py-3 bg-monday-blue text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-monday-blue">Abrir atendimento</button>'
+    : '';
   const isConcluida = statusAtual.includes('concluida') || statusAtual.includes('concluída');
   const acoesHtml = isConcluida
     ? `
@@ -1363,6 +1366,7 @@ async function openModalEvento(id, container, dataConsulta) {
         <button type="button" class="modal-reverter-completo min-h-touch px-4 py-3 bg-amber-600 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500">Reverter para agendado</button>
       `
     : `
+        ${atendimentoHtml}
         <button type="button" class="modal-editar min-h-touch px-4 py-3 bg-monday-blue text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-monday-blue">Editar agendamento</button>
         <button type="button" class="modal-confirmar min-h-touch px-4 py-3 bg-amber-500 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500">Solicitar confirmação</button>
         <button type="button" class="modal-cancelar min-h-touch px-4 py-3 bg-red-500 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500">Cancelar agendamento</button>
@@ -1377,6 +1381,7 @@ async function openModalEvento(id, container, dataConsulta) {
       ${ev.status ? `<span class="inline-block text-xs px-2 py-1 rounded-full mb-3 ${statusBadgeClass(ev.status)}">${escapeHtml(statusLabel(ev.status))}</span>` : ''}
       <div class="text-sm text-gray-600 space-y-1 mb-4">${detalhes.map((d) => `<p>${escapeHtml(d)}</p>`).join('')}</div>
       <div class="flex flex-col gap-2">
+        ${atendimentoHtml}
         <button type="button" class="modal-editar min-h-touch px-4 py-3 bg-monday-blue text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-monday-blue">Editar agendamento</button>
         <button type="button" class="modal-confirmar min-h-touch px-4 py-3 bg-amber-500 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-amber-500">Solicitar confirmação</button>
         <button type="button" class="modal-cancelar min-h-touch px-4 py-3 bg-red-500 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500">Cancelar agendamento</button>
@@ -1397,6 +1402,10 @@ async function openModalEvento(id, container, dataConsulta) {
     }
   }
   modal.querySelector('.modal-close').onclick = () => modal.remove();
+  modal.querySelector('.modal-abrir-atendimento')?.addEventListener('click', () => {
+    modal.remove();
+    window.dispatchEvent(new CustomEvent('open-atendimento', { detail: { consultaId: id, date: ev.data_consulta || undefined } }));
+  });
   modal.querySelector('.modal-ver-anamnese')?.addEventListener('click', () => {
     modal.remove();
     window.dispatchEvent(new CustomEvent('open-atendimento', { detail: { consultaId: id, date: ev.data_consulta || undefined } }));
@@ -1466,9 +1475,7 @@ async function openModalEvento(id, container, dataConsulta) {
       }
       try {
         openEscolhaAtendimentoModal(ev, async (opcao) => {
-          try {
-            await postIniciarAtendimento(id);
-            modal.remove();
+          const continuarFluxo = async () => {
             if (opcao === 'anamnese-adulto') {
               window.dispatchEvent(new CustomEvent('open-atendimento', { detail: { consultaId: id, date: ev.data_consulta || undefined, anamneseTipo: 'adulto' } }));
               return;
@@ -1482,7 +1489,26 @@ async function openModalEvento(id, container, dataConsulta) {
               return;
             }
             window.dispatchEvent(new CustomEvent('open-atendimento', { detail: { consultaId: id, date: ev.data_consulta || undefined } }));
+          };
+          try {
+            await postIniciarAtendimento(id);
+            modal.remove();
+            await continuarFluxo();
           } catch (err) {
+            const consultaAbertaId = Number(err?.errors?.consulta_aberta_id || 0);
+            if (err?.status === 422 && consultaAbertaId > 0) {
+              openConsultaEmAbertoModal({
+                consultaAtualId: id,
+                consultaAtual: ev,
+                consultaAbertaId,
+                consultaAbertaData: String(err?.errors?.consulta_aberta_data || ''),
+                consultaAbertaHora: String(err?.errors?.consulta_aberta_hora || ''),
+                onContinuarFluxo: continuarFluxo,
+                container,
+                parentModal: modal,
+              });
+              return;
+            }
             alert(err.message || 'Erro ao iniciar atendimento.');
           }
         });
@@ -1796,6 +1822,96 @@ async function openSolicitarConfirmacaoModal(consultaId, resumoConsulta) {
   });
   modal.addEventListener('click', (event) => {
     if (event.target === modal) modal.remove();
+  });
+  document.body.appendChild(modal);
+}
+
+function openConsultaEmAbertoModal({
+  consultaAtualId,
+  consultaAtual,
+  consultaAbertaId,
+  consultaAbertaData,
+  consultaAbertaHora,
+  onContinuarFluxo,
+  container,
+  parentModal,
+}) {
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-[2px]';
+  modal.innerHTML = `
+    <div class="w-full max-w-lg rounded-[28px] border border-amber-200 bg-white p-6 shadow-2xl">
+      <div class="flex items-start gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
+          <svg viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 9v4"></path>
+            <path d="M12 17h.01"></path>
+            <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"></path>
+          </svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <h3 class="text-lg font-semibold text-slate-900">Consulta em aberto encontrada</h3>
+          <p class="mt-2 text-sm leading-6 text-slate-600">
+            Este paciente j&aacute; possui a consulta <strong>#${escapeHtml(String(consultaAbertaId || ''))}</strong> em atendimento e sem prontu&aacute;rio.
+            ${consultaAbertaData ? `Ela est&aacute; registrada para <strong>${escapeHtml(formatDateBr(consultaAbertaData))}</strong>${consultaAbertaHora ? ` &agrave;s <strong>${escapeHtml(fmtTime(consultaAbertaHora))}</strong>` : ''}.` : ''}
+          </p>
+          <div class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+            <p class="font-medium text-slate-900">Como deseja resolver?</p>
+            <p class="mt-2"><strong>Finalizar atendimento</strong> abre a consulta em aberto para concluir o registro.</p>
+            <p class="mt-1"><strong>Reverter consulta</strong> desfaz o status de atendimento da consulta em aberto para liberar uma nova.</p>
+          </div>
+        </div>
+      </div>
+      <div class="mt-6 grid gap-3 sm:grid-cols-2">
+        <button type="button" class="btn-finalizar-open min-h-touch rounded-2xl bg-monday-blue px-4 py-3 text-sm font-semibold text-white">Finalizar atendimento</button>
+        <button type="button" class="btn-reverter-open min-h-touch rounded-2xl bg-amber-500 px-4 py-3 text-sm font-semibold text-white">Reverter consulta</button>
+        <button type="button" class="btn-ver-open min-h-touch rounded-2xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700">Ver consulta</button>
+        <button type="button" class="btn-fechar-open min-h-touch rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-500">Fechar</button>
+      </div>
+    </div>
+  `;
+
+  const close = () => modal.remove();
+  const closeAll = () => {
+    close();
+    parentModal?.remove();
+  };
+  const setBusy = (busy) => {
+    modal.querySelectorAll('button').forEach((button) => {
+      button.disabled = busy;
+      button.classList.toggle('opacity-60', busy);
+      button.classList.toggle('cursor-wait', busy);
+    });
+  };
+
+  modal.querySelector('.btn-fechar-open')?.addEventListener('click', close);
+  modal.querySelector('.btn-finalizar-open')?.addEventListener('click', () => {
+    closeAll();
+    window.dispatchEvent(new CustomEvent('open-atendimento', {
+      detail: { consultaId: consultaAbertaId, date: consultaAbertaData || undefined }
+    }));
+  });
+  modal.querySelector('.btn-ver-open')?.addEventListener('click', () => {
+    closeAll();
+    openModalEvento(Number(consultaAbertaId || 0), container, consultaAbertaData || consultaAtual?.data_consulta || currentDate);
+  });
+  modal.querySelector('.btn-reverter-open')?.addEventListener('click', async () => {
+    setBusy(true);
+    try {
+      await postReverterAtendimento(consultaAbertaId);
+      close();
+      await renderAgenda(container);
+      if (typeof onContinuarFluxo === 'function') {
+        await postIniciarAtendimento(consultaAtualId);
+        parentModal?.remove();
+        await onContinuarFluxo();
+      }
+    } catch (err) {
+      setBusy(false);
+      alert(err.message || 'Erro ao reverter atendimento.');
+    }
+  });
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) close();
   });
   document.body.appendChild(modal);
 }

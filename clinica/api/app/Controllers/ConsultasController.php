@@ -230,7 +230,11 @@ class ConsultasController
         if ($consultaAberta) {
             JsonResponse::error(
                 'Este paciente ja possui uma consulta em atendimento sem prontuario. Finalize ou reverta a consulta #' . (int)$consultaAberta['id'] . ' antes de iniciar outra.',
-                ['consulta_aberta_id' => (int)$consultaAberta['id']],
+                [
+                    'consulta_aberta_id' => (int)$consultaAberta['id'],
+                    'consulta_aberta_data' => (string) ($consultaAberta['data_consulta'] ?? ''),
+                    'consulta_aberta_hora' => (string) ($consultaAberta['hora_inicio_prevista'] ?? ''),
+                ],
                 422
             );
         }
