@@ -219,7 +219,7 @@ function renderizarGridChamada(array $rows, $pdo, $dataSelecionada, $NNomeCurso,
                             data-search='{$search}'
                             data-bs-toggle='tooltip'
                             data-bs-placement='top'
-                            title='Matricula: {$aluno['idMatricula']} | Codigo aluno: {$aluno['idAluno']} | Curso: {$aluno['idCurso']} | Turma: {$aluno['idTurma']} | Dt Mat.: " . htmlspecialchars($aluno['dataMatricula'], ENT_QUOTES, 'UTF-8') . "'
+                            title='Matrícula: {$aluno['idMatricula']} | Código do aluno: {$aluno['idAluno']} | Curso: {$aluno['idCurso']} | Turma: {$aluno['idTurma']} | Dt. Mat.: " . htmlspecialchars($aluno['dataMatricula'], ENT_QUOTES, 'UTF-8') . "'
                             style='background-color: " . htmlspecialchars($aluno['corCard'], ENT_QUOTES, 'UTF-8') . ";'>";
             $output .= $aluno['badgeAniversario'];
             $output .= "<img src='" . htmlspecialchars($aluno['foto'], ENT_QUOTES, 'UTF-8') . "' alt='Foto_de_{$nomeEsc}'>";
@@ -316,6 +316,6 @@ function renderizarBotoesPorData($idMatricula, $data, $fotoaluno, $membro, $Obs)
                 <button class='btn btnp' id='P-{$idMatricula}-{$dataId}' data-date='{$data}'>P</button>
                 <button class='btn btnp' id='F-{$idMatricula}-{$dataId}' data-date='{$data}'>F</button>
                 <button class='btn btnp' id='FJ-{$idMatricula}-{$dataId}' data-date='{$data}'>FJ</button>
-                <button type='button' class='btn obs-botao' id='Obs-{$idMatricula}-{$dataId}' data-date='{$data}' data-bs-toggle='tooltip' title='Observacoes do aluno' disabled>Obs</button>
+                <button type='button' class='btn obs-botao' id='Obs-{$idMatricula}-{$dataId}' data-date='{$data}' data-bs-toggle='tooltip' title='Observações do aluno' disabled>Obs</button>
             </div>";
 }

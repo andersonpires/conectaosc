@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $backupConfig) {
     $stmt = $pdo->prepare('UPDATE tbbackupconfig SET IntervaloHoras = ?, EmailDestino = ? WHERE IdConfig = ?');
     $stmt->execute([$intervalo, $email, $backupConfig['IdConfig']]);
 
-    header('Location: ' . rtrim((string) $BASE_para_URL, '/') . '/backup/?msg=' . urlencode('Configuracoes salvas com sucesso!'));
+    header('Location: ' . rtrim((string) $BASE_para_URL, '/') . '/backup/?msg=' . urlencode('Configurações salvas com sucesso!'));
     exit();
 }
 
@@ -85,7 +85,7 @@ $reduzFotoLogs = $pdo->query('SELECT DataHora, QtdEncontrada, Economia, Resultad
 
             <main class="content">
                 <div class="container-fluid p-0">
-                    <h1 class="h3 mb-3">Configuracao do Backup Automatico</h1>
+                    <h1 class="h3 mb-3">Configuração do Backup Automático</h1>
 
                     <?php if (isset($_GET['msg'])): ?>
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -97,7 +97,7 @@ $reduzFotoLogs = $pdo->query('SELECT DataHora, QtdEncontrada, Economia, Resultad
                     <div class="card card-config">
                         <div class="card-header">
                             <h5 class="card-title">Ajustar Intervalo e Destino</h5>
-                            <h6 class="card-subtitle text-muted">O sistema enviara automaticamente um backup a cada intervalo configurado.</h6>
+                            <h6 class="card-subtitle text-muted">O sistema enviará automaticamente um backup a cada intervalo configurado.</h6>
                         </div>
                         <div class="card-body">
                             <form method="post">
@@ -123,7 +123,7 @@ $reduzFotoLogs = $pdo->query('SELECT DataHora, QtdEncontrada, Economia, Resultad
                                 </div>
 
                                 <button type="submit" class="btn btn-primary w-100">
-                                    Salvar Configuracoes
+                                    Salvar configurações
                                 </button>
                             </form>
                         </div>
@@ -173,7 +173,7 @@ $reduzFotoLogs = $pdo->query('SELECT DataHora, QtdEncontrada, Economia, Resultad
                             <div class="col-12 col-xl-6">
                                 <div class="card h-100">
                                     <div class="card-header">
-                                        <h5 class="card-title mb-0">Logs de Reducao de Fotos</h5>
+                                        <h5 class="card-title mb-0">Logs de Redução de Fotos</h5>
                                     </div>
                                     <div class="card-body">
                                         <div class="table-responsive">

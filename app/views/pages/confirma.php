@@ -3,6 +3,8 @@ $runtime = require __DIR__ . '/../../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
 $authCookieName = bootstrap_auth_cookie_name($BASE_para_PATH);
+$appCssVersion = bootstrap_asset_version($BASE_para_PATH . '/app/assets/css/app.css');
+$appJsVersion = bootstrap_asset_version($BASE_para_PATH . '/app/assets/js/app.js', $appCssVersion);
 
 require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
 
@@ -66,9 +68,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link rel="shortcut icon" href="<?php echo $BASE_para_URL; ?>/assets/img/icons/icon-48x48.png" />
     <title>Login | ITEVA - Gestão de OSCs</title>
-    <link href="<?php echo $BASE_para_URL; ?>/assets/css/app.css" rel="stylesheet">
+    <link href="<?php echo $BASE_para_URL; ?>/assets/css/app.css?v=<?php echo rawurlencode($appCssVersion); ?>" rel="stylesheet">
     <link href="https:
-    <script src="<?php echo $BASE_para_URL; ?>/assets/js/app.js"></script>
+    <script src="<?php echo $BASE_para_URL; ?>/assets/js/app.js?v=<?php echo rawurlencode($appJsVersion); ?>"></script>
 </head>
 <body>
     <main class="d-flex w-100">

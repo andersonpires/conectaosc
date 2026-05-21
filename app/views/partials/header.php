@@ -4,6 +4,8 @@ $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
 $ASSETS_IMG_PATH = rtrim((string)($runtime['assets_img_path'] ?? ($BASE_para_PATH . '/app/assets/img')), '/\\');
 $ASSETS_IMG_URL = rtrim((string)($runtime['assets_img_url'] ?? ($BASE_para_URL . '/assets/img')), '/');
+$appCssVersion = bootstrap_asset_version($BASE_para_PATH . '/app/assets/css/app.css');
+$overrideCssVersion = bootstrap_asset_version($BASE_para_PATH . '/app/assets/css/override.php', $appCssVersion);
 require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
 $config = $pdo->query("SELECT * FROM tbConfig LIMIT 1")->fetch(PDO::FETCH_ASSOC);
 $shortcutIcon = (string)($config['ShortcutIcon'] ?? 'icon-48x48.png');
@@ -50,8 +52,8 @@ if (!preg_match('#^https?://#i', $canonicalUrl)) {
 
 <title><?php echo htmlspecialchars($config['TituloPagina']); ?></title>
 
-<link href="<?php echo $BASE_para_URL; ?>/assets/css/app.css" rel="stylesheet">
-<link href="<?php echo $BASE_para_URL; ?>/assets/css/override.php?versao=<?php echo time(); ?>" rel="stylesheet">
+<link href="<?php echo $BASE_para_URL; ?>/assets/css/app.css?v=<?php echo rawurlencode($appCssVersion); ?>" rel="stylesheet">
+<link href="<?php echo $BASE_para_URL; ?>/assets/css/override.php?versao=<?php echo rawurlencode($overrideCssVersion); ?>" rel="stylesheet">
 
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
@@ -67,4 +69,3 @@ if (!preg_match('#^https?://#i', $canonicalUrl)) {
     }, true);
 }());
 </script>
-

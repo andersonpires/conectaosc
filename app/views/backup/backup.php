@@ -36,7 +36,7 @@ if (!function_exists('backupGenerateViaPdo')) {
     {
         $fp = @fopen($arquivoBackup, 'wb');
         if ($fp === false) {
-            throw new RuntimeException('Nao foi possivel abrir o arquivo de backup para escrita.');
+            throw new RuntimeException('Não foi possível abrir o arquivo de backup para escrita.');
         }
 
         try {
@@ -65,7 +65,7 @@ if (!function_exists('backupGenerateViaPdo')) {
                 $createStmt = $pdo->query('SHOW CREATE TABLE ' . $tableId);
                 $createRow = $createStmt ? $createStmt->fetch(PDO::FETCH_NUM) : false;
                 if (!is_array($createRow) || !isset($createRow[1])) {
-                    throw new RuntimeException('Nao foi possivel ler estrutura da tabela: ' . $table);
+                    throw new RuntimeException('Não foi possível ler a estrutura da tabela: ' . $table);
                 }
 
                 fwrite($fp, 'DROP TABLE IF EXISTS ' . $tableId . ';' . PHP_EOL);

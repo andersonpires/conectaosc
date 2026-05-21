@@ -426,7 +426,7 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
     <div id="contextMenu" class="custom-context-menu" style="display: none; position: absolute; z-index: 9999;">
         <ul class="list-group list-group-flush mb-0">
             <li class="list-group-item d-flex align-items-center" id="menuVerMatricula" style="cursor:pointer;">
-                <i data-feather="book-open" class="me-2"></i> Ver Matricula
+                <i data-feather="book-open" class="me-2"></i> Ver matrícula
             </li>
             <li class="list-group-item d-flex align-items-center" id="menuListarFaltas" style="cursor:pointer;">
                 <i data-feather="calendar" class="me-2"></i> Listar Faltas
@@ -927,7 +927,7 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
                                 abrirMenuContexto(e, aluno);
                             };
 
-                            // Guardando informacoes
+                            // Guardando informações
                             card.dataset.idUsuario = aluno.IdUsuario;
                             card.dataset.idTurma = aluno.IdTurma;
                             card.dataset.idCurso = aluno.IdCurso;

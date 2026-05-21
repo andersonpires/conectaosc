@@ -155,7 +155,7 @@ if (!function_exists('contratoAssinarPdfComDirigente')) {
             $qrFile = $pathQR . $codigoBase . '.png';
 
             if (!contratoGerarQrPng($linkValidacao, $qrFile)) {
-                throw new RuntimeException('Nao foi possivel gerar o QR Code de validacao.');
+                throw new RuntimeException('Não foi possível gerar o QR Code de validação.');
             }
 
             $pdf = new Fpdi();
@@ -309,4 +309,3 @@ if (!function_exists('contratoAssinarPdfComDirigente')) {
         }
     }
 }
-

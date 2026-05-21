@@ -2,7 +2,7 @@
 $runtime = require __DIR__ . '/../../../bootstrap/runtime.php';
 $BASE_para_URL = $runtime['base_para_url'];
 
-// Inclui o arquivo de conexao com o banco de dados
+// Inclui o arquivo de conexão com o banco de dados
 include __DIR__ . '/conexao_grava.php';
 
 $base = rtrim((string)$BASE_para_URL, '/');

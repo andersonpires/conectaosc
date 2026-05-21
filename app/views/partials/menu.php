@@ -69,7 +69,7 @@ $menuClinicaDebug = [];
 			<?php if (!$mostrarAppClinica && bootstrap_is_debug()): ?>
 			<li class="sidebar-item">
 				<div class="sidebar-link text-warning" style="white-space: normal; cursor: default;">
-					<i class="align-middle" data-feather="alert-circle"></i> <span class="align-middle">Debug App ClÃ­nica: <?php echo htmlspecialchars(json_encode($menuClinicaDebug, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?></span>
+					<i class="align-middle" data-feather="alert-circle"></i> <span class="align-middle">Debug App Clínica: <?php echo htmlspecialchars(json_encode($menuClinicaDebug, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8'); ?></span>
 				</div>
 			</li>
 			<?php endif; ?>

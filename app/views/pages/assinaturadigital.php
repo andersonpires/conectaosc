@@ -18,7 +18,7 @@ $validarUrl = rtrim((string)$BASE_para_URL, '/') . '/assinatura/pdf/validar/';
             const url = <?= json_encode($validarUrl, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?>;
             window.open(url, '_blank', 'noopener');
 
-            // Mantem o PDF aberto na aba atual, voltando para a pagina anterior.
+            // Mantém o PDF aberto na aba atual, voltando para a página anterior.
             setTimeout(function () {
                 if (window.history.length > 1) {
                     window.history.back();

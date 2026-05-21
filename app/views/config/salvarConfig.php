@@ -16,7 +16,7 @@ try {
     $service = new \BackEnd\Services\ConfigService(new \BackEnd\Repositories\ConfigRepository());
     $service->updateConfig($_POST);
 
-    header('Location: ' . rtrim((string) $BASE_para_URL, '/') . '/configuracoes?msg=' . urlencode('Configuracoes atualizadas com sucesso!'));
+    header('Location: ' . rtrim((string) $BASE_para_URL, '/') . '/configuracoes?msg=' . urlencode('Configurações atualizadas com sucesso!'));
     exit();
 } catch (Throwable $e) {
     header('Location: ' . rtrim((string) $BASE_para_URL, '/') . '/configuracoes?erro=' . urlencode('Erro ao atualizar configuracoes: ' . $e->getMessage()));

@@ -13,7 +13,7 @@
 
     <title>Esqueci a senha | ITEVA - Gestão de OSCs</title>
 
-    <link href="<?php echo rtrim((string) $BASE_para_URL, '/'); ?>/assets/css/app.css" rel="stylesheet">
+    <link href="<?php echo rtrim((string) $BASE_para_URL, '/'); ?>/assets/css/app.css?v=<?php echo rawurlencode((string) bootstrap_asset_version($BASE_para_PATH . '/app/assets/css/app.css', (string) $appJsVersion)); ?>" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="<?php echo rtrim((string) $BASE_para_URL, '/'); ?>/assets/js/app.js?v=<?php echo (int) $appJsVersion; ?>"></script>
     <style>

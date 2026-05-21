@@ -79,7 +79,7 @@ $mensagemErro = isset($_GET['erro']) ? trim((string) $_GET['erro']) : '';
                                     </div>
                                     <div class="row mb-3">
                                         <div class="col-4">
-                                            <label for="Municipio" class="form-label">Municipio</label>
+                                            <label for="Municipio" class="form-label">Município</label>
                                             <input type="text" class="form-control" id="Municipio" name="Municipio" autocomplete="off">
                                         </div>
                                         <div class="col-4">
@@ -92,7 +92,7 @@ $mensagemErro = isset($_GET['erro']) ? trim((string) $_GET['erro']) : '';
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="ObsCadastro" class="form-label">Observacoes</label>
+                                        <label for="ObsCadastro" class="form-label">Observações</label>
                                         <textarea rows="7" class="form-control" id="ObsCadastro" name="Obs" autocomplete="off"></textarea>
                                     </div>
                                     <div style="text-align: right;">
@@ -164,7 +164,7 @@ $mensagemErro = isset($_GET['erro']) ? trim((string) $_GET['erro']) : '';
                                         <select class="form-select js-curso-select" name="curso" id="edit_curso"></select>
                                     </div>
                                     <div class="col-5">
-                                        <label for="edit_municipio" class="form-label">Municipio</label>
+                                        <label for="edit_municipio" class="form-label">Município</label>
                                         <input type="text" class="form-control" id="edit_municipio" name="municipio" autocomplete="off">
                                     </div>
                                 </div>
@@ -193,7 +193,7 @@ $mensagemErro = isset($_GET['erro']) ? trim((string) $_GET['erro']) : '';
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="submit" class="btn btn-success">Salvar alteracoes</button>
+                                    <button type="submit" class="btn btn-success">Salvar alterações</button>
                                 </div>
                             </form>
                         </div>
@@ -221,7 +221,7 @@ $mensagemErro = isset($_GET['erro']) ? trim((string) $_GET['erro']) : '';
                                         <input type="text" class="form-control" id="del_curso" readonly autocomplete="off">
                                     </div>
                                     <div class="col-6">
-                                        <label for="del_municipio" class="form-label">Municipio</label>
+                                        <label for="del_municipio" class="form-label">Município</label>
                                         <input type="text" class="form-control" id="del_municipio" readonly autocomplete="off">
                                     </div>
                                 </div>

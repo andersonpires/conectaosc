@@ -17,7 +17,7 @@ require_once $BASE_para_PATH . '/api/lib/tcpdf/tcpdf.php';
 
 if (!isset($pdo) || !($pdo instanceof PDO)) {
     http_response_code(500);
-    echo 'Erro de conexao com o banco de dados.';
+    echo 'Erro de conexão com o banco de dados.';
     exit;
 }
 
@@ -166,7 +166,7 @@ $turma = trim((string)($_GET['turma2'] ?? ''));
 $dataInicio = trim((string)($_GET['dataInicio'] ?? ''));
 $dataFim = trim((string)($_GET['dataFim'] ?? ''));
 $habilitado = (int)($_GET['habilitado'] ?? 0);
-// Mantido por compatibilidade com a URL atual, mas o layout em PDF segue o padrao antigo.
+// Mantido por compatibilidade com a URL atual, mas o layout em PDF segue o padrão antigo.
 $incluirTurma = boolParam('turmaInterval');
 $assinar = boolParam('assinar');
 $incluirCargo = boolParam('incluir_cargo');
@@ -177,7 +177,7 @@ $dataFimObj = DateTimeImmutable::createFromFormat('Y-m-d', $dataFim) ?: null;
 
 if (!$dataInicioObj || !$dataFimObj) {
     header('Content-Type: text/html; charset=utf-8');
-    echo "<script>alert('Datas invalidas.');window.close();</script>";
+    echo "<script>alert('Datas inválidas.');window.close();</script>";
     exit;
 }
 
@@ -235,7 +235,7 @@ $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 if (empty($data)) {
     header('Content-Type: text/html; charset=utf-8');
-    echo "<script>alert('Nenhum dado encontrado para os criterios selecionados.');window.close();</script>";
+    echo "<script>alert('Nenhum dado encontrado para os critérios selecionados.');window.close();</script>";
     exit;
 }
 
@@ -300,7 +300,7 @@ usort($dias, static function (string $a, string $b): int {
 
 if (empty($dias) || empty($alunos)) {
     header('Content-Type: text/html; charset=utf-8');
-    echo "<script>alert('Nenhum dado encontrado para os criterios selecionados.');window.close();</script>";
+    echo "<script>alert('Nenhum dado encontrado para os critérios selecionados.');window.close();</script>";
     exit;
 }
 
@@ -483,7 +483,7 @@ class RelatorioFrequenciaIntervaloPdf extends TCPDF
 $pdf = new RelatorioFrequenciaIntervaloPdf($orientation, 'mm', 'A4', true, 'UTF-8', false);
 $pdf->SetCreator('ConectaOSC');
 $pdf->SetAuthor('ConectaOSC');
-$pdf->SetTitle('Relatorio de Frequencia por Periodo');
+$pdf->SetTitle('Relatório de Frequência por Período');
 $pdf->SetMargins($margin, 70, $margin);
 $pdf->SetHeaderMargin(5);
 $pdf->SetFooterMargin(10);
@@ -545,7 +545,7 @@ if ($pdf->GetY() < $pdf->bodyStartY) {
 }
 $pdf->Ln(2);
 $pdf->SetFont('helvetica', 'I', 8);
-$pdf->MultiCell(0, 5, 'Obs.: P = Presenca; F = Falta; FJ = Falta Justificada; NA = Nao se Aplica.', 0, 'L');
+$pdf->MultiCell(0, 5, 'Obs.: P = Presença; F = Falta; FJ = Falta Justificada; NA = Não se Aplica.', 0, 'L');
 
 if (!$assinar) {
     $pdf->Output('relatorio_frequencia_intervalo.pdf', 'I');
@@ -554,7 +554,7 @@ if (!$assinar) {
 
 if ($invertextoApiToken === '') {
     header('Content-Type: text/html; charset=utf-8');
-    echo '<div class="alert alert-danger">Token da Invertexto nao configurado.</div>';
+    echo '<div class="alert alert-danger">Token da Invertexto não configurado.</div>';
     exit;
 }
 
@@ -663,7 +663,7 @@ $pdf->Cell($textWidth, 6, $nomeUpper, 0, 0, 'L');
 $pdf->SetFont('helvetica', '', 7);
 $pdf->SetTextColor(50, 50, 50);
 $pdf->SetXY($groupX, $groupY + $qrSize - 1.65);
-$pdf->Cell($groupWidth, 4, 'Codigo para validacao: ' . $codigoBase, 0, 0, 'L');
+$pdf->Cell($groupWidth, 4, 'Código para validação: ' . $codigoBase, 0, 0, 'L');
 
 $pdf->SetFont('helvetica', '', 6);
 $pdf->SetTextColor(80, 80, 80);
@@ -678,7 +678,7 @@ if (is_file($qrFile)) {
     @unlink($qrFile);
 }
 
-$nomeDocumento = safeText('Relatorio de frequencia - ' . $cursoNome . ' (' . $dataInicioFormatada . ' a ' . $dataFimFormatada . ')', 180);
+$nomeDocumento = safeText('Relatório de frequência - ' . $cursoNome . ' (' . $dataInicioFormatada . ' a ' . $dataFimFormatada . ')', 180);
 $stmtIns = $pdo->prepare("
     INSERT INTO tbpdf_assinado
         (IdColaborador, NomeOriginal, NomeDocumento, NomeArquivo, AssinaturaBase64, TimestampAssinatura, Xpos, Ypos, urlValidacao)

@@ -7,7 +7,7 @@ $BASE_para_URL = $runtime['base_para_url'];
 // Verifica se as variaveis de sessao BASE_para_PATH e BASE_para_URL estao definidas
 if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
     // Salva a URL atual para redirecionar o usuario apos o login
-    $redirect_url = urlencode($_SERVER['REQUEST_URI']); // Codifica o endereco atual
+    $redirect_url = urlencode($_SERVER['REQUEST_URI']); // Codifica o endereço atual
     header("Location: " . rtrim((string) ($BASE_para_URL ?? ''), '/') . "/login/?redirect=$redirect_url");
     exit(); // Garante que o codigo abaixo nao sera executado
 }

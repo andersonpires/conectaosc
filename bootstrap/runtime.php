@@ -122,6 +122,35 @@ if (!function_exists('bootstrap_runtime')) {
         }
     }
 
+    function bootstrap_send_no_cache_headers(): void
+    {
+        if (PHP_SAPI === 'cli' || headers_sent()) {
+            return;
+        }
+
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+    }
+
+    function bootstrap_asset_version(?string $filePath = null, string $fallback = '1'): string
+    {
+        $deployVersion = trim(bootstrap_env('APP_DEPLOY_VERSION', bootstrap_env('APP_ASSET_VERSION', '')));
+        if ($deployVersion !== '') {
+            return $deployVersion;
+        }
+
+        $filePath = trim((string)$filePath);
+        if ($filePath !== '' && is_file($filePath)) {
+            $mtime = @filemtime($filePath);
+            if ($mtime !== false) {
+                return (string)$mtime;
+            }
+        }
+
+        return $fallback;
+    }
+
     function bootstrap_database_config(?string $basePath = null): array
     {
         if ($basePath !== null && $basePath !== '') {
@@ -234,6 +263,7 @@ if (!function_exists('bootstrap_runtime')) {
                 mb_internal_encoding('UTF-8');
             }
             if (!headers_sent()) {
+                bootstrap_send_no_cache_headers();
                 header('Content-Type: text/html; charset=UTF-8');
             }
         }

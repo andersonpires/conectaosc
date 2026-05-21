@@ -132,7 +132,7 @@ require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
                                     <div class="order-xxl-1">
                                         <div class="card flex-fill">
                                             <div class="card-header">
-                                                <h5 class="card-title mb-0">Selecione a data da matricula:</h5>
+                                                <h5 class="card-title mb-0">Selecione a data da matrícula:</h5>
                                             </div>
                                             <div class="card-body d-flex">
                                                 <div class="align-self-center w-100">
@@ -175,7 +175,7 @@ require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
                                     <button type="button" class="btn btn-outline-primary" id="adicionarCursoTurma">Adicionar curso/turma</button>
                                 </div>
                                 <div class="d-grid">
-                                    <button type="button" class="btn btn-primary mb-3" id="SalvarMatriculas">Efetuar matricula(s)</button>
+                                    <button type="button" class="btn btn-primary mb-3" id="SalvarMatriculas">Efetuar matrícula(s)</button>
                                 </div>
                             </div>
                         </div>

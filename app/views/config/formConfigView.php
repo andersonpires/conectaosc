@@ -144,7 +144,7 @@ if ($BASE_para_PATH !== '') {
                                     <input type="text" class="form-control" id="MetaAuthor" name="MetaAuthor" value="<?php echo htmlspecialchars((string)($configCurrent['MetaAuthor'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>">
                                 </div>
                                 <div class="mb-3">
-                                    <label for="IdColaboradorDirigente" class="form-label">Dirigente da organizacao</label>
+                                    <label for="IdColaboradorDirigente" class="form-label">Dirigente da organização</label>
                                     <select class="form-select" id="IdColaboradorDirigente" name="IdColaboradorDirigente">
                                         <option value="">Selecione</option>
                                         <?php

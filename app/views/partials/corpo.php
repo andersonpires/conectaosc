@@ -2,13 +2,13 @@
 $runtime = require __DIR__ . '/../../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
-// Inclui o arquivo de conexao PDO (deve definir a variavel $pdo)
+// Inclui o arquivo de conexão PDO (deve definir a variável $pdo)
 require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
 
 // Inicializa o array com todos os meses zerados
 $data = array_fill(0, 12, 0);
 
-// Primeira consulta: obtem contagens de registros em diversas tabelas
+// Primeira consulta: obtém contagens de registros em diversas tabelas
 $sql = "
     SELECT
         (SELECT COUNT(*) FROM tbAluno WHERE Habilitado = 1) AS totalAlunos,
@@ -31,11 +31,11 @@ try {
 		$totalMatriculasAtivas = $row['totalMatriculasAtivas'] > 0 ? $row['totalMatriculasAtivas'] : "Sem registros";
 		$totalTurmas    = $row['totalTurmas'] > 0 ? $row['totalTurmas'] : "Sem registros";
 	} else {
-		// Caso nao retorne resultados, inicializa com "Sem registros"
+		// Caso não retorne resultados, inicializa com "Sem registros"
 		$totalAlunos = $totalCursos = $totalMatriculas = $totalTurmas = "Sem registros";
 	}
 
-	// Segunda consulta: obtem a contagem de aulas realizadas por mes
+	// Segunda consulta: obtém a contagem de aulas realizadas por mês
 	$sql2 = "
         SELECT 
             Mes,
@@ -96,7 +96,7 @@ foreach ($resultados_Matricula as $row) {
 
 $dadosFormatados = [];
 for ($i = 1; $i <= 12; $i++) {
-	$dadosFormatados[] = $dados[$i]; // Mantem a ordem fixa de Janeiro a Dezembro
+	$dadosFormatados[] = $dados[$i]; // Mantém a ordem fixa de janeiro a dezembro
 }
 
 $query = "
@@ -132,7 +132,7 @@ $matriculas = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
 								<div class="card-body">
 									<div class="row">
 										<div class="col mt-0">
-											<h5 class="card-title">Total de beneficiarios ativos cadastrados</h5>
+											<h5 class="card-title">Total de beneficiários ativos cadastrados</h5>
 										</div>
 										<div class="col-auto">
 											<div class="stat text-primary">
@@ -164,7 +164,7 @@ $matriculas = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
 								<div class="card-body">
 									<div class="row">
 										<div class="col mt-0">
-											<h5 class="card-title">Matriculas ativas / Total matriculados</h5>
+											<h5 class="card-title">Matrículas ativas / Total de matriculados</h5>
 										</div>
 										<div class="col-auto">
 											<div class="stat text-primary">
@@ -214,7 +214,7 @@ $matriculas = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
 				<div class="card flex-fill w-100">
 					<div class="card-header">
 
-						<h5 class="card-title mb-0">Beneficiarios <?php echo date("Y") . ": " .  $Total . " no total"; ?></h5>
+						<h5 class="card-title mb-0">Beneficiários <?php echo date("Y") . ": " .  $Total . " no total"; ?></h5>
 					</div>
 					<div class="card-body d-flex">
 						<div class="align-self-center w-100">
@@ -248,7 +248,7 @@ $matriculas = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
 				<div class="card flex-fill w-100">
 					<div class="card-header">
 
-						<h5 class="card-title mb-0">Qtd Matriculas Ultimos 12 meses - <?php echo $total_Matricula ?> no total</h5>
+						<h5 class="card-title mb-0">Qtd. de matrículas nos últimos 12 meses - <?php echo $total_Matricula ?> no total</h5>
 					</div>
 					<div class="card-body d-flex w-100">
 						<div class="align-self-center chart chart-lg">
@@ -261,7 +261,7 @@ $matriculas = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
 				<div class="card flex-fill">
 					<div class="card-header">
 
-						<h5 class="card-title mb-0">Calendario</h5>
+						<h5 class="card-title mb-0">Calendário</h5>
 					</div>
 					<div class="card-body d-flex">
 						<div class="align-self-center w-100">
@@ -278,7 +278,7 @@ $matriculas = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
 			<div class="col-12 col-lg-8 col-xxl-9 d-flex">
 				<div class="card flex-fill">
 					<div class="card-header">
-						<h5 class="card-title mb-0">Ultimos Beneficiarios Matriculados</h5>
+						<h5 class="card-title mb-0">Últimos beneficiários matriculados</h5>
 					</div>
 					<table class="table table-hover my-0">
 						<thead>
@@ -313,7 +313,7 @@ $matriculas = $pdo->query($query)->fetchAll(PDO::FETCH_ASSOC);
 				<div class="card flex-fill w-100">
 					<div class="card-header">
 
-						<h5 class="card-title mb-0">Qtd Matriculas Ultimos 12 meses - <?php //echo $total_Matricula ?> no total</h5>
+						<h5 class="card-title mb-0">Qtd. de matrículas nos últimos 12 meses - <?php //echo $total_Matricula ?> no total</h5>
 					</div>
 					<div class="card-body d-flex w-100">
 						<div class="align-self-center chart chart-lg">

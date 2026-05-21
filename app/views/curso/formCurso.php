@@ -52,7 +52,7 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                             <input type="text" class="form-control" id="NomeCurso" name="NomeCurso" autocomplete="off">
                                         </div>
                                         <div class="col-6">
-                                            <label for="CargaHoraria" class="form-label">Carga horaria</label>
+                                            <label for="CargaHoraria" class="form-label">Carga horária</label>
                                             <input type="text" class="form-control" id="CargaHoraria" name="CargaHoraria" autocomplete="off">
                                         </div>
                                     </div>
@@ -81,11 +81,11 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                             </select>
                                         </div>
                                         <div class="col-4">
-                                            <label for="idade-min" class="form-label">Idade minima</label>
+                                            <label for="idade-min" class="form-label">Idade mínima</label>
                                             <input type="text" class="form-control" id="idade-min" name="idade-min" autocomplete="off">
                                         </div>
                                         <div class="col-4">
-                                            <label for="idade-max" class="form-label">Idade maxima</label>
+                                            <label for="idade-max" class="form-label">Idade máxima</label>
                                             <input type="text" class="form-control" id="idade-max" name="idade-max" autocomplete="off">
                                         </div>
                                     </div>
@@ -201,7 +201,7 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                         </select>
                                     </div>
                                     <div class="col-4">
-                                        <label for="edit_cargah" class="form-label">Carga horaria</label>
+                                        <label for="edit_cargah" class="form-label">Carga horária</label>
                                         <input type="text" class="form-control" id="edit_cargah" name="cargah" autocomplete="off">
                                     </div>
                                 </div>
@@ -214,11 +214,11 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                         </select>
                                     </div>
                                     <div class="col-3">
-                                        <label for="edit_idade_min" class="form-label">Idade minima</label>
+                                        <label for="edit_idade_min" class="form-label">Idade mínima</label>
                                         <input type="text" class="form-control" id="edit_idade_min" name="idade-min" autocomplete="off">
                                     </div>
                                     <div class="col-3">
-                                        <label for="edit_idade_max" class="form-label">Idade maxima</label>
+                                        <label for="edit_idade_max" class="form-label">Idade máxima</label>
                                         <input type="text" class="form-control" id="edit_idade_max" name="idade-max" autocomplete="off">
                                     </div>
                                 </div>
@@ -240,7 +240,7 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                    <button type="submit" class="btn btn-success">Salvar alteracoes</button>
+                                    <button type="submit" class="btn btn-success">Salvar alterações</button>
                                 </div>
                             </form>
                         </div>
@@ -278,7 +278,7 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                         <input type="text" class="form-control" id="del_tipo" name="tipo" readonly autocomplete="off">
                                     </div>
                                     <div class="col-4">
-                                        <label for="del_cargah" class="form-label">Carga horaria</label>
+                                        <label for="del_cargah" class="form-label">Carga horária</label>
                                         <input type="text" class="form-control" id="del_cargah" name="cargah" readonly autocomplete="off">
                                     </div>
                                 </div>

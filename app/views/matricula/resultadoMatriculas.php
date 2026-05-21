@@ -15,7 +15,7 @@ $resultado = isset($_SESSION['resultado_matriculas_lote']) ? $_SESSION['resultad
 unset($_SESSION['resultado_matriculas_lote']);
 
 if (!$resultado || !isset($resultado['linhas']) || !is_array($resultado['linhas'])) {
-    header("Location: " . $BASE_para_URL . "/beneficiarios/lista?erro=" . urlencode("Nenhum resultado de matricula para exibir.") . "&matricula=1");
+    header("Location: " . $BASE_para_URL . "/beneficiarios/lista?erro=" . urlencode("Nenhum resultado de matrícula para exibir.") . "&matricula=1");
     exit();
 }
 
@@ -48,9 +48,9 @@ $urlRetorno = $BASE_para_URL . "/beneficiarios/lista?msg=%27Selecione%20as%20pes
                                 <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
-                                            <th>Beneficiario(a)</th>
+                                            <th>Beneficiário(a)</th>
                                             <th>Cursos/Turmas matriculados</th>
-                                            <th>Observacoes</th>
+                                            <th>Observações</th>
                                         </tr>
                                     </thead>
                                     <tbody>

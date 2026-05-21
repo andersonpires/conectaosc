@@ -243,6 +243,7 @@ require_once $ROOT_PATH . '/app/config/legacy_config.php';
 require_once $ROOT_PATH . '/api/legacy/funcoes.php';
 require_once $ROOT_PATH . '/api/conectabd/conexao.php';
 $appJsVersion = @filemtime($ROOT_PATH . '/app/assets/js/app.js') ?: time();
+$appCssVersion = bootstrap_asset_version($ROOT_PATH . '/app/assets/css/app.css', (string)$appJsVersion);
 $showProfileModal = false;
 $profileModalData = null;
 $profileModalMissing = [];
@@ -641,7 +642,7 @@ if (!$showProfileModal && $_SERVER["REQUEST_METHOD"] == "POST") {
 
     <title>Login | ITEVA - Gestão de OSCs</title>
 
-    <link href="<?php echo $BASE_para_URL; ?>/assets/css/app.css" rel="stylesheet">
+    <link href="<?php echo $BASE_para_URL; ?>/assets/css/app.css?v=<?php echo rawurlencode((string)$appCssVersion); ?>" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="<?php echo $BASE_para_URL; ?>/assets/js/app.js?v=<?php echo $appJsVersion; ?>"></script>
     <style>

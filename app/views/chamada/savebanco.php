@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmtAluno->execute([$idMatricula]);
             $rowAluno = $stmtAluno->fetch(PDO::FETCH_ASSOC);
             if (!$rowAluno || empty($rowAluno['IdUsuario'])) {
-                echo json_encode(['success' => false, 'message' => 'Matricula nao encontrada para registrar observacao.']);
+                echo json_encode(['success' => false, 'message' => 'Matrícula não encontrada para registrar observação.']);
                 exit;
             }
             $idAluno = (int)$rowAluno['IdUsuario'];

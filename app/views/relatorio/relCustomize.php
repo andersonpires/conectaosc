@@ -110,7 +110,7 @@ $projetosDisponiveis = $relatorioService->projetos();
             <?php require_once $BASE_para_PATH . '/app/views/partials/topo.php'; ?>
             <main class="content">
                 <div class="container-fluid p-0">
-                    <h1 class="h3 mb-3">Relatorio Personalizado de Alunos</h1>
+                    <h1 class="h3 mb-3">Relatório Personalizado de Alunos</h1>
                     <div class="card">
                         <div class="card-body">
                             <form id="customForm" class="mb-4">
@@ -132,7 +132,7 @@ $projetosDisponiveis = $relatorioService->projetos();
                                             <div class="form-check">
                                                 <input type="hidden" name="matriculasAtivas" value="0">
                                                 <input type="checkbox" class="form-check-input" id="matriculasAtivas" name="matriculasAtivas">
-                                                <label class="form-check-label" for="matriculasAtivas">Matriculas ativas</label>
+                                                <label class="form-check-label" for="matriculasAtivas">Matrículas ativas</label>
                                             </div>
                                             <div class="form-check">
                                                 <input type="hidden" name="filtroAtivos" value="0">
@@ -323,7 +323,7 @@ $projetosDisponiveis = $relatorioService->projetos();
         const aoa = [cabecalhos, ...conteudo];
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(aoa);
-        XLSX.utils.book_append_sheet(wb, ws, 'Relatorio Personalizado');
+        XLSX.utils.book_append_sheet(wb, ws, 'Relatório Personalizado');
         XLSX.writeFile(wb, nomeArquivo);
     }
 
