@@ -146,8 +146,14 @@ export async function postExcluirConsulta(id) {
   await handleResponse(res);
 }
 
-export async function postIniciarAtendimento(id) {
-  const res = await fetch(`${API_BASE}/consultas/${id}/iniciar-atendimento`, { method: 'POST', credentials: 'include' });
+export async function postIniciarAtendimento(id, data = null) {
+  const hasBody = !!(data && typeof data === 'object');
+  const res = await fetch(`${API_BASE}/consultas/${id}/iniciar-atendimento`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
+    body: hasBody ? JSON.stringify(data) : undefined,
+  });
   await handleResponse(res);
 }
 
@@ -156,8 +162,14 @@ export async function postConcluirAtendimento(id) {
   await handleResponse(res);
 }
 
-export async function postReverterAtendimento(id) {
-  const res = await fetch(`${API_BASE}/consultas/${id}/reverter-atendimento`, { method: 'POST', credentials: 'include' });
+export async function postReverterAtendimento(id, data = null) {
+  const hasBody = !!(data && typeof data === 'object');
+  const res = await fetch(`${API_BASE}/consultas/${id}/reverter-atendimento`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
+    body: hasBody ? JSON.stringify(data) : undefined,
+  });
   await handleResponse(res);
 }
 
@@ -166,8 +178,14 @@ export async function postExcluirAtendimento(id) {
   await handleResponse(res);
 }
 
-export async function postReverterAtendimentoCompleto(id) {
-  const res = await fetch(`${API_BASE}/consultas/${id}/reverter-atendimento-completo`, { method: 'POST', credentials: 'include' });
+export async function postReverterAtendimentoCompleto(id, data = null) {
+  const hasBody = !!(data && typeof data === 'object');
+  const res = await fetch(`${API_BASE}/consultas/${id}/reverter-atendimento-completo`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: hasBody ? { 'Content-Type': 'application/json' } : undefined,
+    body: hasBody ? JSON.stringify(data) : undefined,
+  });
   await handleResponse(res);
 }
 
@@ -498,6 +516,26 @@ export async function putAnamneseRoteiro(id, data) {
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
     body: JSON.stringify(data),
+  });
+  await handleResponse(res);
+}
+
+export async function deleteAnamneseRoteiro(id, data = {}) {
+  const res = await fetch(`${API_BASE}/anamnese-roteiro/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data || {}),
+  });
+  await handleResponse(res);
+}
+
+export async function deleteAnamnese(id, data = {}) {
+  const res = await fetch(`${API_BASE}/anamnese/${id}`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(data || {}),
   });
   await handleResponse(res);
 }

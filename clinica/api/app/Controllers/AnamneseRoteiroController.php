@@ -174,6 +174,73 @@ class AnamneseRoteiroController
         JsonResponse::success(['message' => 'Anamnese atualizada']);
     }
 
+    public function destroy(string $id): void
+    {
+        AuthMiddleware::requireAcessoClinica();
+        $id = (int)$id;
+        if ($id <= 0) {
+            JsonResponse::error('ID invalido', [], 400);
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("
+            SELECT a.id, a.consulta_id, a.profissional_id,
+                   c.profissional_id AS consulta_profissional_id,
+                   c.profissional_nome_livre
+              FROM " . self::TABLE_NAME . " a
+              JOIN tb_consulta c ON c.id = a.consulta_id
+             WHERE a.id = ?
+             LIMIT 1
+        ");
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$row) {
+            JsonResponse::error('Anamnese nao encontrada', [], 404);
+        }
+
+        $this->validarSenhaProfissionalExclusao($pdo, $row, $input);
+
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare("DELETE FROM " . self::TABLE_NAME . " WHERE id = ?")->execute([$id]);
+            $pdo->prepare("UPDATE tb_consulta SET status = 'agendada' WHERE id = ?")->execute([(int) $row['consulta_id']]);
+            $pdo->prepare("UPDATE tb_agenda_clinica SET status = 'agendada' WHERE consulta_id = ?")->execute([(int) $row['consulta_id']]);
+            $pdo->commit();
+            JsonResponse::success(['id' => $id], 'Anamnese excluida e agendamento reativado');
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            error_log('Erro ao excluir anamnese infantojuvenil: ' . $e->getMessage());
+            JsonResponse::error('Erro ao excluir anamnese', [], 500);
+        }
+    }
+
+    private function validarSenhaProfissionalExclusao(\PDO $pdo, array $row, array $input): void
+    {
+        $nomeLivre = strtolower(trim((string) ($row['profissional_nome_livre'] ?? '')));
+        $isPlantonista = (int) ($row['consulta_profissional_id'] ?? 0) <= 0 || $nomeLivre === 'plantonista';
+        if ($isPlantonista) {
+            return;
+        }
+
+        $senha = (string) ($input['senha_profissional'] ?? '');
+        if ($senha === '') {
+            JsonResponse::error('Informe a senha do profissional responsavel por esta anamnese.', [], 422);
+        }
+
+        $profissionalId = (int) ($row['profissional_id'] ?? 0);
+        if ($profissionalId <= 0) {
+            JsonResponse::error('Nao foi possivel validar o profissional responsavel por esta anamnese.', [], 422);
+        }
+
+        $stmt = $pdo->prepare("SELECT Senha FROM tbUser WHERE IdColaborador = ? AND Habilitado = 1 LIMIT 1");
+        $stmt->execute([$profissionalId]);
+        $hash = (string) ($stmt->fetchColumn() ?: '');
+        if ($hash === '' || !password_verify($senha, $hash)) {
+            JsonResponse::error('Senha do profissional invalida.', [], 403);
+        }
+    }
+
     private function getColumns(): array
     {
         return [

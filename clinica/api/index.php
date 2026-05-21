@@ -343,12 +343,14 @@ $router->get('/anamnese', [$anamnese, 'index']);
 $router->get('/anamnese/{id}', [$anamnese, 'show']);
 $router->post('/anamnese', [$anamnese, 'store']);
 $router->put('/anamnese/{id}', [$anamnese, 'update']);
+$router->delete('/anamnese/{id}', [$anamnese, 'destroy']);
 
 $rot = new \App\Controllers\AnamneseRoteiroController();
 $router->get('/anamnese-roteiro', [$rot, 'index']);
 $router->get('/anamnese-roteiro/{id}', [$rot, 'show']);
 $router->post('/anamnese-roteiro', [$rot, 'store']);
 $router->put('/anamnese-roteiro/{id}', [$rot, 'update']);
+$router->delete('/anamnese-roteiro/{id}', [$rot, 'destroy']);
 
 $router->dispatch();
 } catch (Throwable $e) {

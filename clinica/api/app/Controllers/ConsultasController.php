@@ -120,7 +120,7 @@ class ConsultasController
         $tipoConsultaId = isset($input['tipo_consulta_id']) ? (int)$input['tipo_consulta_id'] : null;
 
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare("SELECT id, data_consulta, hora_inicio_prevista, duracao_minutos_prevista, especialidade_id, tipo_consulta_id, status FROM tb_consulta WHERE id = ? AND status != 'concluida'");
+        $stmt = $pdo->prepare("SELECT id, data_consulta, hora_inicio_prevista, duracao_minutos_prevista, especialidade_id, tipo_consulta_id, status FROM tb_consulta WHERE id = ?");
         $stmt->execute([$id]);
         $consulta = $stmt->fetch(\PDO::FETCH_ASSOC);
         if (!$consulta) JsonResponse::error('Consulta não encontrada', [], 404);
@@ -133,7 +133,18 @@ class ConsultasController
         $horaFim = date('H:i:s', strtotime($horaInicio) + ($duracao * 60));
 
         $isCancelada = ($consulta['status'] ?? '') === 'cancelada';
-        $novoStatus = $isCancelada ? 'agendada' : $consulta['status'];
+        $isConcluida = ($consulta['status'] ?? '') === 'concluida';
+        $novoStatus = $isConcluida ? 'concluida' : ($isCancelada ? 'agendada' : $consulta['status']);
+
+        if ($isConcluida) {
+            $dataHoraConsulta = strtotime($dataConsulta . ' ' . (strlen((string) $horaInicio) <= 5 ? $horaInicio . ':00' : $horaInicio));
+            if ($dataHoraConsulta === false) {
+                JsonResponse::error('Data ou hora invÃ¡lida', [], 422);
+            }
+            if ($dataHoraConsulta > time()) {
+                JsonResponse::error('Consulta concluida nao pode ser movida para uma data ou hora futura.', [], 422);
+            }
+        }
 
         $stmt = $pdo->prepare("
             UPDATE tb_consulta SET profissional_id = ?, profissional_nome_livre = ?, data_consulta = ?, hora_inicio_prevista = ?,
@@ -147,7 +158,12 @@ class ConsultasController
         $stmtAg = $pdo->prepare("UPDATE tb_agenda_clinica SET data_agenda = ?, inicio = ?, fim_previsto = ?, status = ? WHERE consulta_id = ?");
         $stmtAg->execute([$dataConsulta, $inicio, $fim, $novoStatus, $id]);
 
-        JsonResponse::success(['id' => $id], $isCancelada ? 'Agendamento reativado e atualizado' : 'Agendamento atualizado');
+        JsonResponse::success(
+            ['id' => $id],
+            $isConcluida
+                ? 'Consulta concluida atualizada'
+                : ($isCancelada ? 'Agendamento reativado e atualizado' : 'Agendamento atualizado')
+        );
     }
 
     public function confirmacao(string $id): void
@@ -204,11 +220,12 @@ class ConsultasController
     public function iniciarAtendimento(string $id): void
     {
         AuthMiddleware::requireProfissionalSaude();
+        $userId = AuthMiddleware::getUserId();
         $id = (int) $id;
         if ($id <= 0) JsonResponse::error('ID invÃ¡lido', [], 400);
 
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare("SELECT id, aluno_id FROM tb_consulta WHERE id = ? LIMIT 1");
+        $stmt = $pdo->prepare("SELECT id, aluno_id, profissional_id, profissional_nome_livre FROM tb_consulta WHERE id = ? LIMIT 1");
         $stmt->execute([$id]);
         $consulta = $stmt->fetch(\PDO::FETCH_ASSOC);
         if (!$consulta) {
@@ -239,13 +256,37 @@ class ConsultasController
             );
         }
 
+        $this->atribuirProfissionalAoAtendimento($pdo, $consulta, $userId);
         $this->updateStatus($id, 'em_atendimento');
     }
 
     public function reverterAtendimento(string $id): void
     {
-        AuthMiddleware::requireAuth();
-        $this->updateStatus($id, 'agendada');
+        AuthMiddleware::requireAcessoClinica();
+        $consultaId = (int) $id;
+        if ($consultaId <= 0) JsonResponse::error('ID invalido', [], 400);
+
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("SELECT id FROM tb_consulta WHERE id = ? LIMIT 1");
+        $stmt->execute([$consultaId]);
+        if (!$stmt->fetch(\PDO::FETCH_ASSOC)) {
+            JsonResponse::error('Consulta nao encontrada', [], 404);
+        }
+
+        $profissionalId = $this->resolverProfissionalReagendamento($pdo, $input);
+
+        $pdo->beginTransaction();
+        try {
+            $this->atualizarProfissionalConsulta($pdo, $consultaId, $profissionalId);
+            $this->setStatusConsulta($pdo, $consultaId, 'agendada');
+            $pdo->commit();
+            JsonResponse::success(['id' => $consultaId], 'Atendimento revertido para agendado');
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            error_log('Erro ao reverter atendimento: ' . $e->getMessage());
+            JsonResponse::error('Erro ao reverter atendimento', [], 500);
+        }
     }
 
     public function concluirAtendimento(string $id): void
@@ -309,8 +350,9 @@ class ConsultasController
 
     public function reverterAtendimentoCompleto(string $id): void
     {
-        AuthMiddleware::requireProfissionalSaude();
+        AuthMiddleware::requireAcessoClinica();
         $consultaId = (int) $id;
+        $input = json_decode(file_get_contents('php://input'), true) ?: [];
         if ($consultaId <= 0) JsonResponse::error('ID invÃ¡lido', [], 400);
 
         $pdo = Database::getConnection();
@@ -320,11 +362,13 @@ class ConsultasController
             JsonResponse::error('Consulta nÃ£o encontrada', [], 404);
         }
 
+        $profissionalId = $this->resolverProfissionalReagendamento($pdo, $input);
+
         $pdo->beginTransaction();
         try {
             $this->deleteDadosAtendimento($pdo, $consultaId);
-            $pdo->prepare("UPDATE tb_consulta SET status = 'agendada' WHERE id = ?")->execute([$consultaId]);
-            $pdo->prepare("UPDATE tb_agenda_clinica SET status = 'agendada' WHERE consulta_id = ?")->execute([$consultaId]);
+            $this->atualizarProfissionalConsulta($pdo, $consultaId, $profissionalId);
+            $this->setStatusConsulta($pdo, $consultaId, 'agendada');
             $pdo->commit();
             JsonResponse::success(['id' => $consultaId], 'Atendimento revertido para agendado');
         } catch (\Throwable $e) {
@@ -374,6 +418,61 @@ class ConsultasController
         }
 
         return false;
+    }
+
+    private function atribuirProfissionalAoAtendimento(\PDO $pdo, array $consulta, int $userId): void
+    {
+        $profissionalAtual = (int) ($consulta['profissional_id'] ?? 0);
+        $nomeLivre = strtolower(trim((string) ($consulta['profissional_nome_livre'] ?? '')));
+        if ($profissionalAtual > 0 && $nomeLivre !== 'plantonista') {
+            return;
+        }
+
+        $stmt = $pdo->prepare("
+            UPDATE tb_consulta
+               SET profissional_id = ?, profissional_nome_livre = NULL
+             WHERE id = ?
+        ");
+        $stmt->execute([$userId, (int) ($consulta['id'] ?? 0)]);
+    }
+
+    private function resolverProfissionalReagendamento(\PDO $pdo, array $input): int
+    {
+        $profissionalId = (int) ($input['profissional_id'] ?? 0);
+        if ($profissionalId <= 0) {
+            JsonResponse::error('Selecione o profissional responsavel pelo agendamento reativado.', [], 422);
+        }
+
+        $stmt = $pdo->prepare("
+            SELECT IdColaborador
+              FROM tbUser
+             WHERE IdColaborador = ?
+               AND Habilitado = 1
+               AND COALESCE(profissional_saude, 0) = 1
+             LIMIT 1
+        ");
+        $stmt->execute([$profissionalId]);
+        if (!$stmt->fetch(\PDO::FETCH_ASSOC)) {
+            JsonResponse::error('Profissional informado nao e valido para o agendamento.', [], 422);
+        }
+
+        return $profissionalId;
+    }
+
+    private function atualizarProfissionalConsulta(\PDO $pdo, int $consultaId, int $profissionalId): void
+    {
+        $stmt = $pdo->prepare("
+            UPDATE tb_consulta
+               SET profissional_id = ?, profissional_nome_livre = NULL
+             WHERE id = ?
+        ");
+        $stmt->execute([$profissionalId, $consultaId]);
+    }
+
+    private function setStatusConsulta(\PDO $pdo, int $consultaId, string $status): void
+    {
+        $pdo->prepare("UPDATE tb_consulta SET status = ? WHERE id = ?")->execute([$status, $consultaId]);
+        $pdo->prepare("UPDATE tb_agenda_clinica SET status = ? WHERE consulta_id = ?")->execute([$status, $consultaId]);
     }
 
     private function updateStatus(int $id, string $status): void

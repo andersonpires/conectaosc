@@ -45,7 +45,7 @@ function fmtDateTime(value, time) {
 }
 
 function getCurrentUserProfile() {
-  return window.__CLINICA_BOOTSTRAP__ || {};
+  return (window.__CLINICA_BOOTSTRAP__ || {}).usuario || {};
 }
 
 function resumoAtendimento(item) {

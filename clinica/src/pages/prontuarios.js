@@ -8,6 +8,8 @@ import {
   getProfissionais,
   postProntuarioStreamIa,
   postProntuario,
+  deleteAnamnese,
+  deleteAnamneseRoteiro,
   getCursosFiltroProntuarios,
   getTurmasFiltroProntuarios,
   getBeneficiariosFiltroProntuarios
@@ -42,7 +44,7 @@ function getFallbackFotoUrl() {
 }
 
 function getCurrentUser() {
-  return window.__CLINICA_BOOTSTRAP__ || {};
+  return (window.__CLINICA_BOOTSTRAP__ || {}).usuario || {};
 }
 
 function getPacienteFotoUrl(paciente) {
@@ -331,8 +333,46 @@ let prontuariosFiltroProfissional = '';
 let prontuariosFiltroCurso = '';
 let prontuariosFiltroTurma = '';
 let prontuariosBuscaRealizada = false;
+let aguardandoBuscaRealizada = false;
+let prontuariosTabAtiva = 'prontuarios';
 let prontuariosSelecionados = new Set();
 let prontuariosCursosDisponiveis = [];
+
+function filtrarConsultasAguardandoProntuario(consultas, filtros = {}) {
+  const {
+    alunoId = null,
+    nome = '',
+    data = '',
+    horaInicio = '',
+    horaFim = '',
+    profissionalId = '',
+    idsPermitidosTurma = null,
+  } = filtros;
+
+  const termoNome = String(nome || '').trim().toLowerCase();
+  const horaInicioFiltro = String(horaInicio || '').trim();
+  const horaFimFiltro = String(horaFim || '').trim();
+  const dataFiltro = String(data || '').trim();
+  const profissionalFiltro = String(profissionalId || '').trim();
+  const temFiltroTurma = idsPermitidosTurma instanceof Set && idsPermitidosTurma.size > 0;
+
+  return (Array.isArray(consultas) ? consultas : []).filter((consulta) => {
+    const consultaAlunoId = Number(consulta?.aluno_id || 0);
+    const consultaNome = String(consulta?.paciente_nome || '').trim().toLowerCase();
+    const consultaData = String(consulta?.data_consulta || '').trim();
+    const consultaHora = String(consulta?.hora_inicio_prevista || '').slice(0, 5);
+    const consultaProfissionalId = String(consulta?.profissional_id || '').trim();
+
+    if (alunoId && consultaAlunoId !== Number(alunoId)) return false;
+    if (!alunoId && termoNome && !consultaNome.includes(termoNome)) return false;
+    if (dataFiltro && consultaData !== dataFiltro) return false;
+    if (horaInicioFiltro && consultaHora && consultaHora < horaInicioFiltro) return false;
+    if (horaFimFiltro && consultaHora && consultaHora > horaFimFiltro) return false;
+    if (profissionalFiltro && consultaProfissionalId !== profissionalFiltro) return false;
+    if (temFiltroTurma && !idsPermitidosTurma.has(consultaAlunoId)) return false;
+    return true;
+  });
+}
 
 export async function renderProntuarios(container, opts = {}) {
   if (opts?.aluno_id !== undefined) {
@@ -350,6 +390,7 @@ export async function renderProntuarios(container, opts = {}) {
   container.innerHTML = getSpinnerHtml('Carregando...');
   let prontuarios = [];
   let consultasAguardando = [];
+  let consultasAguardandoFiltradas = [];
   let profissionaisFiltro = [];
   let turmasDisponiveis = [];
   let idsPermitidosTurma = new Set();
@@ -405,6 +446,18 @@ export async function renderProntuarios(container, opts = {}) {
       prontuarios = prontuarios.filter((item) => idsPermitidosTurma.has(Number(item.aluno_id)));
     }
 
+    consultasAguardandoFiltradas = aguardandoBuscaRealizada
+      ? filtrarConsultasAguardandoProntuario(consultasAguardando, {
+          alunoId: alunoIdFiltro,
+          nome: prontuariosFiltroNome,
+          data: prontuariosFiltroData,
+          horaInicio: prontuariosFiltroHoraInicio,
+          horaFim: prontuariosFiltroHoraFim,
+          profissionalId: prontuariosFiltroProfissional,
+          idsPermitidosTurma: Number.isInteger(turmaIdSelecionada) && turmaIdSelecionada > 0 ? idsPermitidosTurma : null,
+        })
+      : consultasAguardando;
+
     const idsAtuais = new Set(prontuarios.map((p) => Number(p.id)));
     prontuariosSelecionados = new Set(Array.from(prontuariosSelecionados).filter((id) => idsAtuais.has(Number(id))));
   } catch (e) {
@@ -426,7 +479,7 @@ export async function renderProntuarios(container, opts = {}) {
     .join('');
 
   const colaborador = getCurrentUser();
-  const colaboradorNome = escapeAttribute(colaborador.nome || 'Perfil do M?dico');
+  const colaboradorNome = escapeAttribute(colaborador.nome || 'Perfil do Médico');
   const colaboradorFoto = escapeAttribute(colaborador.fotoUrl || getFallbackFotoUrl());
 
   const shellPrefix = `
@@ -576,13 +629,15 @@ export async function renderProntuarios(container, opts = {}) {
       </div>
     `;
 
-  const aguardandoHtml = consultasAguardando.length === 0
-    ? '<p class="text-gray-500 py-8 text-center">Nenhuma consulta aguardando prontuário.</p>'
+  const aguardandoHtml = consultasAguardandoFiltradas.length === 0
+    ? (aguardandoBuscaRealizada
+      ? '<p class="text-gray-500 py-8 text-center">Nenhuma consulta aguardando prontuário para os filtros informados.</p>'
+      : '<p class="text-gray-500 py-8 text-center">Nenhuma consulta aguardando prontuário.</p>')
     : `
     <div class="space-y-3" id="aguardando-list">
       <p class="text-sm text-gray-600 mb-3">Selecione uma consulta para gerar o prontuário com IA com base nos modelos do sistema.</p>
-      ${consultasAguardando.map((c) => `
-        <button type="button" data-consulta-id="${c.id}" data-aluno-id="${c.aluno_id}" data-paciente-nome="${escapeHtml(c.paciente_nome || '')}" data-data="${c.data_consulta || ''}" data-hora="${fmtTime(c.hora_inicio_prevista)}" data-especialidade="${escapeHtml(c.especialidade_nome || '')}" data-profissional="${escapeHtml(c.profissional_nome || '')}" class="aguardando-card w-full text-left bg-white rounded-xl shadow-monday p-4 hover:shadow-monday-lg hover:border-monday-blue border-2 border-transparent transition">
+      ${consultasAguardandoFiltradas.map((c) => `
+        <button type="button" data-consulta-id="${c.id}" data-aluno-id="${c.aluno_id}" data-paciente-nome="${escapeHtml(c.paciente_nome || '')}" data-data="${c.data_consulta || ''}" data-hora="${fmtTime(c.hora_inicio_prevista)}" data-especialidade="${escapeHtml(c.especialidade_nome || '')}" data-profissional="${escapeHtml(c.profissional_nome || '')}" data-profissional-id="${escapeAttribute(c.profissional_id || '')}" data-profissional-livre="${escapeAttribute(c.profissional_nome_livre || '')}" data-tem-anamnese-adulto="${Number(c.tem_anamnese_adulto || 0)}" data-tem-anamnese-infantojuvenil="${Number(c.tem_anamnese_infantojuvenil || 0)}" data-anamnese-adulto-id="${escapeAttribute(c.anamnese_adulto_id || '')}" data-anamnese-infantojuvenil-id="${escapeAttribute(c.anamnese_infantojuvenil_id || '')}" class="aguardando-card w-full text-left bg-white rounded-xl shadow-monday p-4 hover:shadow-monday-lg hover:border-monday-blue border-2 border-transparent transition">
           <span class="font-medium text-gray-800 block">${escapeHtml(c.paciente_nome || '')}</span>
           <span class="text-sm text-gray-500">${c.data_consulta} ${fmtTime(c.hora_inicio_prevista)} — ${escapeHtml(c.especialidade_nome || '')}</span>
           <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">${escapeHtml(c.profissional_nome || 'Plantonista')}</span>
@@ -631,7 +686,11 @@ export async function renderProntuarios(container, opts = {}) {
     prontuariosFiltroHoraInicio = String(container.querySelector('#filtro-hora-inicio-pront')?.value || '').trim();
     prontuariosFiltroHoraFim = String(container.querySelector('#filtro-hora-fim-pront')?.value || '').trim();
     prontuariosFiltroProfissional = String(container.querySelector('#filtro-profissional-pront')?.value || '').trim();
-    prontuariosBuscaRealizada = true;
+    if (prontuariosTabAtiva === 'aguardando') {
+      aguardandoBuscaRealizada = true;
+    } else {
+      prontuariosBuscaRealizada = true;
+    }
     await renderProntuarios(container);
   };
   if (btnPesquisarPront) {
@@ -657,6 +716,7 @@ export async function renderProntuarios(container, opts = {}) {
       prontuariosFiltroCurso = '';
       prontuariosFiltroTurma = '';
       prontuariosBuscaRealizada = false;
+      aguardandoBuscaRealizada = false;
       prontuariosSelecionados = new Set();
       await renderProntuarios(container);
     });
@@ -677,11 +737,12 @@ export async function renderProntuarios(container, opts = {}) {
     container.querySelector('#tab-content-aguardando').classList.toggle('hidden', tabAtiva !== 'aguardando');
   };
 
-  syncProntuarioTabs('prontuarios');
+  syncProntuarioTabs(prontuariosTabAtiva);
 
   container.querySelectorAll('.tab-pront').forEach((btn) => {
     btn.onclick = () => {
-      syncProntuarioTabs(btn.dataset.tab);
+      prontuariosTabAtiva = btn.dataset.tab || 'prontuarios';
+      syncProntuarioTabs(prontuariosTabAtiva);
       if (typeof lucide !== 'undefined') lucide.createIcons();
     };
   });
@@ -774,15 +835,145 @@ export async function renderProntuarios(container, opts = {}) {
         data_consulta: btn.dataset.data || '',
         hora_inicio_prevista: btn.dataset.hora || '',
         especialidade_nome: btn.dataset.especialidade || '',
-        profissional_nome: btn.dataset.profissional || ''
+        profissional_nome: btn.dataset.profissional || '',
+        profissional_id: parseInt(btn.dataset.profissionalId, 10) || null,
+        profissional_nome_livre: btn.dataset.profissionalLivre || '',
+        tem_anamnese_adulto: parseInt(btn.dataset.temAnamneseAdulto, 10) || 0,
+        tem_anamnese_infantojuvenil: parseInt(btn.dataset.temAnamneseInfantojuvenil, 10) || 0,
+        anamnese_adulto_id: parseInt(btn.dataset.anamneseAdultoId, 10) || null,
+        anamnese_infantojuvenil_id: parseInt(btn.dataset.anamneseInfantojuvenilId, 10) || null
       };
-      openModalGerarProntuario(c, container);
+      openModalConsultaAguardando(c, container);
     };
   });
 
   atualizarControlesSelecao();
 
   if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function abrirEditorAnamnesePendente(consulta) {
+  const tipo = Number(consulta?.tem_anamnese_infantojuvenil || 0) > 0 ? 'roteiro' : 'adulto';
+  window.dispatchEvent(new CustomEvent('open-atendimento', {
+    detail: {
+      consultaId: consulta.id,
+      date: consulta.data_consulta || undefined,
+      anamneseTipo: tipo
+    }
+  }));
+}
+
+async function openModalExcluirAnamnesePendente(consulta, container) {
+  const isPlantonista = !(parseInt(consulta?.profissional_id, 10) > 0)
+    || String(consulta?.profissional_nome_livre || '').trim().toLowerCase() === 'plantonista';
+  const tipo = Number(consulta?.tem_anamnese_infantojuvenil || 0) > 0 ? 'roteiro' : 'adulto';
+  const anamneseId = tipo === 'roteiro'
+    ? parseInt(consulta?.anamnese_infantojuvenil_id, 10)
+    : parseInt(consulta?.anamnese_adulto_id, 10);
+  if (!Number.isInteger(anamneseId) || anamneseId <= 0) {
+    throw new Error('Nenhuma anamnese vinculada foi localizada para esta consulta.');
+  }
+
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4';
+    modal.innerHTML = `
+      <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-monday-lg">
+        <h3 class="text-lg font-semibold text-slate-900">Excluir anamnese</h3>
+        <p class="mt-2 text-sm text-slate-600">
+          Esta exclusao reativara o agendamento e a consulta voltara a ficar aguardando atendimento.
+        </p>
+        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p><strong>Paciente:</strong> ${escapeHtml(consulta?.paciente_nome || '')}</p>
+          <p><strong>Consulta:</strong> ${escapeHtml(consulta?.data_consulta || '')} ${escapeHtml(fmtTime(consulta?.hora_inicio_prevista || ''))}</p>
+        </div>
+        ${isPlantonista ? '' : `
+          <label class="mt-4 block">
+            <span class="mb-2 block text-sm font-medium text-slate-700">Senha do profissional que atendeu</span>
+            <input type="password" id="senha-profissional-exclusao" class="w-full rounded-xl border border-slate-300 px-4 py-3" placeholder="Digite a senha do profissional responsavel">
+          </label>
+        `}
+        <div class="mt-5 flex gap-2">
+          <button type="button" class="btn-excluir-confirmar flex-1 rounded-xl bg-red-600 px-4 py-3 text-white">Excluir mesmo assim</button>
+          <button type="button" class="btn-excluir-cancelar rounded-xl border border-slate-300 px-4 py-3 text-slate-700">Cancelar</button>
+        </div>
+      </div>
+    `;
+
+    const fechar = () => {
+      modal.remove();
+      resolve(false);
+    };
+
+    modal.querySelector('.btn-excluir-cancelar')?.addEventListener('click', fechar);
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) fechar();
+    });
+    modal.querySelector('.btn-excluir-confirmar')?.addEventListener('click', async () => {
+      const senha = String(modal.querySelector('#senha-profissional-exclusao')?.value || '').trim();
+      if (!isPlantonista && !senha) {
+        alert('Informe a senha do profissional responsavel pela anamnese.');
+        return;
+      }
+      try {
+        if (tipo === 'roteiro') {
+          await deleteAnamneseRoteiro(anamneseId, { senha_profissional: senha });
+        } else {
+          await deleteAnamnese(anamneseId, { senha_profissional: senha });
+        }
+        modal.remove();
+        await renderProntuarios(container);
+        resolve(true);
+      } catch (err) {
+        alert(err.message || 'Erro ao excluir anamnese.');
+      }
+    });
+
+    document.body.appendChild(modal);
+  });
+}
+
+async function openModalConsultaAguardando(consulta, container) {
+  const temAnamneseAdulto = Number(consulta?.tem_anamnese_adulto || 0) > 0;
+  const temAnamneseInfantojuvenil = Number(consulta?.tem_anamnese_infantojuvenil || 0) > 0;
+  const temAnamnese = temAnamneseAdulto || temAnamneseInfantojuvenil;
+
+  const modal = document.createElement('div');
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4';
+  modal.innerHTML = `
+    <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-monday-lg">
+      <h3 class="text-lg font-semibold text-slate-900">${escapeHtml(consulta?.paciente_nome || '')}</h3>
+      <p class="mt-1 text-sm text-slate-500">${escapeHtml(consulta?.data_consulta || '')} ${escapeHtml(fmtTime(consulta?.hora_inicio_prevista || ''))} - ${escapeHtml(consulta?.especialidade_nome || '')}</p>
+      <div class="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+        ${temAnamnese ? 'Esta consulta ja possui anamnese salva e esta aguardando a geracao do prontuario.' : 'Esta consulta ainda nao possui anamnese identificada, mas voce pode gerar o prontuario se o fluxo clinico ja estiver pronto.'}
+      </div>
+      <div class="mt-5 flex flex-col gap-2">
+        <button type="button" class="btn-gerar-prontuario min-h-touch rounded-xl bg-monday-blue px-4 py-3 text-white">Gerar prontuario</button>
+        ${temAnamnese ? '<button type="button" class="btn-editar-anamnese min-h-touch rounded-xl border border-slate-300 px-4 py-3 text-slate-700">Editar anamnese</button>' : ''}
+        ${temAnamnese ? '<button type="button" class="btn-excluir-anamnese min-h-touch rounded-xl bg-red-600 px-4 py-3 text-white">Excluir anamnese</button>' : ''}
+        <button type="button" class="btn-fechar-acoes min-h-touch rounded-xl border border-slate-300 px-4 py-3 text-slate-700">Fechar</button>
+      </div>
+    </div>
+  `;
+
+  modal.querySelector('.btn-fechar-acoes')?.addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (event) => {
+    if (event.target === modal) modal.remove();
+  });
+  modal.querySelector('.btn-gerar-prontuario')?.addEventListener('click', () => {
+    modal.remove();
+    openModalGerarProntuario(consulta, container);
+  });
+  modal.querySelector('.btn-editar-anamnese')?.addEventListener('click', () => {
+    modal.remove();
+    abrirEditorAnamnesePendente(consulta);
+  });
+  modal.querySelector('.btn-excluir-anamnese')?.addEventListener('click', async () => {
+    const excluiu = await openModalExcluirAnamnesePendente(consulta, container);
+    if (excluiu) modal.remove();
+  });
+
+  document.body.appendChild(modal);
 }
 
 async function openModalGerarProntuario(consulta, container) {
@@ -793,21 +984,21 @@ async function openModalGerarProntuario(consulta, container) {
     modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto';
     modal.innerHTML = `
       <div class="bg-white rounded-2xl shadow-monday-lg max-w-2xl w-full p-6 my-8 max-h-[90vh] overflow-y-auto">
-        <h3 class="text-lg font-semibold mb-2">Gerar prontu?rio ? ${escapeHtml(consulta.paciente_nome || '')}</h3>
-        <p class="text-sm text-gray-500 mb-4">${dataConsulta} ${fmtTime(consulta.hora_inicio_prevista)} ? ${escapeHtml(consulta.especialidade_nome || '')}</p>
-        <p class="text-sm text-gray-600 mb-4">O prontu?rio ser? gerado com base em todos os dados do cadastro e da anamnese, seguindo os modelos do sistema.</p>
+        <h3 class="text-lg font-semibold mb-2">Gerar prontu&aacute;rio - ${escapeHtml(consulta.paciente_nome || '')}</h3>
+        <p class="text-sm text-gray-500 mb-4">${dataConsulta} ${fmtTime(consulta.hora_inicio_prevista)} - ${escapeHtml(consulta.especialidade_nome || '')}</p>
+        <p class="text-sm text-gray-600 mb-4">O prontu&aacute;rio ser&aacute; gerado com base em todos os dados do cadastro e da anamnese, seguindo os modelos do sistema.</p>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Instru??es adicionais (opcional)</label>
-          <textarea id="modal-dados-clinicos" rows="2" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Par?metros, pedidos ou instru??es para IA..."></textarea>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Instru&ccedil;&otilde;es adicionais (opcional)</label>
+          <textarea id="modal-dados-clinicos" rows="2" class="w-full px-4 py-3 border border-gray-300 rounded-lg" placeholder="Par&acirc;metros, pedidos ou instru&ccedil;&otilde;es para IA..."></textarea>
         </div>
         <button type="button" id="modal-btn-gerar" class="mt-3 w-full min-h-touch py-3 bg-purple-accent text-white rounded-xl font-medium hover:bg-purple-accent-hover transition">
-          Gerar prontu?rio com IA
+          Gerar prontu&aacute;rio com IA
         </button>
         <div id="modal-resultado-ia" class="hidden mt-4">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Prontu?rio gerado (edite se necess?rio antes de salvar)</label>
-          <textarea id="modal-pront-texto" rows="14" class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm" placeholder="O prontu?rio gerado pela IA aparecer? aqui."></textarea>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Prontu&aacute;rio gerado (edite se necess&aacute;rio antes de salvar)</label>
+          <textarea id="modal-pront-texto" rows="14" class="w-full px-4 py-3 border border-gray-300 rounded-lg font-mono text-sm" placeholder="O prontu&aacute;rio gerado pela IA aparecer&aacute; aqui."></textarea>
           <div class="flex gap-2 mt-3">
-            <button type="button" id="modal-btn-salvar" class="flex-1 py-3 bg-monday-blue text-white rounded-lg font-medium">Salvar prontu?rio</button>
+            <button type="button" id="modal-btn-salvar" class="flex-1 py-3 bg-monday-blue text-white rounded-lg font-medium">Salvar prontu&aacute;rio</button>
             <button type="button" class="modal-btn-fechar px-4 py-3 border border-gray-300 rounded-lg">Fechar</button>
           </div>
         </div>
@@ -855,14 +1046,14 @@ async function openModalGerarProntuario(consulta, container) {
             textoEl.value = markdownToHtml(conteudo);
             initTinyMCEPront('modal-pront-texto');
           },
-            onError: (msg) => { alert(msg || 'Erro ao gerar prontu?rio.'); }
+            onError: (msg) => { alert(msg || 'Erro ao gerar prontuario.'); }
           }
         );
       } catch (err) {
-        alert(err.message || 'Erro ao gerar prontu?rio.');
+        alert(err.message || 'Erro ao gerar prontuario.');
       } finally {
         btn.disabled = false;
-        btn.innerHTML = 'Gerar prontu?rio com IA';
+        btn.innerHTML = 'Gerar prontu&aacute;rio com IA';
       }
     };
 
@@ -871,7 +1062,7 @@ async function openModalGerarProntuario(consulta, container) {
         ? tinymce.get('modal-pront-texto').getContent().trim()
         : modal.querySelector('#modal-pront-texto')?.value?.trim() || '';
       if (!conteudo) {
-        alert('O prontu?rio est? vazio. Gere primeiro com IA ou edite o texto.');
+        alert('O prontuario esta vazio. Gere primeiro com IA ou edite o texto.');
         return;
       }
       const btn = modal.querySelector('#modal-btn-salvar');

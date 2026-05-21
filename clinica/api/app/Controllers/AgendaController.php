@@ -136,8 +136,12 @@ class AgendaController
         $pdo = Database::getConnection();
 
         $stmt = $pdo->prepare("
-            SELECT c.id, c.aluno_id, c.profissional_id, c.data_consulta, c.hora_inicio_prevista,
+            SELECT c.id, c.aluno_id, c.profissional_id, c.profissional_nome_livre, c.data_consulta, c.hora_inicio_prevista,
                    c.duracao_minutos_prevista, c.status, c.observacao,
+                   EXISTS(SELECT 1 FROM tb_anamnese_psi ap WHERE ap.consulta_id = c.id) AS tem_anamnese_adulto,
+                   EXISTS(SELECT 1 FROM tb_anamnese_infantojuvenil ar WHERE ar.consulta_id = c.id) AS tem_anamnese_infantojuvenil,
+                   (SELECT ap.id FROM tb_anamnese_psi ap WHERE ap.consulta_id = c.id ORDER BY ap.id DESC LIMIT 1) AS anamnese_adulto_id,
+                   (SELECT ar.id FROM tb_anamnese_infantojuvenil ar WHERE ar.consulta_id = c.id ORDER BY ar.id DESC LIMIT 1) AS anamnese_infantojuvenil_id,
                    al.Nome AS paciente_nome, al.WhatsApp AS paciente_telefone,
                    e.nome AS especialidade_nome
             FROM tb_consulta c

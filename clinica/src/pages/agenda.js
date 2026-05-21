@@ -1338,6 +1338,76 @@ export async function openModalAgendar(container, alunoIdPreselected, opts = {})
   }
 }
 
+async function escolherProfissionalReagendamento(consulta, contextoAcao) {
+  const profissionais = await getProfissionais();
+  if (!Array.isArray(profissionais) || profissionais.length === 0) {
+    throw new Error('Nenhum profissional de saude esta disponivel para reassociar este agendamento.');
+  }
+
+  const currentUser = getCurrentClinicaUser();
+  const profissionalAnteriorId = parseInt(consulta?.profissional_id, 10) || 0;
+  const profissionalPreferidoId = currentUser.profissional_saude === 1
+    ? (parseInt(currentUser.id, 10) || profissionalAnteriorId)
+    : profissionalAnteriorId;
+
+  const profissionaisOrdenados = [...profissionais].sort((a, b) => {
+    const aId = parseInt(a?.id, 10) || 0;
+    const bId = parseInt(b?.id, 10) || 0;
+    if (aId === profissionalPreferidoId && bId !== profissionalPreferidoId) return -1;
+    if (bId === profissionalPreferidoId && aId !== profissionalPreferidoId) return 1;
+    return String(a?.nome || '').localeCompare(String(b?.nome || ''), 'pt-BR');
+  });
+
+  return new Promise((resolve, reject) => {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4';
+    modal.innerHTML = `
+      <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-monday-lg">
+        <h3 class="text-lg font-semibold text-slate-900">Confirmar profissional</h3>
+        <p class="mt-2 text-sm text-slate-600">
+          Antes de ${escapeHtml(contextoAcao || 'reativar este agendamento')}, confirme qual profissional ficara vinculado a esta consulta.
+        </p>
+        <div class="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Consulta: ${escapeHtml(consulta?.paciente_nome || '')} em ${escapeHtml(consulta?.data_consulta || '')} as ${escapeHtml(fmtTime(consulta?.hora_inicio_prevista || ''))}
+        </div>
+        <label class="mt-4 block">
+          <span class="mb-2 block text-sm font-medium text-slate-700">Profissional responsavel</span>
+          <select id="reagendar-profissional-id" class="w-full rounded-xl border border-slate-300 px-4 py-3">
+            ${profissionaisOrdenados.map((p) => `<option value="${p.id}" ${parseInt(p.id, 10) === profissionalPreferidoId ? 'selected' : ''}>${escapeHtml(p.nome || '')}</option>`).join('')}
+          </select>
+        </label>
+        <div class="mt-5 flex gap-2">
+          <button type="button" class="btn-confirmar-profissional flex-1 rounded-xl bg-monday-blue px-4 py-3 text-white">Confirmar</button>
+          <button type="button" class="btn-cancelar-profissional rounded-xl border border-slate-300 px-4 py-3 text-slate-700">Cancelar</button>
+        </div>
+      </div>
+    `;
+
+    const finalizar = () => modal.remove();
+    modal.querySelector('.btn-cancelar-profissional')?.addEventListener('click', () => {
+      finalizar();
+      reject(new Error('cancelado'));
+    });
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        finalizar();
+        reject(new Error('cancelado'));
+      }
+    });
+    modal.querySelector('.btn-confirmar-profissional')?.addEventListener('click', () => {
+      const profissionalId = parseInt(modal.querySelector('#reagendar-profissional-id')?.value || '', 10);
+      if (!Number.isInteger(profissionalId) || profissionalId <= 0) {
+        alert('Selecione um profissional valido.');
+        return;
+      }
+      finalizar();
+      resolve({ profissional_id: profissionalId });
+    });
+
+    document.body.appendChild(modal);
+  });
+}
+
 async function openModalEvento(id, container, dataConsulta) {
   const dateToFetch = dataConsulta || currentDate;
   showLoadingOverlay('Carregando consulta...');
@@ -1364,6 +1434,7 @@ async function openModalEvento(id, container, dataConsulta) {
   const isConcluida = statusAtual.includes('concluida') || statusAtual.includes('concluída');
   const acoesHtml = isConcluida
     ? `
+        <button type="button" class="modal-editar-concluida min-h-touch px-4 py-3 bg-monday-blue text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-monday-blue">Editar agendamento</button>
         <button type="button" class="modal-ver-anamnese min-h-touch px-4 py-3 bg-monday-blue text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-monday-blue">Ver anamnese</button>
         <button type="button" class="modal-ver-prontuario min-h-touch px-4 py-3 bg-slate-800 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-600">Ver prontuário</button>
         <button type="button" class="modal-excluir-atendimento min-h-touch px-4 py-3 bg-red-600 text-white rounded-xl font-medium focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-red-500">Excluir atendimento</button>
@@ -1406,6 +1477,10 @@ async function openModalEvento(id, container, dataConsulta) {
     }
   }
   modal.querySelector('.modal-close').onclick = () => modal.remove();
+  modal.querySelector('.modal-editar-concluida')?.addEventListener('click', () => {
+    modal.remove();
+    openModalEditarConsulta(id, container, ev);
+  });
   modal.querySelector('.modal-abrir-atendimento')?.addEventListener('click', () => {
     modal.remove();
     window.dispatchEvent(new CustomEvent('open-atendimento', { detail: { consultaId: id, date: ev.data_consulta || undefined } }));
@@ -1433,10 +1508,12 @@ async function openModalEvento(id, container, dataConsulta) {
     const ok = confirm('Reverter para agendado? Serão apagados prontuário, anamnese e evolução vinculados somente a esta consulta, mas o agendamento será mantido.');
     if (!ok) return;
     try {
-      await postReverterAtendimentoCompleto(id);
+      const payload = await escolherProfissionalReagendamento(ev, 'reverter este atendimento concluido');
+      await postReverterAtendimentoCompleto(id, payload);
       modal.remove();
       await renderAgenda(container);
     } catch (err) {
+      if (err?.message === 'cancelado') return;
       alert(err.message || 'Erro ao reverter atendimento.');
     }
   });
@@ -1524,10 +1601,12 @@ async function openModalEvento(id, container, dataConsulta) {
   if (btnReverter) {
     btnReverter.onclick = async () => {
       try {
-        await postReverterAtendimento(id);
+        const payload = await escolherProfissionalReagendamento(ev, 'reverter este atendimento em andamento');
+        await postReverterAtendimento(id, payload);
         modal.remove();
         await renderAgenda(container);
       } catch (err) {
+        if (err?.message === 'cancelado') return;
         alert(err.message || 'Erro ao reverter atendimento.');
       }
     };
@@ -1550,9 +1629,15 @@ async function openModalEditarConsulta(id, container, ev) {
   const modal = document.createElement('div');
   modal.className = 'fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto';
   const horaInput = fmtTime(ev.hora_inicio_prevista) || '09:00';
+  const statusAtual = String(ev?.status || '').toLowerCase();
+  const isConcluida = statusAtual.includes('concluida') || statusAtual.includes('concluída');
+  const agora = new Date();
+  const dataMaxima = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}-${String(agora.getDate()).padStart(2, '0')}`;
+  const horaMaxima = `${String(agora.getHours()).padStart(2, '0')}:${String(agora.getMinutes()).padStart(2, '0')}`;
   modal.innerHTML = `
     <div class="bg-white rounded-2xl shadow-monday-lg max-w-md w-full p-6 my-8">
       <h3 class="text-lg font-semibold mb-4">Editar agendamento</h3>
+      ${isConcluida ? `<div class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">Consulta concluída: esta edição mantém o status concluído e só aceita data e hora iguais ou anteriores ao momento atual.</div>` : ''}
       <form id="form-editar" class="space-y-3">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Paciente</label>
@@ -1561,12 +1646,12 @@ async function openModalEditarConsulta(id, container, ev) {
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Data</label>
-            <input type="date" name="data_consulta" id="editar-data-consulta" value="${ev.data_consulta}" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+            <input type="date" name="data_consulta" id="editar-data-consulta" value="${ev.data_consulta}" ${isConcluida ? `max="${dataMaxima}"` : ''} required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
             <div id="editar-feriado-aviso" class="mt-1 text-xs min-h-[1.25rem]"></div>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Hora</label>
-            <input type="time" name="hora_inicio_prevista" value="${horaInput}" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+            <input type="time" id="editar-hora-consulta" name="hora_inicio_prevista" value="${horaInput}" required class="w-full px-4 py-2 border border-gray-300 rounded-lg">
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2">
@@ -1603,6 +1688,17 @@ async function openModalEditarConsulta(id, container, ev) {
   `;
   modal.querySelector('.btn-cancel-editar').onclick = () => modal.remove();
 
+  const atualizarLimiteHoraConclusao = () => {
+    const dataEl = modal.querySelector('#editar-data-consulta');
+    const horaEl = modal.querySelector('#editar-hora-consulta');
+    if (!isConcluida || !dataEl || !horaEl) return;
+    if (dataEl.value === dataMaxima) {
+      horaEl.max = horaMaxima;
+    } else {
+      horaEl.removeAttribute('max');
+    }
+  };
+
   const atualizarFeriadoEditar = async () => {
     const input = modal.querySelector('#editar-data-consulta');
     const aviso = modal.querySelector('#editar-feriado-aviso');
@@ -1623,7 +1719,9 @@ async function openModalEditarConsulta(id, container, ev) {
     }
   };
   modal.querySelector('#editar-data-consulta')?.addEventListener('change', atualizarFeriadoEditar);
+  modal.querySelector('#editar-data-consulta')?.addEventListener('change', atualizarLimiteHoraConclusao);
   atualizarFeriadoEditar();
+  atualizarLimiteHoraConclusao();
 
   modal.querySelector('#form-editar').onsubmit = async (e) => {
     e.preventDefault();
@@ -1633,9 +1731,17 @@ async function openModalEditarConsulta(id, container, ev) {
     try {
     const fd = new FormData(e.target);
     const horaVal = fd.get('hora_inicio_prevista');
+    const dataVal = String(fd.get('data_consulta') || '');
+    const horaNormalizada = (horaVal.length === 5 ? horaVal + ':00' : horaVal);
+    if (isConcluida) {
+      const dataHoraEditada = new Date(`${dataVal}T${String(horaNormalizada).slice(0, 8)}`);
+      if (Number.isNaN(dataHoraEditada.getTime()) || dataHoraEditada.getTime() > Date.now()) {
+        throw new Error('Consulta concluída não pode ser movida para uma data ou hora futura.');
+      }
+    }
     await putConsulta(id, {
-      data_consulta: fd.get('data_consulta'),
-      hora_inicio_prevista: (horaVal.length === 5 ? horaVal + ':00' : horaVal),
+      data_consulta: dataVal,
+      hora_inicio_prevista: horaNormalizada,
       duracao_minutos_prevista: parseInt(fd.get('duracao_minutos_prevista'), 10) || 60,
       especialidade_id: parseInt(fd.get('especialidade_id'), 10),
       tipo_consulta_id: parseInt(fd.get('tipo_consulta_id'), 10),
