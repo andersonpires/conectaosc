@@ -49,12 +49,12 @@ class ColaboradorResolver
 
     public function findNomeCompleto(int $idColaborador): ?string
     {
-        $nomeApi = $this->findNomeCompletoViaApi($idColaborador);
-        if ($nomeApi !== null && $nomeApi !== '') {
-            return $nomeApi;
+        $nomeBanco = $this->findNomeCompletoViaBanco($idColaborador);
+        if ($nomeBanco !== null && $nomeBanco !== '') {
+            return $nomeBanco;
         }
 
-        return $this->findNomeCompletoViaBanco($idColaborador);
+        return $this->findNomeCompletoViaApi($idColaborador);
     }
 
     private function findNomeCompletoViaApi(int $idColaborador): ?string

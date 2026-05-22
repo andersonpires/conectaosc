@@ -12,7 +12,8 @@ class TiposConsultaController
         AuthMiddleware::requireAuth();
         $pdo = Database::getConnection();
         $isAdmin = AuthMiddleware::isSuperAdmin();
-        $sql = $isAdmin
+        $incluirInativos = $isAdmin && (string) ($_GET['incluir_inativos'] ?? '0') === '1';
+        $sql = $incluirInativos
             ? "SELECT id, nome, ativo FROM tb_tipo_consulta ORDER BY nome"
             : "SELECT id, nome, ativo FROM tb_tipo_consulta WHERE ativo = 1 ORDER BY nome";
         $stmt = $pdo->query($sql);
@@ -93,5 +94,38 @@ class TiposConsultaController
         $update->execute([$novoAtivo, $tipoId]);
 
         JsonResponse::success(['id' => $tipoId, 'ativo' => $novoAtivo], $novoAtivo === 1 ? 'Tipo ativado' : 'Tipo inativado');
+    }
+
+    public function destroy(string $id): void
+    {
+        AuthMiddleware::requireAuth();
+        if (!AuthMiddleware::isSuperAdmin()) {
+            JsonResponse::error('Acesso restrito a administradores', [], 403);
+        }
+
+        $tipoId = (int) $id;
+        if ($tipoId <= 0) {
+            JsonResponse::error('ID invalido', [], 400);
+        }
+
+        $pdo = Database::getConnection();
+
+        $stmt = $pdo->prepare('SELECT id, nome FROM tb_tipo_consulta WHERE id = ? LIMIT 1');
+        $stmt->execute([$tipoId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$row) {
+            JsonResponse::error('Tipo de consulta nao encontrado', [], 404);
+        }
+
+        $stmtUso = $pdo->prepare('SELECT 1 FROM tb_consulta WHERE tipo_consulta_id = ? LIMIT 1');
+        $stmtUso->execute([$tipoId]);
+        if ($stmtUso->fetchColumn()) {
+            JsonResponse::error('Nao e possivel excluir este tipo porque ele ja foi usado em consultas. Inative-o em vez disso.', [], 422);
+        }
+
+        $stmtDelete = $pdo->prepare('DELETE FROM tb_tipo_consulta WHERE id = ?');
+        $stmtDelete->execute([$tipoId]);
+
+        JsonResponse::success(['id' => $tipoId], 'Tipo de consulta excluido');
     }
 }

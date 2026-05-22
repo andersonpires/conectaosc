@@ -61,8 +61,11 @@ export async function getEspecialidades() {
   return j.data.especialidades;
 }
 
-export async function getTiposConsulta() {
-  const res = await fetch(`${API_BASE}/tipos-consulta`, { credentials: 'include' });
+export async function getTiposConsulta(options = {}) {
+  const params = new URLSearchParams();
+  if (options.includeInactive) params.set('incluir_inativos', '1');
+  const query = params.toString();
+  const res = await fetch(`${API_BASE}/tipos-consulta${query ? `?${query}` : ''}`, { credentials: 'include' });
   const j = await handleResponse(res);
   return j.data.tipos_consulta;
 }
@@ -92,6 +95,15 @@ export async function putTipoConsulta(id, data) {
 export async function postToggleTipoConsulta(id) {
   const res = await fetch(`${API_BASE}/tipos-consulta/${id}/toggle`, {
     method: 'POST',
+    credentials: 'include',
+  });
+  const j = await handleResponse(res);
+  return j.data;
+}
+
+export async function deleteTipoConsulta(id) {
+  const res = await fetch(`${API_BASE}/tipos-consulta/${id}`, {
+    method: 'DELETE',
     credentials: 'include',
   });
   const j = await handleResponse(res);

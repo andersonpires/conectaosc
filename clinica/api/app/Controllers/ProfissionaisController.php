@@ -12,9 +12,9 @@ class ProfissionaisController
     {
         AuthMiddleware::requireAuth();
 
-        $list = $this->loadProfissionaisViaApi();
-        if ($list === null) {
-            $list = $this->loadProfissionaisViaBanco();
+        $list = $this->loadProfissionaisViaBanco();
+        if (empty($list)) {
+            $list = $this->loadProfissionaisViaApi() ?? [];
         }
 
         JsonResponse::success(['profissionais' => $list]);

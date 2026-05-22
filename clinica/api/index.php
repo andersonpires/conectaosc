@@ -304,6 +304,7 @@ $router->get('/tipos-consulta', [$tip, 'index']);
 $router->post('/tipos-consulta', [$tip, 'store']);
 $router->put('/tipos-consulta/{id}', [$tip, 'update']);
 $router->post('/tipos-consulta/{id}/toggle', [$tip, 'toggle']);
+$router->delete('/tipos-consulta/{id}', [$tip, 'destroy']);
 $router->get('/profissionais', [$profissionais, 'index']);
 $router->get('/consultas/{id}', [$con, 'show']);
 $router->post('/consultas', [$con, 'store']);

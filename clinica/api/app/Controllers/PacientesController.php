@@ -19,9 +19,9 @@ class PacientesController
             return;
         }
 
-        $rows = $this->loadPacientesViaApi($search, $limit);
-        if ($rows === null) {
-            $rows = $this->loadPacientesViaBanco($search, $limit);
+        $rows = $this->loadPacientesViaBanco($search, $limit);
+        if (empty($rows)) {
+            $rows = $this->loadPacientesViaApi($search, $limit) ?? [];
         }
 
         JsonResponse::success(['pacientes' => $rows]);
@@ -35,9 +35,9 @@ class PacientesController
             JsonResponse::error('ID invalido', [], 400);
         }
 
-        $row = $this->loadPacienteDetalheViaApi($id);
+        $row = $this->loadPacienteDetalheViaBanco($id);
         if ($row === null) {
-            $row = $this->loadPacienteDetalheViaBanco($id);
+            $row = $this->loadPacienteDetalheViaApi($id);
         }
 
         if (!$row) {

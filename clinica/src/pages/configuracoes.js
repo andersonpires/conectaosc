@@ -1,4 +1,4 @@
-import { getTiposConsulta, postTipoConsulta, putTipoConsulta, postToggleTipoConsulta, getCurrentClinicaUser } from '../services/api.js';
+import { getTiposConsulta, postTipoConsulta, putTipoConsulta, postToggleTipoConsulta, deleteTipoConsulta, getCurrentClinicaUser } from '../services/api.js';
 import { getSpinnerHtml } from '../utils/loading.js';
 
 function escapeHtml(value) {
@@ -15,7 +15,7 @@ export async function renderConfiguracoes(container) {
   }
 
   container.innerHTML = getSpinnerHtml('Carregando configurações...');
-  const tipos = await getTiposConsulta();
+  const tipos = await getTiposConsulta({ includeInactive: true });
 
   container.innerHTML = `
     <section class="space-y-4">
@@ -43,6 +43,7 @@ export async function renderConfiguracoes(container) {
                 <td class="px-4 py-3 text-right">
                   <button type="button" class="btn-editar-tipo rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700" data-id="${tipo.id}" data-nome="${escapeHtml(tipo.nome)}">Editar</button>
                   <button type="button" class="btn-toggle-tipo rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700" data-id="${tipo.id}">${Number(tipo.ativo || 0) === 1 ? 'Inativar' : 'Ativar'}</button>
+                  <button type="button" class="btn-excluir-tipo rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700" data-id="${tipo.id}" data-nome="${escapeHtml(tipo.nome)}">Excluir</button>
                 </td>
               </tr>
             `).join('')}
@@ -95,6 +96,16 @@ export async function renderConfiguracoes(container) {
   container.querySelectorAll('.btn-toggle-tipo').forEach((button) => {
     button.addEventListener('click', async () => {
       await postToggleTipoConsulta(button.dataset.id);
+      await renderConfiguracoes(container);
+    });
+  });
+
+  container.querySelectorAll('.btn-excluir-tipo').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const nome = button.dataset.nome || 'este tipo de consulta';
+      const ok = confirm(`Excluir ${nome}? Esta ação remove o tipo definitivamente se ele ainda não tiver sido usado em consultas.`);
+      if (!ok) return;
+      await deleteTipoConsulta(button.dataset.id);
       await renderConfiguracoes(container);
     });
   });
