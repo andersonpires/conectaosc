@@ -14,6 +14,9 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
 require_once $BASE_para_PATH . '/api/lib/tcpdf/tcpdf.php';
+require_once $BASE_para_PATH . '/api/lib/tcpdf/fpdi/autoload.php';
+
+use setasign\Fpdi\Tcpdf\Fpdi;
 
 if (!isset($pdo) || !($pdo instanceof PDO)) {
     http_response_code(500);
@@ -629,11 +632,15 @@ if (!$qrData) {
 $pathStorageBase = rtrim($BASE_para_PATH, '/\\') . '/app/storage/assinatura/';
 $pathFinais = $pathStorageBase . 'assinados/';
 $pathQR = $pathStorageBase . 'qrcodes/';
+$pathTemp = $pathStorageBase . 'tmp/';
 if (!is_dir($pathFinais)) {
     @mkdir($pathFinais, 0775, true);
 }
 if (!is_dir($pathQR)) {
     @mkdir($pathQR, 0775, true);
+}
+if (!is_dir($pathTemp)) {
+    @mkdir($pathTemp, 0775, true);
 }
 
 $qrFile = $pathQR . $codigoBase . '.png';
@@ -651,64 +658,180 @@ $pageWidthSigned = $pdf->getPageWidth();
 $pageHeightSigned = $pdf->getPageHeight();
 $neededHeight = 22.0;
 $startY = max($pdf->GetY(), $pdf->bodyStartY) + 4.0;
-if (($startY + $neededHeight) > ($pageHeightSigned - 20.0)) {
-    $pdf->skipTableHeaderRow = true;
-    $pdf->AddPage();
-    $lastPage = $pdf->getNumPages();
-    $pdf->setPage($lastPage);
-    $pageWidthSigned = $pdf->getPageWidth();
-    $startY = $pdf->bodyStartY;
-}
-
-$qrSize = 18.0;
-$gap = 3.0;
-$textWidth = 102.0;
-$groupWidth = $qrSize + $gap + $textWidth;
-$groupX = max(8.0, ($pageWidthSigned - $groupWidth) / 2);
-$groupY = $startY;
-
-$pdf->Image($qrFile, $groupX, $groupY, $qrSize, $qrSize);
-
-$textX = $groupX + $qrSize + $gap - 4.0;
-$textY = $groupY + 1.7;
-
-$pdf->SetFont($fontName, '', 13.0);
-$pdf->SetTextColor(0, 0, 0);
-$pdf->SetXY($textX, $textY);
-$pdf->Cell($textWidth, 6, $nomeCursivo, 0, 0, 'L');
-$larguraCursiva = $pdf->GetStringWidth($nomeCursivo);
-
-$pdf->SetFont('helvetica', '', 7.0);
-$pdf->SetXY($textX, $textY + 4.8);
-$pdf->Cell($textWidth, 5, 'Assinatura digital de:', 0, 0, 'L');
-
-$upperSize = 10.0;
-$pdf->SetFont('helvetica', 'B', $upperSize);
-while ($pdf->GetStringWidth($nomeUpper) > $larguraCursiva && $upperSize > 6.0) {
-    $upperSize -= 0.5;
-    $pdf->SetFont('helvetica', 'B', $upperSize);
-}
-$pdf->SetXY($textX, $textY + 8.9);
-$pdf->Cell($textWidth, 6, $nomeUpper, 0, 0, 'L');
-
-$pdf->SetFont('helvetica', '', 7);
-$pdf->SetTextColor(50, 50, 50);
-$pdf->SetXY($groupX, $groupY + $qrSize - 1.65);
-$pdf->Cell($groupWidth, 4, 'Código para validação: ' . $codigoBase, 0, 0, 'L');
-
-$pdf->SetFont('helvetica', '', 6);
-$pdf->SetTextColor(80, 80, 80);
-$pdf->SetXY($groupX, $groupY + $qrSize + 2.5);
-$pdf->Cell($groupWidth, 3.6, 'Confira autenticidade em: ' . $assinaturaDigitalPublic, 0, 0, 'L');
+$signatureNeedsNewPage = (($startY + $neededHeight) > ($pageHeightSigned - 20.0));
 
 $nomeArquivoFinal = assinaturaGerarNomeArquivoFinal($pathFinais, max(1, $idColaborador));
 $pathFinalPdf = $pathFinais . $nomeArquivoFinal;
-$pdf->Output($pathFinalPdf, 'F');
+$tempOriginalPdf = $pathTemp . 'frequencia_intervalo_base_' . uniqid('', true) . '.pdf';
+$pdf->Output($tempOriginalPdf, 'F');
 
-if (is_file($qrFile)) {
-    @unlink($qrFile);
+$signatureLayout = [
+    'qrSize' => 18.0,
+    'gap' => 3.0,
+    'textWidth' => 102.0,
+    'neededHeight' => 22.0,
+    'scriptFont' => 13.0,
+    'labelFont' => 7.0,
+    'upperFont' => 10.0,
+    'codeFont' => 7.0,
+    'authFont' => 6.0,
+    'nameOffsetY' => 1.7,
+    'labelOffsetY' => 4.8,
+    'upperOffsetY' => 8.9,
+    'codeOffsetY' => -1.65,
+    'authOffsetY' => 2.5,
+];
+$groupX = 0.0;
+$groupY = 0.0;
+
+try {
+    $signedPdf = new Fpdi();
+    $signedPdf->setPrintHeader(false);
+    $signedPdf->setPrintFooter(false);
+    $signedPdf->SetAutoPageBreak(false, 0);
+    $pageCount = $signedPdf->setSourceFile($tempOriginalPdf);
+    if ($pageCount === 1 && $signatureNeedsNewPage) {
+        $compactLayouts = [
+            [
+                'qrSize' => 12.0,
+                'gap' => 2.0,
+                'textWidth' => 78.0,
+                'neededHeight' => 14.0,
+                'scriptFont' => 10.0,
+                'labelFont' => 6.0,
+                'upperFont' => 8.0,
+                'codeFont' => 6.0,
+                'authFont' => 5.5,
+                'nameOffsetY' => 1.2,
+                'labelOffsetY' => 3.3,
+                'upperOffsetY' => 5.9,
+                'codeOffsetY' => -1.0,
+                'authOffsetY' => 1.4,
+            ],
+            [
+                'qrSize' => 10.0,
+                'gap' => 2.0,
+                'textWidth' => 68.0,
+                'neededHeight' => 11.5,
+                'scriptFont' => 8.5,
+                'labelFont' => 5.5,
+                'upperFont' => 7.0,
+                'codeFont' => 5.5,
+                'authFont' => 5.0,
+                'nameOffsetY' => 0.8,
+                'labelOffsetY' => 2.7,
+                'upperOffsetY' => 4.9,
+                'codeOffsetY' => -0.6,
+                'authOffsetY' => 0.8,
+            ],
+        ];
+
+        foreach ($compactLayouts as $compactLayout) {
+            if (($startY + (float)$compactLayout['neededHeight']) <= ($pageHeightSigned - 20.0)) {
+                $signatureLayout = $compactLayout;
+                $signatureNeedsNewPage = false;
+                break;
+            }
+        }
+    }
+
+    $footerPrefix = 'Documento assinado digitalmente, codigo ' . $codigoBase . '. Confira autenticidade em ';
+    $footerUrl = $assinaturaDigitalPublic;
+
+    for ($pageNumber = 1; $pageNumber <= $pageCount; $pageNumber++) {
+        $tplIdx = $signedPdf->importPage($pageNumber);
+        $size = $signedPdf->getTemplateSize($tplIdx);
+
+        $signedPdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+        $signedPdf->useTemplate($tplIdx, 0, 0, $size['width'], $size['height'], true);
+
+        $signedPdf->SetFont('helvetica', '', 6);
+        $signedPdf->SetTextColor(80, 80, 80);
+        $prefixLen = $signedPdf->GetStringWidth($footerPrefix);
+        $urlLen = $signedPdf->GetStringWidth($footerUrl);
+        $textLen = $prefixLen + $urlLen;
+        $xBase = 5.0;
+        $yCenter = $size['height'] / 2;
+        $yBase = $yCenter + ($textLen / 2);
+
+        $signedPdf->StartTransform();
+        $signedPdf->Rotate(90, $xBase, $yBase);
+        $signedPdf->Text($xBase, $yBase, $footerPrefix);
+        $signedPdf->SetFont('helvetica', 'U', 6);
+        $signedPdf->SetTextColor(0, 102, 204);
+        $urlX = $xBase + $prefixLen;
+        $signedPdf->Text($urlX, $yBase, $footerUrl);
+        $signedPdf->Link($urlX, $yBase - 2.1, $urlLen + 0.6, 3.0, $footerUrl);
+        $signedPdf->StopTransform();
+
+        if ($pageNumber !== $pageCount) {
+            continue;
+        }
+
+        if ($signatureNeedsNewPage) {
+            $signedPdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
+        }
+
+        $currentWidth = $signedPdf->getPageWidth();
+        $currentHeight = $signedPdf->getPageHeight();
+        $qrSize = (float)$signatureLayout['qrSize'];
+        $gap = (float)$signatureLayout['gap'];
+        $textWidth = (float)$signatureLayout['textWidth'];
+        $neededHeightCurrent = (float)$signatureLayout['neededHeight'];
+        $groupWidth = $qrSize + $gap + $textWidth;
+        $groupX = max(8.0, ($currentWidth - $groupWidth) / 2);
+        $groupY = $signatureNeedsNewPage ? 70.0 : $startY;
+
+        if (($groupY + $neededHeightCurrent) > ($currentHeight - 20.0)) {
+            $groupY = max(20.0, $currentHeight - 20.0 - $neededHeightCurrent);
+        }
+
+        $signedPdf->Image($qrFile, $groupX, $groupY, $qrSize, $qrSize);
+
+        $textX = $groupX + $qrSize + $gap - 4.0;
+        $textY = $groupY + (float)$signatureLayout['nameOffsetY'];
+
+        $signedPdf->SetFont($fontName, '', (float)$signatureLayout['scriptFont']);
+        $signedPdf->SetTextColor(0, 0, 0);
+        $signedPdf->SetXY($textX, $textY);
+        $signedPdf->Cell($textWidth, 6, $nomeCursivo, 0, 0, 'L');
+        $larguraCursiva = $signedPdf->GetStringWidth($nomeCursivo);
+
+        $signedPdf->SetFont('helvetica', '', (float)$signatureLayout['labelFont']);
+        $signedPdf->SetXY($textX, $textY + (float)$signatureLayout['labelOffsetY']);
+        $signedPdf->Cell($textWidth, 5, 'Assinatura digital de:', 0, 0, 'L');
+
+        $upperSize = (float)$signatureLayout['upperFont'];
+        $signedPdf->SetFont('helvetica', 'B', $upperSize);
+        while ($signedPdf->GetStringWidth($nomeUpper) > $larguraCursiva && $upperSize > 6.0) {
+            $upperSize -= 0.5;
+            $signedPdf->SetFont('helvetica', 'B', $upperSize);
+        }
+        $signedPdf->SetXY($textX, $textY + (float)$signatureLayout['upperOffsetY']);
+        $signedPdf->Cell($textWidth, 6, $nomeUpper, 0, 0, 'L');
+
+        $signedPdf->SetFont('helvetica', '', (float)$signatureLayout['codeFont']);
+        $signedPdf->SetTextColor(50, 50, 50);
+        $signedPdf->SetXY($groupX, $groupY + $qrSize + (float)$signatureLayout['codeOffsetY']);
+        $signedPdf->Cell($groupWidth, 4, 'Codigo para validacao: ' . $codigoBase, 0, 0, 'L');
+
+        $signedPdf->SetFont('helvetica', '', (float)$signatureLayout['authFont']);
+        $signedPdf->SetTextColor(80, 80, 80);
+        $authY = $groupY + $qrSize + (float)$signatureLayout['authOffsetY'];
+        $signedPdf->SetXY($groupX, $authY);
+        $signedPdf->Cell($groupWidth, 3.6, 'Confira autenticidade em: ' . $assinaturaDigitalPublic, 0, 0, 'L');
+        $signedPdf->Link($groupX, $authY, $groupWidth, 3.6, $assinaturaDigitalPublic);
+    }
+
+    $signedPdf->Output($pathFinalPdf, 'F');
+} finally {
+    if (is_file($tempOriginalPdf)) {
+        @unlink($tempOriginalPdf);
+    }
+    if (is_file($qrFile)) {
+        @unlink($qrFile);
+    }
 }
-
 $nomeDocumento = safeText('Relatório de frequência - ' . $cursoNome . ' (' . $dataInicioFormatada . ' a ' . $dataFimFormatada . ')', 180);
 $stmtIns = $pdo->prepare("
     INSERT INTO tbpdf_assinado

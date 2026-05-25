@@ -9,6 +9,7 @@ temp/*
 !/app/assets/img/fotos/*
 !/app/assets/img/fotos/padrao.jfif
 !/app/assets/img/fotos/padrao.jpg
+app/storage/assinatura/assinados/*
 zz_Suporte/
 /.vscode/
 /backup-versao-1.93/
