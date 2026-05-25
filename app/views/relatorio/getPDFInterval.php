@@ -595,7 +595,7 @@ if (!is_dir($pathOriginais)) {
 $idColaborador = (int)($_SESSION['Cod'] ?? 0);
 $nomeArquivoPreview = 'frequencia_intervalo_' . time() . '_' . max(1, $idColaborador) . '_' . bin2hex(random_bytes(4)) . '.pdf';
 $pathPreviewPdf = $pathOriginais . $nomeArquivoPreview;
-$nomeDocumento = safeText('Relatorio de frequencia - ' . $cursoNome . ' (' . $dataInicioFormatada . ' a ' . $dataFimFormatada . ')', 180);
+$nomeDocumento = safeText('Relatório de frequência - ' . $cursoNome . ' (' . $dataInicioFormatada . ' a ' . $dataFimFormatada . ')', 180);
 
 $pdf->Output($pathPreviewPdf, 'F');
 

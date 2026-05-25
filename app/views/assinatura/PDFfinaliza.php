@@ -157,11 +157,11 @@ $nomeDocumento = (string)($_POST['nomeDocumento'] ?? '');
 $pathOriginalPDF = $pathOriginais . $nomeArquivo;
 
 if ($nomeArquivo === '' || $nomeDocumento === '') {
-    die("<div class='alert alert-danger'>Erro: Dados nao recebidos.</div>");
+    die("<div class='alert alert-danger'>Erro: dados não recebidos.</div>");
 }
 
 if (!file_exists($pathOriginalPDF)) {
-    die("<div class='alert alert-danger'>Erro: Arquivo original nao encontrado.</div>");
+    die("<div class='alert alert-danger'>Erro: arquivo original não encontrado.</div>");
 }
 
 $xPx = (float)($_POST['xpos'] ?? 0);
@@ -171,11 +171,11 @@ $canvasH = (float)($_POST['canvasHeight'] ?? 0);
 $selectedPage = (int)($_POST['selected_page'] ?? 1);
 
 if ($canvasW <= 0 || $canvasH <= 0) {
-    die('Erro: Dimensoes invalidas.');
+    die('Erro: dimensões inválidas.');
 }
 
 if ($invertextoApiToken === '') {
-    die("<div class='alert alert-danger'>Token da Invertexto nao configurado.</div>");
+    die("<div class='alert alert-danger'>Token da Invertexto não configurado.</div>");
 }
 
 $timestampAssinatura = time();
@@ -189,7 +189,7 @@ $urlPDFInt = $BASE_para_URL . '/app/storage/assinatura/assinados/' . $nomeArquiv
 $qrURL = 'https://api.invertexto.com/v1/qrcode?token=' . rawurlencode($invertextoApiToken) . '&text=' . urlencode($linkValidacao);
 $qrData = @file_get_contents($qrURL);
 if (!$qrData) {
-    die("<div class='alert alert-danger'>Erro ao gerar QR Code!</div>");
+    die("<div class='alert alert-danger'>Erro ao gerar QR Code.</div>");
 }
 
 $qrFile = $pathQR . $codigoBase . '.png';
@@ -226,7 +226,7 @@ try {
         if ($i !== $selectedPage) {
             $pdf->SetFont('helvetica', '', 6);
             $pdf->SetTextColor(80, 80, 80);
-            $footerPrefix = "Documento assinado digitalmente, codigo {$codigoBase}. Confira autenticidade em ";
+            $footerPrefix = "Documento assinado digitalmente, código {$codigoBase}. Confira autenticidade em ";
             $footerUrl = $assinaturaDigitalPublic;
             $prefixLen = $pdf->GetStringWidth($footerPrefix);
             $urlLen = $pdf->GetStringWidth($footerUrl);
@@ -271,7 +271,7 @@ try {
         $pdf->SetFont('helvetica', '', 7);
         $pdf->SetTextColor(50, 50, 50);
         $pdf->SetXY($qrX, $qrY + 17);
-        $pdf->Cell(0, 4, 'Codigo para validacao: ' . $codigoBase, 0, 0, 'L');
+        $pdf->Cell(0, 4, 'Código para validação: ' . $codigoBase, 0, 0, 'L');
 
         $pdf->SetFont($fontName, '', 18);
         $pdf->SetTextColor(0, 0, 0);
@@ -301,12 +301,13 @@ try {
 
     $sql = $pdo->prepare(
         'INSERT INTO tbpdf_assinado
-            (IdColaborador, NomeDocumento, NomeArquivo, AssinaturaBase64, TimestampAssinatura, Xpos, Ypos, urlValidacao)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            (IdColaborador, NomeOriginal, NomeDocumento, NomeArquivo, AssinaturaBase64, TimestampAssinatura, Xpos, Ypos, urlValidacao)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
 
     $sql->execute([
         $idColab,
+        $nomeArquivo,
         $nomeDocumento,
         $nomeArquivoFinal,
         $codigoBase,
@@ -320,9 +321,9 @@ try {
 
     $msgErro = "
         <div class='alert alert-danger'>
-            <h4><b>Nao foi possivel processar este PDF</b></h4>
-            <p>Este documento usa um tipo de compressao que nao e compativel com o sistema atual.</p>
-            <p><b>Detalhes tecnicos:</b> {$erro}</p>
+            <h4><b>Não foi possível processar este PDF</b></h4>
+            <p>Este documento usa um tipo de compressão que não é compatível com o sistema atual.</p>
+            <p><b>Detalhes técnicos:</b> {$erro}</p>
             <br>
             <a href='" . rtrim((string)$BASE_para_URL, '/') . "/assinatura/pdf' class='btn btn-secondary'>
                 Tentar outro PDF

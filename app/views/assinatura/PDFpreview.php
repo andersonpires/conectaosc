@@ -11,7 +11,7 @@ $incluirCargo = (string)($_POST['incluir_cargo'] ?? '0');
 $cargoPersonalizado = (string)($_POST['cargo_personalizado'] ?? '');
 
 if ($nomeArquivo === '' || $nomeDocumento === '') {
-    die('Dados nao recebidos. Volte ao envio do PDF.');
+    die('Dados não recebidos. Volte ao envio do PDF.');
 }
 
 $pdfURL = $BASE_para_URL . '/app/storage/assinatura/originais/' . rawurlencode($nomeArquivo);
@@ -198,7 +198,7 @@ $pdfURL = $BASE_para_URL . '/app/storage/assinatura/originais/' . rawurlencode($
             <main class="content">
                 <div class="container mt-4">
                     <h2>Posicione a assinatura digital</h2>
-                    <p class="preview-hint">Clique na página desejada e arraste a caixa para definir onde a assinatura sera aplicada. Pagina selecionada: <strong id="selectedPageLabel">1</strong>.</p>
+                    <p class="preview-hint">Clique na página desejada e arraste a caixa para definir onde a assinatura será aplicada. Página selecionada: <strong id="selectedPageLabel">1</strong>.</p>
                     <div id="viewer"></div>
 
                     <form method="POST" action="<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/assinatura/pdf/finalizar/">
