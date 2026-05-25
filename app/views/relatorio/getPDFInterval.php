@@ -728,7 +728,7 @@ try {
         ];
 
         foreach ($compactLayouts as $compactLayout) {
-            if (($startY + (float)$compactLayout['neededHeight']) <= ($pageHeightSigned - 20.0)) {
+            if (($contentEndY + 3.0 + (float)$compactLayout['neededHeight']) <= $footerTopY) {
                 $signatureLayout = $compactLayout;
                 $signatureNeedsNewPage = false;
                 $useCompactInlineSignature = true;
@@ -783,7 +783,7 @@ try {
         $groupWidth = $qrSize + $gap + $textWidth;
         if ($useCompactInlineSignature) {
             $groupX = max(8.0, $currentWidth - $groupWidth - 10.0);
-            $groupY = max($startY, $currentHeight - $neededHeightCurrent - 14.0);
+            $groupY = max($contentEndY + 3.0, $currentHeight - $neededHeightCurrent - 14.0);
         } else {
             $groupX = max(8.0, ($currentWidth - $groupWidth) / 2);
             $groupY = $signatureNeedsNewPage ? 70.0 : $startY;
