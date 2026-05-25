@@ -161,6 +161,30 @@ function safeText(string $value, int $max = 120): string
     return $value;
 }
 
+function buildDayColumnWidths(float $usableWidth, float $fixedWidth, int $dayCount): array
+{
+    if ($dayCount <= 0) {
+        return [];
+    }
+
+    $remainingWidth = max(0.0, $usableWidth - $fixedWidth);
+    $baseWidth = round($remainingWidth / $dayCount, 4);
+    $widths = [];
+    $consumedWidth = 0.0;
+
+    for ($index = 0; $index < $dayCount; $index++) {
+        if ($index === ($dayCount - 1)) {
+            $widths[] = round(max(0.0, $remainingWidth - $consumedWidth), 4);
+            continue;
+        }
+
+        $widths[] = $baseWidth;
+        $consumedWidth += $baseWidth;
+    }
+
+    return $widths;
+}
+
 $curso = trim((string)($_GET['curso2'] ?? ''));
 $turma = trim((string)($_GET['turma2'] ?? ''));
 $dataInicio = trim((string)($_GET['dataInicio'] ?? ''));
@@ -322,7 +346,9 @@ $usableWidth = $pageWidth - ($margin * 2);
 $wNum = 10.0;
 $wNome = 70.0;
 $wFixas = $wNum + $wNome;
-$wDia = ($usableWidth - $wFixas) / max(1, count($dias));
+$dayCount = count($dias);
+$dayWidths = buildDayColumnWidths($usableWidth, $wFixas, $dayCount);
+$wDia = $dayCount > 0 ? (($usableWidth - $wFixas) / $dayCount) : 0.0;
 
 if ($wDia < 6.0) {
     $orientation = 'L';
@@ -330,7 +356,8 @@ if ($wDia < 6.0) {
     $usableWidth = $pageWidth - ($margin * 2);
     $wNome = 90.0;
     $wFixas = $wNum + $wNome;
-    $wDia = ($usableWidth - $wFixas) / max(1, count($dias));
+    $dayWidths = buildDayColumnWidths($usableWidth, $wFixas, $dayCount);
+    $wDia = $dayCount > 0 ? (($usableWidth - $wFixas) / $dayCount) : 0.0;
 }
 
 class RelatorioFrequenciaIntervaloPdf extends TCPDF
@@ -342,6 +369,7 @@ class RelatorioFrequenciaIntervaloPdf extends TCPDF
     public float $wNum = 10.0;
     public float $wNome = 70.0;
     public float $wDia = 6.0;
+    public array $dayWidths = [];
     public float $bodyStartY = 0.0;
     public bool $skipTableHeaderRow = false;
 
@@ -464,8 +492,9 @@ class RelatorioFrequenciaIntervaloPdf extends TCPDF
             $this->SetFont('helvetica', 'B', 8);
             $this->Cell($this->wNum, $headerRowH, 'No', 1, 0, 'C');
             $this->Cell($this->wNome, $headerRowH, ' Nome do beneficiário(a)', 1, 0, 'L');
-            foreach ($this->dias as $dia) {
-                $this->drawRotatedHeaderCell($this->wDia, $headerRowH, $dia);
+            foreach ($this->dias as $index => $dia) {
+                $dayWidth = (float)($this->dayWidths[$index] ?? $this->wDia);
+                $this->drawRotatedHeaderCell($dayWidth, $headerRowH, $dia);
             }
             $this->SetXY($headerRowStartX, $headerRowStartY + $headerRowH);
         }
@@ -506,6 +535,7 @@ $pdf->dias = $dias;
 $pdf->wNum = $wNum;
 $pdf->wNome = $wNome;
 $pdf->wDia = $wDia;
+$pdf->dayWidths = $dayWidths;
 
 $pdf->AddPage();
 $pdf->SetFont('helvetica', '', 8);
@@ -531,9 +561,10 @@ foreach ($alunos as $idAluno) {
     $pdf->Cell($wNum, 6, (string)$indice, 1, 0, 'C');
     $pdf->Cell($wNome, 6, (string)($info['nome'] ?? ''), 1, 0, 'L');
 
-    foreach ($dias as $dia) {
+    foreach ($dias as $indexDia => $dia) {
         $status = (string)($tabela[$idAluno][$dia] ?? 'NA');
-        $pdf->Cell($wDia, 6, $status, 1, 0, 'C');
+        $dayWidth = (float)($dayWidths[$indexDia] ?? $wDia);
+        $pdf->Cell($dayWidth, 6, $status, 1, 0, 'C');
     }
     $pdf->Ln();
     $indice++;
