@@ -108,7 +108,7 @@ function assinaturaGerarNomeArquivoFinal(string $diretorioAssinados, int $idCola
 
     do {
         $timestampAtual = $timestampBase + $tentativa;
-        $nome = 'contrato_' . $timestampAtual . '_' . $idColaborador . '.pdf';
+        $nome = 'documento_' . $timestampAtual . '_' . $idColaborador . '.pdf';
         $path = rtrim($diretorioAssinados, '/\\') . '/' . $nome;
         $tentativa++;
     } while (file_exists($path) && $tentativa < 10);
@@ -117,9 +117,26 @@ function assinaturaGerarNomeArquivoFinal(string $diretorioAssinados, int $idCola
 }
 
 $idColab = (int)($_SESSION['Cod'] ?? 0);
-$nomeCompleto = (string)(($_SESSION['Nome'] ?? '') . ' ' . ($_SESSION['Sobrenome'] ?? ''));
-$nomeCompleto = trim($nomeCompleto);
-$nomeUpper = mb_strtoupper($nomeCompleto, 'UTF-8');
+$nomeCompleto = trim((string)(($_SESSION['Nome'] ?? '') . ' ' . ($_SESSION['Sobrenome'] ?? '')));
+if ($nomeCompleto === '') {
+    $nomeCompleto = 'Colaborador';
+}
+
+$incluirCargo = (string)($_POST['incluir_cargo'] ?? '0') === '1';
+$cargoPersonalizado = trim((string)($_POST['cargo_personalizado'] ?? ''));
+$cargoPadrao = '';
+if ($incluirCargo && $idColab > 0) {
+    $stmtCargo = $pdo->prepare('SELECT COALESCE(Cargo, "") AS Cargo FROM tbUser WHERE IdColaborador = ? LIMIT 1');
+    $stmtCargo->execute([$idColab]);
+    $cargoPadrao = trim((string)($stmtCargo->fetchColumn() ?: ''));
+}
+
+$nomeUpper = $nomeCompleto;
+$cargoParaExibir = $incluirCargo ? ($cargoPersonalizado !== '' ? $cargoPersonalizado : $cargoPadrao) : '';
+if ($cargoParaExibir !== '') {
+    $nomeUpper .= ' - ' . $cargoParaExibir;
+}
+$nomeUpper = mb_strtoupper($nomeUpper, 'UTF-8');
 
 $publicBaseWithScheme = assinaturaResolvePublicBaseUrl((string)$BASE_para_URL);
 $assinaturaDigitalPublic = assinaturaResolveAssinaturaDigitalPublicUrl($BASE_para_URL);
@@ -140,32 +157,33 @@ $nomeDocumento = (string)($_POST['nomeDocumento'] ?? '');
 $pathOriginalPDF = $pathOriginais . $nomeArquivo;
 
 if ($nomeArquivo === '' || $nomeDocumento === '') {
-    die("<div class='alert alert-danger'>Erro: Dados não recebidos.</div>");
+    die("<div class='alert alert-danger'>Erro: Dados nao recebidos.</div>");
 }
 
 if (!file_exists($pathOriginalPDF)) {
-    die("<div class='alert alert-danger'>Erro: Arquivo original não encontrado.</div>");
+    die("<div class='alert alert-danger'>Erro: Arquivo original nao encontrado.</div>");
 }
 
-$xPx = floatval($_POST['xpos'] ?? 0);
-$yPx = floatval($_POST['ypos'] ?? 0);
-$canvasW = floatval($_POST['canvasWidth'] ?? 0);
-$canvasH = floatval($_POST['canvasHeight'] ?? 0);
+$xPx = (float)($_POST['xpos'] ?? 0);
+$yPx = (float)($_POST['ypos'] ?? 0);
+$canvasW = (float)($_POST['canvasWidth'] ?? 0);
+$canvasH = (float)($_POST['canvasHeight'] ?? 0);
+$selectedPage = (int)($_POST['selected_page'] ?? 1);
 
 if ($canvasW <= 0 || $canvasH <= 0) {
-    die('Erro: Dimensões inválidas.');
+    die('Erro: Dimensoes invalidas.');
 }
 
 if ($invertextoApiToken === '') {
-    die("<div class='alert alert-danger'>Token da Invertexto não configurado.</div>");
+    die("<div class='alert alert-danger'>Token da Invertexto nao configurado.</div>");
 }
+
 $timestampAssinatura = time();
 $codigoBase = assinaturaGerarCodigoValidacaoCurto($pdo, $timestampAssinatura);
 $linkValidacao = rtrim((string)$publicBaseWithScheme, '/') . '/assinatura/pdf/validar/?code=' . $codigoBase;
 
 $nomeArquivoFinal = assinaturaGerarNomeArquivoFinal($pathFinais, $idColab);
 $pathFinalPDF = $pathFinais . $nomeArquivoFinal;
-$urlPDF = $BASE_para_URL . '/app/storage/assinatura/assinados/' . $nomeArquivoFinal;
 $urlPDFInt = $BASE_para_URL . '/app/storage/assinatura/assinados/' . $nomeArquivoFinal;
 
 $qrURL = 'https://api.invertexto.com/v1/qrcode?token=' . rawurlencode($invertextoApiToken) . '&text=' . urlencode($linkValidacao);
@@ -182,6 +200,10 @@ try {
     $pdf->setPrintHeader(false);
     $pdf->setPrintFooter(false);
     $pageCount = $pdf->setSourceFile($pathOriginalPDF);
+
+    if ($selectedPage < 1 || $selectedPage > $pageCount) {
+        $selectedPage = $pageCount;
+    }
 
     $fontFile = $BASE_para_PATH . '/api/lib/tcpdf/fonts/Licorice-Regular.ttf';
     $fontName = 'helvetica';
@@ -201,10 +223,10 @@ try {
         $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
         $pdf->useTemplate($tplIdx, 0, 0, $size['width'], $size['height'], true);
 
-        if ($i < $pageCount) {
+        if ($i !== $selectedPage) {
             $pdf->SetFont('helvetica', '', 6);
             $pdf->SetTextColor(80, 80, 80);
-            $footerPrefix = "Documento assinado digitalmente, código {$codigoBase}. Confira autenticidade em ";
+            $footerPrefix = "Documento assinado digitalmente, codigo {$codigoBase}. Confira autenticidade em ";
             $footerUrl = $assinaturaDigitalPublic;
             $prefixLen = $pdf->GetStringWidth($footerPrefix);
             $urlLen = $pdf->GetStringWidth($footerUrl);
@@ -222,54 +244,49 @@ try {
             $pdf->Text($urlX, $yBase, $footerUrl);
             $pdf->Link($urlX, $yBase - 2.1, $urlLen + 0.6, 3.0, $footerUrl);
             $pdf->StopTransform();
+            continue;
         }
 
-        if ($i === $pageCount) {
-            $realX = ($xPx / $canvasW) * $size['width'];
-            $realY = ($yPx / $canvasH) * $size['height'];
+        $realX = ($xPx / $canvasW) * $size['width'];
+        $realY = ($yPx / $canvasH) * $size['height'];
 
-            if ($realX < 5) {
-                $realX = 5;
-            }
-            if ($realY < 5) {
-                $realY = 5;
-            }
-            if ($realX > $size['width'] - 60) {
-                $realX = $size['width'] - 60;
-            }
-            if ($realY > $size['height'] - 30) {
-                $realY = $size['height'] - 30;
-            }
-
-            $qrX = $realX;
-            $qrY = $realY;
-
-            if ($qrX < 0) {
-                $qrX = 0;
-            }
-
-            $pdf->Image($qrFile, $qrX, $qrY, 18, 18);
-
-            $pdf->SetFont('helvetica', '', 7);
-            $pdf->SetTextColor(50, 50, 50);
-            $pdf->SetXY($qrX, $qrY + 17);
-            $pdf->Cell(0, 4, 'Código para validação: ' . $codigoBase, 0, 0, 'L');
-
-            $pdf->SetFont($fontName, '', 18);
-            $pdf->SetTextColor(0, 0, 0);
-            $assinaturaX = $realX + 18;
-            $assinaturaY = $realY;
-            $pdf->SetXY($assinaturaX, $assinaturaY);
-            $pdf->Cell(0, 6, $nomeCompleto);
-
-            $pdf->SetFont('helvetica', '', 7);
-            $pdf->SetXY($assinaturaX, $assinaturaY + 6);
-            $pdf->Cell(0, 5, 'Assinatura digital de:');
-
-            $pdf->SetFont('helvetica', 'B', 10);
-            $pdf->SetXY($assinaturaX, $assinaturaY + 11);
-            $pdf->Cell(0, 5, $nomeUpper);
+        if ($realX < 5) {
+            $realX = 5;
         }
+        if ($realY < 5) {
+            $realY = 5;
+        }
+        if ($realX > $size['width'] - 60) {
+            $realX = $size['width'] - 60;
+        }
+        if ($realY > $size['height'] - 30) {
+            $realY = $size['height'] - 30;
+        }
+
+        $qrX = max(0.0, $realX);
+        $qrY = $realY;
+
+        $pdf->Image($qrFile, $qrX, $qrY, 18, 18);
+
+        $pdf->SetFont('helvetica', '', 7);
+        $pdf->SetTextColor(50, 50, 50);
+        $pdf->SetXY($qrX, $qrY + 17);
+        $pdf->Cell(0, 4, 'Codigo para validacao: ' . $codigoBase, 0, 0, 'L');
+
+        $pdf->SetFont($fontName, '', 18);
+        $pdf->SetTextColor(0, 0, 0);
+        $assinaturaX = $realX + 18;
+        $assinaturaY = $realY;
+        $pdf->SetXY($assinaturaX, $assinaturaY);
+        $pdf->Cell(0, 6, $nomeCompleto);
+
+        $pdf->SetFont('helvetica', '', 7);
+        $pdf->SetXY($assinaturaX, $assinaturaY + 6);
+        $pdf->Cell(0, 5, 'Assinatura digital de:');
+
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->SetXY($assinaturaX, $assinaturaY + 11);
+        $pdf->Cell(0, 5, $nomeUpper);
     }
 
     $pdf->Output($pathFinalPDF, 'F');
@@ -298,15 +315,14 @@ try {
         $realY,
         $linkValidacao,
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     $erro = $e->getMessage();
 
     $msgErro = "
         <div class='alert alert-danger'>
-            <h4><b>Não foi possível processar este PDF</b></h4>
-            <p>Este documento usa um tipo de compressão que não é compatível com o sistema atual.</p>
-            <p><b>Detalhes técnicos:</b> {$erro}</p>
-
+            <h4><b>Nao foi possivel processar este PDF</b></h4>
+            <p>Este documento usa um tipo de compressao que nao e compativel com o sistema atual.</p>
+            <p><b>Detalhes tecnicos:</b> {$erro}</p>
             <br>
             <a href='" . rtrim((string)$BASE_para_URL, '/') . "/assinatura/pdf' class='btn btn-secondary'>
                 Tentar outro PDF
@@ -317,53 +333,37 @@ try {
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <?php require_once $BASE_para_PATH . '/app/views/partials/header.php'; ?>
 </head>
-
 <body>
-
     <div class="wrapper">
-
         <?php require_once $BASE_para_PATH . '/app/views/partials/menu.php'; ?>
-
         <div class="main">
-
             <?php require_once $BASE_para_PATH . '/app/views/partials/topo.php'; ?>
             <script src="<?php echo $BASE_para_URL; ?>/assets/js/app.js?v=<?php echo $appJsVersion; ?>"></script>
-
             <main class="content">
                 <div class="container mt-4">
-
                     <?php if (isset($msgErro)) { ?>
-
                         <?= $msgErro ?>
-
                     <?php } else { ?>
-
                         <div class="alert alert-success">
-
                             PDF assinado com sucesso!<br><br>
-                            <a href="<?= $linkValidacao ?>" target="_blank" class="btn btn-primary">
+                            <a href="<?= htmlspecialchars($linkValidacao, ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="btn btn-primary">
                                 Verificar Assinatura
                             </a>
                             &nbsp;
-                            <a href="<?= $urlPDFInt ?>" target="_blank" class="btn btn-secondary">
+                            <a href="<?= htmlspecialchars($urlPDFInt, ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="btn btn-secondary">
                                 Abrir PDF Assinado
                             </a>
                         </div>
                     <?php } ?>
                 </div>
             </main>
-
             <footer class="footer">
                 <?php require_once $BASE_para_PATH . '/app/views/partials/footer.php'; ?>
             </footer>
-
         </div>
     </div>
-
 </body>
-
 </html>
