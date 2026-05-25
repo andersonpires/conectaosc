@@ -683,6 +683,7 @@ $signatureLayout = [
 ];
 $groupX = 0.0;
 $groupY = 0.0;
+$useCompactInlineSignature = false;
 
 try {
     $signedPdf = new Fpdi();
@@ -730,6 +731,7 @@ try {
             if (($startY + (float)$compactLayout['neededHeight']) <= ($pageHeightSigned - 20.0)) {
                 $signatureLayout = $compactLayout;
                 $signatureNeedsNewPage = false;
+                $useCompactInlineSignature = true;
                 break;
             }
         }
@@ -779,8 +781,13 @@ try {
         $textWidth = (float)$signatureLayout['textWidth'];
         $neededHeightCurrent = (float)$signatureLayout['neededHeight'];
         $groupWidth = $qrSize + $gap + $textWidth;
-        $groupX = max(8.0, ($currentWidth - $groupWidth) / 2);
-        $groupY = $signatureNeedsNewPage ? 70.0 : $startY;
+        if ($useCompactInlineSignature) {
+            $groupX = max(8.0, $currentWidth - $groupWidth - 10.0);
+            $groupY = max($startY, $currentHeight - $neededHeightCurrent - 14.0);
+        } else {
+            $groupX = max(8.0, ($currentWidth - $groupWidth) / 2);
+            $groupY = $signatureNeedsNewPage ? 70.0 : $startY;
+        }
 
         if (($groupY + $neededHeightCurrent) > ($currentHeight - 20.0)) {
             $groupY = max(20.0, $currentHeight - 20.0 - $neededHeightCurrent);
