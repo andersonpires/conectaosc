@@ -1051,11 +1051,36 @@ if (isset($pdo) && $pdo instanceof PDO) {
                 };
                 const pdfAssinanteSelect = $('#pdfAssinanteSelect');
                 const podeEscolherAssinante = <?= $podeEscolherAssinante ? 'true' : 'false' ?>;
+                let signerSelectControl = null;
+
+                const getSignerIdSelecionado = () => {
+                    if (!podeEscolherAssinante || !pdfAssinanteSelect.length) {
+                        return '';
+                    }
+                    if (signerSelectControl) {
+                        return String(signerSelectControl.getValue() || '').trim();
+                    }
+                    return String(pdfAssinanteSelect.val() || '').trim();
+                };
+
+                const getCargoAssinanteSelecionado = () => {
+                    if (!podeEscolherAssinante || !pdfAssinanteSelect.length) {
+                        return '';
+                    }
+
+                    const signerId = getSignerIdSelecionado();
+                    if (signerId === '') {
+                        return '';
+                    }
+
+                    const option = pdfAssinanteSelect.find(`option[value="${signerId}"]`);
+                    return String(option.data('cargo') || '').trim();
+                };
 
                 const syncCampoCargoPdf = () => {
                     const ativo = !!pdfOptCargoNome.prop('checked');
                     if (ativo && podeEscolherAssinante && pdfAssinanteSelect.length) {
-                        const cargoAssinante = String(pdfAssinanteSelect.find('option:selected').data('cargo') || '').trim();
+                        const cargoAssinante = getCargoAssinanteSelecionado();
                         if (cargoAssinante !== '' && String(pdfCargoInput.val() || '').trim() === '') {
                             pdfCargoInput.val(cargoAssinante);
                         }
@@ -1088,7 +1113,10 @@ if (isset($pdo) && $pdo instanceof PDO) {
                         params.set('cargo_personalizado', cargoPersonalizado);
                     }
                     if (podeEscolherAssinante && pdfAssinanteSelect.length) {
-                        params.set('signer_id', String(pdfAssinanteSelect.val() || ''));
+                        const signerIdSelecionado = getSignerIdSelecionado();
+                        if (signerIdSelecionado !== '') {
+                            params.set('signer_id', signerIdSelecionado);
+                        }
                     }
 
                     const url = `${pdfFrequenciaIntervalUrl}?${params.toString()}`;
@@ -1102,15 +1130,14 @@ if (isset($pdo) && $pdo instanceof PDO) {
 
                 pdfOptCargoNome.on('change', syncCampoCargoPdf);
                 if (podeEscolherAssinante && pdfAssinanteSelect.length) {
-                    const signerSelectControl = new TomSelect('#pdfAssinanteSelect', {
+                    signerSelectControl = new TomSelect('#pdfAssinanteSelect', {
                         create: false,
                         maxOptions: 300,
                         placeholder: 'Pesquise o colaborador que vai assinar'
                     });
                     signerSelectControl.on('change', function() {
                         if (pdfOptCargoNome.is(':checked')) {
-                            const option = pdfAssinanteSelect.find('option:selected');
-                            pdfCargoInput.val(String(option.data('cargo') || '').trim());
+                            pdfCargoInput.val(getCargoAssinanteSelecionado());
                         }
                     });
                 }

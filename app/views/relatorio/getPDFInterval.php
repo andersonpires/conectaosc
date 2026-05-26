@@ -198,6 +198,7 @@ $incluirTurma = boolParam('turmaInterval');
 $assinar = boolParam('assinar');
 $incluirCargo = boolParam('incluir_cargo');
 $cargoPersonalizado = safeText((string)($_GET['cargo_personalizado'] ?? ''), 120);
+$signerId = (int)($_GET['signer_id'] ?? 0);
 
 $dataInicioObj = DateTimeImmutable::createFromFormat('Y-m-d', $dataInicio) ?: null;
 $dataFimObj = DateTimeImmutable::createFromFormat('Y-m-d', $dataFim) ?: null;
@@ -606,6 +607,7 @@ echo '<input type="hidden" name="file" value="' . htmlspecialchars($nomeArquivoP
 echo '<input type="hidden" name="nomeDocumento" value="' . htmlspecialchars($nomeDocumento, ENT_QUOTES, 'UTF-8') . '">';
 echo '<input type="hidden" name="incluir_cargo" value="' . ($incluirCargo ? '1' : '0') . '">';
 echo '<input type="hidden" name="cargo_personalizado" value="' . htmlspecialchars($cargoPersonalizado, ENT_QUOTES, 'UTF-8') . '">';
+echo '<input type="hidden" name="signer_id" value="' . $signerId . '">';
 echo '</form>';
 echo '<script>document.getElementById("goPreviewRelatorio").submit();</script>';
 exit;
