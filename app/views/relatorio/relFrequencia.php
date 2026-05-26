@@ -24,10 +24,33 @@ $beneficiarioCadastroUrl = $BASE_para_URL . '/beneficiarios/cadastro';
 $assetsFotosBaseUrl = rtrim(bootstrap_assets_img_url(), '/') . '/fotos';
 $avatarPadraoUrl = bootstrap_foto_url('');
 $cargoColaboradorPadrao = '';
+$tipoSessao = trim((string)($_SESSION['Tipo'] ?? ''));
+$podeEscolherAssinante = in_array($tipoSessao, ['Administrador', 'Superadministrador'], true);
+$assinantesDisponiveis = [];
 if (isset($pdo) && $pdo instanceof PDO) {
     $stmtCargoColaborador = $pdo->prepare('SELECT COALESCE(Cargo, "") AS Cargo FROM tbUser WHERE IdColaborador = ? LIMIT 1');
     $stmtCargoColaborador->execute([(int)($_SESSION['Cod'] ?? 0)]);
     $cargoColaboradorPadrao = trim((string)($stmtCargoColaborador->fetchColumn() ?: ''));
+    if ($podeEscolherAssinante) {
+        $stmtAssinantes = $pdo->query("
+            SELECT IdColaborador, Nome, Sobrenome, COALESCE(Cargo, '') AS Cargo
+              FROM tbUser
+             WHERE COALESCE(Habilitado, 1) = 1
+             ORDER BY Nome, Sobrenome
+        ");
+        $assinantesDisponiveis = array_map(static function (array $row): array {
+            $id = (int)($row['IdColaborador'] ?? 0);
+            $nome = trim((string)(($row['Nome'] ?? '') . ' ' . ($row['Sobrenome'] ?? '')));
+            $cargo = trim((string)($row['Cargo'] ?? ''));
+
+            return [
+                'id' => $id,
+                'nome' => $nome,
+                'cargo' => $cargo,
+                'label' => $cargo !== '' ? ($nome . ' - ' . $cargo) : $nome,
+            ];
+        }, $stmtAssinantes->fetchAll(PDO::FETCH_ASSOC) ?: []);
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -552,6 +575,24 @@ if (isset($pdo) && $pdo instanceof PDO) {
                             <small class="text-muted">Essa alteração é apenas para este PDF e não altera o cadastro.</small>
                         </div>
 
+                        <?php if ($podeEscolherAssinante): ?>
+                        <div class="mt-3">
+                            <label for="pdfAssinanteSelect" class="form-label mb-1">Assinante do documento</label>
+                            <select id="pdfAssinanteSelect" class="form-select">
+                                <?php foreach ($assinantesDisponiveis as $assinante): ?>
+                                <option
+                                    value="<?= (int)$assinante['id'] ?>"
+                                    data-cargo="<?= htmlspecialchars((string)$assinante['cargo'], ENT_QUOTES, 'UTF-8') ?>"
+                                    <?= (int)$assinante['id'] === (int)($_SESSION['Cod'] ?? 0) ? 'selected' : '' ?>
+                                >
+                                    <?= htmlspecialchars((string)$assinante['label'], ENT_QUOTES, 'UTF-8') ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small class="text-muted">Pesquise e escolha o colaborador que deve assinar este documento.</small>
+                        </div>
+                        <?php endif; ?>
+
                         <div class="pdf-assinatura-acoes">
                             <button type="button" class="btn btn-primary" id="pdfAssinarSim">Sim, assinar digitalmente</button>
                             <button type="button" class="btn btn-outline-secondary" id="pdfAssinarNao">Não, gerar sem assinatura</button>
@@ -1008,9 +1049,17 @@ if (isset($pdo) && $pdo instanceof PDO) {
                     pdfAssinaturaOverlay.removeClass('show').attr('aria-hidden', 'true');
                     $('body').removeClass('modal-acoes-open');
                 };
+                const pdfAssinanteSelect = $('#pdfAssinanteSelect');
+                const podeEscolherAssinante = <?= $podeEscolherAssinante ? 'true' : 'false' ?>;
 
                 const syncCampoCargoPdf = () => {
                     const ativo = !!pdfOptCargoNome.prop('checked');
+                    if (ativo && podeEscolherAssinante && pdfAssinanteSelect.length) {
+                        const cargoAssinante = String(pdfAssinanteSelect.find('option:selected').data('cargo') || '').trim();
+                        if (cargoAssinante !== '' && String(pdfCargoInput.val() || '').trim() === '') {
+                            pdfCargoInput.val(cargoAssinante);
+                        }
+                    }
                     pdfCargoWrap.toggleClass('show', ativo);
                 };
 
@@ -1038,6 +1087,9 @@ if (isset($pdo) && $pdo instanceof PDO) {
                     if (incluirCargo && cargoPersonalizado !== '') {
                         params.set('cargo_personalizado', cargoPersonalizado);
                     }
+                    if (podeEscolherAssinante && pdfAssinanteSelect.length) {
+                        params.set('signer_id', String(pdfAssinanteSelect.val() || ''));
+                    }
 
                     const url = `${pdfFrequenciaIntervalUrl}?${params.toString()}`;
                     window.open(url, '_blank', 'noopener');
@@ -1049,6 +1101,19 @@ if (isset($pdo) && $pdo instanceof PDO) {
                 });
 
                 pdfOptCargoNome.on('change', syncCampoCargoPdf);
+                if (podeEscolherAssinante && pdfAssinanteSelect.length) {
+                    const signerSelectControl = new TomSelect('#pdfAssinanteSelect', {
+                        create: false,
+                        maxOptions: 300,
+                        placeholder: 'Pesquise o colaborador que vai assinar'
+                    });
+                    signerSelectControl.on('change', function() {
+                        if (pdfOptCargoNome.is(':checked')) {
+                            const option = pdfAssinanteSelect.find('option:selected');
+                            pdfCargoInput.val(String(option.data('cargo') || '').trim());
+                        }
+                    });
+                }
                 syncCampoCargoPdf();
 
                 $('#pdfAssinarSim').on('click', function() {

@@ -134,13 +134,22 @@ if ($nomeCompleto === '') {
     $nomeCompleto = 'Colaborador';
 }
 
+$signerId = (int)($_POST['signer_id'] ?? 0);
 $incluirCargo = (string)($_POST['incluir_cargo'] ?? '0') === '1';
 $cargoPersonalizado = trim((string)($_POST['cargo_personalizado'] ?? ''));
 $cargoPadrao = '';
-if ($incluirCargo && $idColab > 0) {
-    $stmtCargo = $pdo->prepare('SELECT COALESCE(Cargo, "") AS Cargo FROM tbUser WHERE IdColaborador = ? LIMIT 1');
-    $stmtCargo->execute([$idColab]);
-    $cargoPadrao = trim((string)($stmtCargo->fetchColumn() ?: ''));
+$idAssinante = $signerId > 0 ? $signerId : $idColab;
+if ($idAssinante > 0) {
+    $stmtAssinante = $pdo->prepare('SELECT Nome, Sobrenome, COALESCE(Cargo, "") AS Cargo FROM tbUser WHERE IdColaborador = ? LIMIT 1');
+    $stmtAssinante->execute([$idAssinante]);
+    $assinante = $stmtAssinante->fetch(PDO::FETCH_ASSOC) ?: null;
+    if ($assinante) {
+        $nomeCompleto = trim((string)(($assinante['Nome'] ?? '') . ' ' . ($assinante['Sobrenome'] ?? '')));
+        if ($nomeCompleto === '') {
+            $nomeCompleto = 'Colaborador';
+        }
+        $cargoPadrao = trim((string)($assinante['Cargo'] ?? ''));
+    }
 }
 
 $cargoParaExibir = $incluirCargo ? ($cargoPersonalizado !== '' ? $cargoPersonalizado : $cargoPadrao) : '';
@@ -344,7 +353,7 @@ try {
     );
 
     $sql->execute([
-        $idColab,
+        $idAssinante > 0 ? $idAssinante : $idColab,
         $nomeArquivo,
         $nomeDocumento,
         $nomeArquivoFinal,
@@ -374,6 +383,48 @@ try {
 <html lang="pt-BR">
 <head>
     <?php require_once $BASE_para_PATH . '/app/views/partials/header.php'; ?>
+    <style>
+        .assinatura-feedback {
+            max-width: 720px;
+            margin: 24px auto;
+            border: 0;
+            border-radius: 22px;
+            box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12);
+            padding: 24px;
+        }
+
+        .assinatura-feedback .btn {
+            min-height: 46px;
+        }
+
+        .assinatura-feedback-acoes {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+        }
+
+        .assinatura-feedback-acoes .btn {
+            flex: 1 1 220px;
+        }
+
+        @media (max-width: 768px) {
+            .assinatura-feedback {
+                margin: 16px auto;
+                padding: 18px;
+                border-radius: 18px;
+            }
+
+            .assinatura-feedback-acoes {
+                flex-direction: column;
+            }
+
+            .assinatura-feedback-acoes .btn {
+                width: 100%;
+                flex-basis: auto;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="wrapper">
@@ -384,17 +435,21 @@ try {
             <main class="content">
                 <div class="container mt-4">
                     <?php if (isset($msgErro)) { ?>
-                        <?= $msgErro ?>
+                        <div class="assinatura-feedback">
+                            <?= $msgErro ?>
+                        </div>
                     <?php } else { ?>
-                        <div class="alert alert-success">
-                            PDF assinado com sucesso!<br><br>
-                            <a href="<?= htmlspecialchars($linkValidacao, ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="btn btn-primary">
-                                Verificar assinatura
-                            </a>
-                            &nbsp;
-                            <a href="<?= htmlspecialchars($urlPDFInt, ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="btn btn-secondary">
-                                Abrir PDF assinado
-                            </a>
+                        <div class="alert alert-success assinatura-feedback">
+                            <h4 class="mb-2">PDF assinado com sucesso</h4>
+                            <p class="mb-0">O documento foi finalizado e já está disponível para validação e abertura.</p>
+                            <div class="assinatura-feedback-acoes">
+                                <a href="<?= htmlspecialchars($linkValidacao, ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="btn btn-primary">
+                                    Verificar assinatura
+                                </a>
+                                <a href="<?= htmlspecialchars($urlPDFInt, ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="btn btn-secondary">
+                                    Abrir PDF assinado
+                                </a>
+                            </div>
                         </div>
                     <?php } ?>
                 </div>

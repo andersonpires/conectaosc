@@ -10,6 +10,7 @@ $nomeArquivo = (string)($_POST['file'] ?? '');
 $nomeDocumento = (string)($_POST['nomeDocumento'] ?? '');
 $incluirCargo = (string)($_POST['incluir_cargo'] ?? '0');
 $cargoPersonalizado = trim((string)($_POST['cargo_personalizado'] ?? ''));
+$signerId = (int)($_POST['signer_id'] ?? 0);
 
 if ($nomeArquivo === '' || $nomeDocumento === '') {
     die('Dados não recebidos. Volte ao envio do PDF.');
@@ -21,12 +22,30 @@ if ($nomeCompleto === '') {
 }
 
 $cargoPadrao = '';
-if ($incluirCargo === '1' && isset($pdo) && $pdo instanceof PDO) {
-    $idColaborador = (int)($_SESSION['Cod'] ?? 0);
+if (isset($pdo) && $pdo instanceof PDO) {
+    $idColaborador = $signerId > 0 ? $signerId : (int)($_SESSION['Cod'] ?? 0);
     if ($idColaborador > 0) {
-        $stmtCargo = $pdo->prepare('SELECT COALESCE(Cargo, "") AS Cargo FROM tbUser WHERE IdColaborador = ? LIMIT 1');
-        $stmtCargo->execute([$idColaborador]);
-        $cargoPadrao = trim((string)($stmtCargo->fetchColumn() ?: ''));
+        $stmtAssinante = $pdo->prepare('SELECT Nome, Sobrenome, COALESCE(Cargo, "") AS Cargo FROM tbUser WHERE IdColaborador = ? LIMIT 1');
+        $stmtAssinante->execute([$idColaborador]);
+        $assinante = $stmtAssinante->fetch(PDO::FETCH_ASSOC) ?: null;
+        if ($assinante) {
+            $nomeCompleto = trim((string)(($assinante['Nome'] ?? '') . ' ' . ($assinante['Sobrenome'] ?? '')));
+            if ($nomeCompleto === '') {
+                $nomeCompleto = 'Colaborador';
+            }
+            $cargoPadrao = trim((string)($assinante['Cargo'] ?? ''));
+        }
+    }
+}
+
+if ($incluirCargo === '1' && isset($pdo) && $pdo instanceof PDO) {
+    $idColaborador = $signerId > 0 ? $signerId : (int)($_SESSION['Cod'] ?? 0);
+    if ($idColaborador > 0) {
+        if ($cargoPadrao === '') {
+            $stmtCargo = $pdo->prepare('SELECT COALESCE(Cargo, "") AS Cargo FROM tbUser WHERE IdColaborador = ? LIMIT 1');
+            $stmtCargo->execute([$idColaborador]);
+            $cargoPadrao = trim((string)($stmtCargo->fetchColumn() ?: ''));
+        }
     }
 }
 
@@ -73,6 +92,10 @@ $pdfURL = $BASE_para_URL . '/app/storage/assinatura/originais/' . rawurlencode($
             align-items: center;
             flex-wrap: wrap;
             margin-bottom: 16px;
+            padding: 12px;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
         }
 
         .preview-toolbar .status {
@@ -168,8 +191,45 @@ $pdfURL = $BASE_para_URL . '/app/storage/assinatura/originais/' . rawurlencode($
         }
 
         @media (max-width: 768px) {
+            .container.mt-4 {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+
+            .preview-toolbar {
+                position: sticky;
+                top: 8px;
+                z-index: 20;
+                gap: 10px;
+            }
+
             .preview-toolbar {
                 align-items: stretch;
+            }
+
+            .preview-toolbar .btn {
+                flex: 1 1 calc(50% - 10px);
+                min-height: 44px;
+            }
+
+            .preview-toolbar .status {
+                width: 100%;
+                font-size: 0.9rem;
+            }
+
+            #viewer {
+                padding: 8px;
+            }
+
+            #assinatura {
+                width: 198px;
+                height: 72px;
+            }
+
+            .sig-card {
+                grid-template-columns: 48px 1fr;
+                gap: 8px;
+                padding: 7px;
             }
         }
     </style>
@@ -407,6 +467,7 @@ $pdfURL = $BASE_para_URL . '/app/storage/assinatura/originais/' . rawurlencode($
                         <input type="hidden" name="nomeDocumento" value="<?= htmlspecialchars($nomeDocumento, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="incluir_cargo" value="<?= htmlspecialchars($incluirCargo, ENT_QUOTES, 'UTF-8') ?>">
                         <input type="hidden" name="cargo_personalizado" value="<?= htmlspecialchars($cargoPersonalizado, ENT_QUOTES, 'UTF-8') ?>">
+                        <input type="hidden" name="signer_id" value="<?= (int)$signerId ?>">
                         <input type="hidden" name="selected_page" id="selectedPage" value="1">
                         <input type="hidden" name="xpos" id="xpos">
                         <input type="hidden" name="ypos" id="ypos">
