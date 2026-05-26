@@ -10,7 +10,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 
 if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
     $redirect_url = urlencode($_SERVER['REQUEST_URI']);
-    header('Location: ' . rtrim((string) $BASE_para_URL, '/') . '/login/?redirect=' . $redirect_url);
+    header('Location: ' . rtrim((string)$BASE_para_URL, '/') . '/login/?redirect=' . $redirect_url);
     exit;
 }
 
@@ -116,6 +116,18 @@ function assinaturaGerarNomeArquivoFinal(string $diretorioAssinados, int $idCola
     return $nome;
 }
 
+function assinaturaBoundingBox(float $width, float $height, float $rotationDegrees): array
+{
+    $radians = deg2rad(fmod($rotationDegrees, 360.0));
+    $cos = abs(cos($radians));
+    $sin = abs(sin($radians));
+
+    return [
+        'width' => ($width * $cos) + ($height * $sin),
+        'height' => ($width * $sin) + ($height * $cos),
+    ];
+}
+
 $idColab = (int)($_SESSION['Cod'] ?? 0);
 $nomeCompleto = trim((string)(($_SESSION['Nome'] ?? '') . ' ' . ($_SESSION['Sobrenome'] ?? '')));
 if ($nomeCompleto === '') {
@@ -131,15 +143,12 @@ if ($incluirCargo && $idColab > 0) {
     $cargoPadrao = trim((string)($stmtCargo->fetchColumn() ?: ''));
 }
 
-$nomeUpper = $nomeCompleto;
 $cargoParaExibir = $incluirCargo ? ($cargoPersonalizado !== '' ? $cargoPersonalizado : $cargoPadrao) : '';
-if ($cargoParaExibir !== '') {
-    $nomeUpper .= ' - ' . $cargoParaExibir;
-}
+$nomeUpper = $nomeCompleto . ($cargoParaExibir !== '' ? ' - ' . $cargoParaExibir : '');
 $nomeUpper = mb_strtoupper($nomeUpper, 'UTF-8');
 
 $publicBaseWithScheme = assinaturaResolvePublicBaseUrl((string)$BASE_para_URL);
-$assinaturaDigitalPublic = assinaturaResolveAssinaturaDigitalPublicUrl($BASE_para_URL);
+$assinaturaDigitalPublic = assinaturaResolveAssinaturaDigitalPublicUrl((string)$BASE_para_URL);
 
 $pathBase = $BASE_para_PATH . '/app/storage/assinatura/';
 $pathOriginais = $pathBase . 'originais/';
@@ -169,6 +178,8 @@ $yPx = (float)($_POST['ypos'] ?? 0);
 $canvasW = (float)($_POST['canvasWidth'] ?? 0);
 $canvasH = (float)($_POST['canvasHeight'] ?? 0);
 $selectedPage = (int)($_POST['selected_page'] ?? 1);
+$scale = (float)($_POST['scale'] ?? 1);
+$rotation = (float)($_POST['rotation'] ?? 0);
 
 if ($canvasW <= 0 || $canvasH <= 0) {
     die('Erro: dimensões inválidas.');
@@ -176,6 +187,12 @@ if ($canvasW <= 0 || $canvasH <= 0) {
 
 if ($invertextoApiToken === '') {
     die("<div class='alert alert-danger'>Token da Invertexto não configurado.</div>");
+}
+
+$scale = max(0.5, min(2.5, $scale));
+$rotation = fmod($rotation, 360.0);
+if ($rotation < 0) {
+    $rotation += 360.0;
 }
 
 $timestampAssinatura = time();
@@ -215,6 +232,11 @@ try {
 
     $realX = 0.0;
     $realY = 0.0;
+    $baseBlockWidth = 68.0;
+    $baseBlockHeight = 24.0;
+    $blockWidth = $baseBlockWidth * $scale;
+    $blockHeight = $baseBlockHeight * $scale;
+    $boundingBox = assinaturaBoundingBox($blockWidth, $blockHeight, $rotation);
 
     for ($i = 1; $i <= $pageCount; $i++) {
         $tplIdx = $pdf->importPage($i);
@@ -223,27 +245,28 @@ try {
         $pdf->AddPage($size['orientation'], [$size['width'], $size['height']]);
         $pdf->useTemplate($tplIdx, 0, 0, $size['width'], $size['height'], true);
 
-        if ($i !== $selectedPage) {
-            $pdf->SetFont('helvetica', '', 6);
-            $pdf->SetTextColor(80, 80, 80);
-            $footerPrefix = "Documento assinado digitalmente, código {$codigoBase}. Confira autenticidade em ";
-            $footerUrl = $assinaturaDigitalPublic;
-            $prefixLen = $pdf->GetStringWidth($footerPrefix);
-            $urlLen = $pdf->GetStringWidth($footerUrl);
-            $textLen = $prefixLen + $urlLen;
-            $xBase = 5.0;
-            $yCenter = $size['height'] / 2;
-            $yBase = $yCenter + ($textLen / 2);
+        $pdf->SetFont('helvetica', '', 6);
+        $pdf->SetTextColor(80, 80, 80);
+        $footerPrefix = "Documento assinado digitalmente, código {$codigoBase}. Confira autenticidade em ";
+        $footerUrl = $assinaturaDigitalPublic;
+        $prefixLen = $pdf->GetStringWidth($footerPrefix);
+        $urlLen = $pdf->GetStringWidth($footerUrl);
+        $textLen = $prefixLen + $urlLen;
+        $xBase = 5.0;
+        $yCenter = $size['height'] / 2;
+        $yBase = $yCenter + ($textLen / 2);
 
-            $pdf->StartTransform();
-            $pdf->Rotate(90, $xBase, $yBase);
-            $pdf->Text($xBase, $yBase, $footerPrefix);
-            $pdf->SetFont('helvetica', 'U', 6);
-            $pdf->SetTextColor(0, 102, 204);
-            $urlX = $xBase + $prefixLen;
-            $pdf->Text($urlX, $yBase, $footerUrl);
-            $pdf->Link($urlX, $yBase - 2.1, $urlLen + 0.6, 3.0, $footerUrl);
-            $pdf->StopTransform();
+        $pdf->StartTransform();
+        $pdf->Rotate(90, $xBase, $yBase);
+        $pdf->Text($xBase, $yBase, $footerPrefix);
+        $pdf->SetFont('helvetica', 'U', 6);
+        $pdf->SetTextColor(0, 102, 204);
+        $urlX = $xBase + $prefixLen;
+        $pdf->Text($urlX, $yBase, $footerUrl);
+        $pdf->Link($urlX, $yBase - 2.1, $urlLen + 0.6, 3.0, $footerUrl);
+        $pdf->StopTransform();
+
+        if ($i !== $selectedPage) {
             continue;
         }
 
@@ -256,37 +279,52 @@ try {
         if ($realY < 5) {
             $realY = 5;
         }
-        if ($realX > $size['width'] - 60) {
-            $realX = $size['width'] - 60;
+        if ($realX > $size['width'] - $boundingBox['width'] - 5) {
+            $realX = max(5, $size['width'] - $boundingBox['width'] - 5);
         }
-        if ($realY > $size['height'] - 30) {
-            $realY = $size['height'] - 30;
+        if ($realY > $size['height'] - $boundingBox['height'] - 5) {
+            $realY = max(5, $size['height'] - $boundingBox['height'] - 5);
         }
 
-        $qrX = max(0.0, $realX);
-        $qrY = $realY;
+        $qrSize = 16.0 * $scale;
+        $qrGap = 3.0 * $scale;
+        $textX = $realX + $qrSize + $qrGap;
+        $scriptFont = 12.0 * $scale;
+        $labelFont = 6.0 * $scale;
+        $upperFont = 7.6 * $scale;
+        $codeFont = 5.5 * $scale;
 
-        $pdf->Image($qrFile, $qrX, $qrY, 18, 18);
+        $pdf->StartTransform();
+        if (abs($rotation) > 0.001) {
+            $pdf->Rotate($rotation, $realX, $realY);
+        }
 
-        $pdf->SetFont('helvetica', '', 7);
+        $pdf->Image($qrFile, $realX, $realY, $qrSize, $qrSize);
+
+        $pdf->SetFont('helvetica', '', $codeFont);
         $pdf->SetTextColor(50, 50, 50);
-        $pdf->SetXY($qrX, $qrY + 17);
-        $pdf->Cell(0, 4, 'Código para validação: ' . $codigoBase, 0, 0, 'L');
+        $pdf->SetXY($realX, $realY + ($qrSize - (2.2 * $scale)));
+        $pdf->Cell($blockWidth, 4 * $scale, 'Código para validação: ' . $codigoBase, 0, 0, 'L');
 
-        $pdf->SetFont($fontName, '', 18);
+        $pdf->SetFont($fontName, '', $scriptFont);
         $pdf->SetTextColor(0, 0, 0);
-        $assinaturaX = $realX + 18;
-        $assinaturaY = $realY;
-        $pdf->SetXY($assinaturaX, $assinaturaY);
-        $pdf->Cell(0, 6, $nomeCompleto);
+        $pdf->SetXY($textX, $realY + (0.8 * $scale));
+        $pdf->Cell($blockWidth - ($qrSize + $qrGap), 5 * $scale, $nomeCompleto, 0, 0, 'L');
 
-        $pdf->SetFont('helvetica', '', 7);
-        $pdf->SetXY($assinaturaX, $assinaturaY + 6);
-        $pdf->Cell(0, 5, 'Assinatura digital de:');
+        $pdf->SetFont('helvetica', '', $labelFont);
+        $pdf->SetXY($textX, $realY + (6.2 * $scale));
+        $pdf->Cell($blockWidth - ($qrSize + $qrGap), 4 * $scale, 'Assinatura digital de:', 0, 0, 'L');
 
-        $pdf->SetFont('helvetica', 'B', 10);
-        $pdf->SetXY($assinaturaX, $assinaturaY + 11);
-        $pdf->Cell(0, 5, $nomeUpper);
+        $pdf->SetFont('helvetica', 'B', $upperFont);
+        $pdf->SetXY($textX, $realY + (10.5 * $scale));
+        $pdf->Cell($blockWidth - ($qrSize + $qrGap), 4.5 * $scale, $nomeUpper, 0, 0, 'L');
+
+        $pdf->SetFont('helvetica', '', max(4.5, 5.0 * $scale));
+        $pdf->SetTextColor(80, 80, 80);
+        $pdf->SetXY($realX, $realY + ($qrSize + (2.0 * $scale)));
+        $pdf->Cell($blockWidth, 3.6 * $scale, 'Confira a autenticidade em: ' . $assinaturaDigitalPublic, 0, 0, 'L');
+
+        $pdf->StopTransform();
     }
 
     $pdf->Output($pathFinalPDF, 'F');
@@ -351,11 +389,11 @@ try {
                         <div class="alert alert-success">
                             PDF assinado com sucesso!<br><br>
                             <a href="<?= htmlspecialchars($linkValidacao, ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="btn btn-primary">
-                                Verificar Assinatura
+                                Verificar assinatura
                             </a>
                             &nbsp;
                             <a href="<?= htmlspecialchars($urlPDFInt, ENT_QUOTES, 'UTF-8') ?>" target="_blank" class="btn btn-secondary">
-                                Abrir PDF Assinado
+                                Abrir PDF assinado
                             </a>
                         </div>
                     <?php } ?>
