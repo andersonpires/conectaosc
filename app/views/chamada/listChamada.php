@@ -244,6 +244,32 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             color: #115e59;
         }
 
+        .chamada-action-whatsapp {
+            width: 46px;
+            min-width: 46px;
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #25D366;
+            background: #25D366;
+            color: #fff;
+        }
+
+        .chamada-action-whatsapp:hover,
+        .chamada-action-whatsapp:focus {
+            background: #1ebe5d;
+            border-color: #1ebe5d;
+            color: #fff;
+        }
+
+        .chamada-action-whatsapp:disabled {
+            background: #94a3b8;
+            border-color: #94a3b8;
+            color: #fff;
+            opacity: .75;
+        }
+
         .chamada-action-presenca {
             color: #16a34a;
             font-weight: 600;
@@ -548,6 +574,18 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                 $resultado = turma_foto($pdo, $dataSelecionada, $dataSelecionada, $NNomeCurso, $NNomeTurma, (string)$BASE_para_URL, $viewChamada);
                 $TotalCards = $resultado['totalCards'];
                 $podeRedefinirChamada = chamadaUsuarioPodeRedefinir($_SESSION);
+                $whatsappColaborador = '';
+                $whatsappMascarado = '';
+                if ($cod > 0) {
+                    $stmtWhatsappColaborador = $pdo->prepare('SELECT WhatsApp FROM tbUser WHERE IdColaborador = ? LIMIT 1');
+                    $stmtWhatsappColaborador->execute([$cod]);
+                    $whatsappColaborador = (string)($stmtWhatsappColaborador->fetchColumn() ?: '');
+                    $whatsappDigitos = preg_replace('/\D+/', '', $whatsappColaborador) ?? '';
+                    if ($whatsappDigitos !== '') {
+                        $whatsappMascarado = str_repeat('*', max(0, strlen($whatsappDigitos) - 4)) . substr($whatsappDigitos, -4);
+                    }
+                }
+                $colaboradorTemWhatsapp = $whatsappMascarado !== '';
                 ?>
                 <div class="info-container">
                     <h2>Dados selecionados</h2>
@@ -631,6 +669,29 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                             aria-label="Baixar fotos">
                             <i class="bi bi-camera" aria-hidden="true"></i>
                         </button>
+
+                        <?php if ($colaboradorTemWhatsapp): ?>
+                            <button
+                                class="btn chamada-action-whatsapp"
+                                type="button"
+                                id="btn-enviar-resumo-whatsapp"
+                                data-bs-toggle="tooltip"
+                                title="Enviar resumo por WhatsApp"
+                                aria-label="Enviar resumo por WhatsApp">
+                                <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                            </button>
+                        <?php else: ?>
+                            <span data-bs-toggle="tooltip" title="WhatsApp não cadastrado">
+                                <button
+                                    class="btn chamada-action-whatsapp"
+                                    type="button"
+                                    id="btn-enviar-resumo-whatsapp"
+                                    aria-label="Enviar resumo por WhatsApp"
+                                    disabled>
+                                    <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                                </button>
+                            </span>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -786,6 +847,41 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="modalResumoWhatsapp" tabindex="-1" aria-labelledby="modalResumoWhatsappLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalResumoWhatsappLabel">Enviar resumo por WhatsApp</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Deseja enviar o resumo da chamada atual para o seu WhatsApp?</p>
+                    <dl class="row mb-0">
+                        <dt class="col-5">Curso</dt>
+                        <dd class="col-7"><?= htmlspecialchars($nomeCurso !== '' ? $nomeCurso : '-', ENT_QUOTES, 'UTF-8') ?></dd>
+
+                        <dt class="col-5">Turma</dt>
+                        <dd class="col-7"><?= htmlspecialchars($nomeTurma !== '' ? $nomeTurma : '-', ENT_QUOTES, 'UTF-8') ?></dd>
+
+                        <dt class="col-5">Data da chamada</dt>
+                        <dd class="col-7"><?= htmlspecialchars((string)($dataSelecionada ?: '-'), ENT_QUOTES, 'UTF-8') ?></dd>
+
+                        <dt class="col-5">Total de alunos</dt>
+                        <dd class="col-7"><?= (int)$TotalCards ?></dd>
+
+                        <dt class="col-5">Destino</dt>
+                        <dd class="col-7"><?= htmlspecialchars($whatsappMascarado !== '' ? $whatsappMascarado : '-', ENT_QUOTES, 'UTF-8') ?></dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="confirmarResumoWhatsapp">Enviar resumo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de mensagem de retorno -->
     <div class="modal fade" id="modalMensagem" tabindex="-1" aria-labelledby="modalMensagemLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -805,6 +901,18 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
 
     <script src="<?php echo $BASE_para_URL; ?>/assets/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const botaoWhatsapp = document.getElementById('btn-enviar-resumo-whatsapp');
+            const modalResumoEl = document.getElementById('modalResumoWhatsapp');
+
+            if (botaoWhatsapp && modalResumoEl && !botaoWhatsapp.disabled) {
+                botaoWhatsapp.addEventListener('click', function() {
+                    bootstrap.Modal.getOrCreateInstance(modalResumoEl).show();
+                });
+            }
+        });
+    </script>
 </body>
 
 <script>
@@ -1446,7 +1554,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                 action: 'resetChamada',
                 selectedAction: '',
                 titulo: 'Redefinir chamada',
-                inicial: 'ATENÇÃO: Esta ação apagará todas as marcações salvas do dia de hoje. Confirmar redefinição?',
+                inicial: 'ATEN\u00C7\u00C3O: Esta a\u00E7\u00E3o apagar\u00E1 todas as marca\u00E7\u00F5es salvas do dia de hoje. Confirmar redefini\u00E7\u00E3o?',
                 final: 'Confirme novamente para redefinir a chamada da listagem atual.',
                 botao: 'btn-danger',
                 sucesso: 'Chamada redefinida com sucesso.'
