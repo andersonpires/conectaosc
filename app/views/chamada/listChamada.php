@@ -270,6 +270,52 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             box-shadow: 0 14px 35px rgba(15, 23, 42, .14);
         }
 
+        .chamada-confirmacao-dialog {
+            transition: max-width .18s ease;
+        }
+
+        .chamada-confirmacao-final .modal-dialog {
+            max-width: 420px;
+        }
+
+        .chamada-confirmacao-final .modal-content {
+            border: 2px solid #f59e0b;
+            box-shadow: 0 18px 45px rgba(146, 64, 14, .22);
+        }
+
+        .chamada-confirmacao-final .modal-header {
+            border-bottom: 0;
+            padding-bottom: .25rem;
+        }
+
+        .chamada-confirmacao-final .modal-body {
+            text-align: center;
+            padding: .75rem 1.5rem 1.25rem;
+        }
+
+        .chamada-confirmacao-final .modal-footer {
+            justify-content: center;
+            border-top: 0;
+            padding-top: 0;
+        }
+
+        .chamada-confirmacao-icone {
+            display: none;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto .8rem;
+            background: #fff7ed;
+            color: #c2410c;
+            font-size: 1.7rem;
+        }
+
+        .chamada-confirmacao-final .chamada-confirmacao-icone {
+            display: inline-flex;
+        }
+
         .plano-topicos-box {
             border: 1px solid #dbe5f3;
             border-radius: .65rem;
@@ -670,15 +716,20 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
     </div>
 
     <div class="modal fade" id="modalConfirmacaoLote" tabindex="-1" aria-labelledby="modalConfirmacaoLoteLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-dialog-centered chamada-confirmacao-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h1 class="modal-title fs-5" id="modalConfirmacaoLoteLabel">Confirmar ação</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                 </div>
-                <div class="modal-body" id="modalConfirmacaoLoteMensagem"></div>
+                <div class="modal-body">
+                    <div class="chamada-confirmacao-icone" id="modalConfirmacaoLoteIcone">
+                        <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                    </div>
+                    <div id="modalConfirmacaoLoteMensagem"></div>
+                </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="cancelarAcaoLote">Cancelar</button>
                     <button type="button" class="btn btn-success" id="confirmarAcaoLote">Continuar</button>
                 </div>
             </div>
@@ -1176,12 +1227,15 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             const tituloEl = document.getElementById('modalConfirmacaoLoteLabel');
             const mensagemEl = document.getElementById('modalConfirmacaoLoteMensagem');
             const confirmarBtn = document.getElementById('confirmarAcaoLote');
+            const cancelarBtn = document.getElementById('cancelarAcaoLote');
             const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
             let etapa = 1;
 
+            modalEl.classList.remove('chamada-confirmacao-final');
             tituloEl.textContent = titulo;
             mensagemEl.textContent = mensagemInicial;
-            confirmarBtn.textContent = 'Continuar';
+            confirmarBtn.textContent = 'Revisar ação';
+            cancelarBtn.textContent = 'Cancelar';
             confirmarBtn.className = `btn ${classeBotao || 'btn-success'}`;
 
             const limpar = () => {
@@ -1197,8 +1251,11 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             const onConfirmar = () => {
                 if (etapa === 1) {
                     etapa = 2;
+                    modalEl.classList.add('chamada-confirmacao-final');
+                    tituloEl.textContent = 'Última confirmação';
                     mensagemEl.textContent = mensagemFinal;
-                    confirmarBtn.textContent = 'Confirmar';
+                    confirmarBtn.textContent = 'Sim, aplicar agora';
+                    cancelarBtn.textContent = 'Voltar';
                     return;
                 }
 
