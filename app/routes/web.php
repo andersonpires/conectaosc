@@ -73,6 +73,7 @@ $router->get('/chamada/faltas', [$chamadaController, 'faltas']);
 $router->get('/chamada/lista/listTotalChamada.php', [$chamadaController, 'faltas']);
 $router->get('/chamada/fotos', [$chamadaController, 'fotos']);
 $router->post('/chamada/salvar', [$chamadaController, 'salvar']);
+$router->post('/chamada/resumo-whatsapp', [$chamadaController, 'resumoWhatsapp']);
 $router->get('/swot', [$swotController, 'index']);
 $router->post('/swot', [$swotController, 'index']);
 $router->get('/swot/swot', [$swotController, 'index']);

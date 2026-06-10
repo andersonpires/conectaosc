@@ -35,6 +35,11 @@ final class ChamadaController
         $this->render('/app/views/chamada/downloadFotos.php');
     }
 
+    public function resumoWhatsapp(): void
+    {
+        $this->render('/app/views/chamada/resumoWhatsapp.php');
+    }
+
     private function render(string $relativePath): void
     {
         $candidate = $this->basePath . $relativePath;
