@@ -802,7 +802,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
     <div class="chamada-download-overlay" id="chamadaDownloadOverlay" aria-live="polite" aria-busy="true">
         <div class="chamada-download-box" role="status">
-            <div>Suas fotos estão sendo preparadas</div>
+            <div id="chamadaDownloadOverlayText">Suas fotos estão sendo preparadas</div>
             <div class="chamada-download-spinner" aria-hidden="true"></div>
         </div>
     </div>
@@ -904,11 +904,18 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const botaoWhatsapp = document.getElementById('btn-enviar-resumo-whatsapp');
+            const confirmarWhatsapp = document.getElementById('confirmarResumoWhatsapp');
             const modalResumoEl = document.getElementById('modalResumoWhatsapp');
 
             if (botaoWhatsapp && modalResumoEl && !botaoWhatsapp.disabled) {
                 botaoWhatsapp.addEventListener('click', function() {
                     bootstrap.Modal.getOrCreateInstance(modalResumoEl).show();
+                });
+            }
+
+            if (confirmarWhatsapp) {
+                confirmarWhatsapp.addEventListener('click', function() {
+                    enviarResumoWhatsapp();
                 });
             }
         });
@@ -1403,6 +1410,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
     async function baixarFotosChamada() {
         const overlay = document.getElementById('chamadaDownloadOverlay');
+        const overlayTexto = document.getElementById('chamadaDownloadOverlayText');
         const botao = document.getElementById('btn-baixar-fotos');
         const params = new URLSearchParams({
             NNomeCurso: '<?php echo addslashes((string)$NNomeCurso); ?>',
@@ -1414,6 +1422,9 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
         try {
             if (botao) {
                 botao.disabled = true;
+            }
+            if (overlayTexto) {
+                overlayTexto.textContent = 'Suas fotos estão sendo preparadas';
             }
             if (overlay) {
                 overlay.classList.add('is-visible');
@@ -1443,6 +1454,76 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             if (botao) {
                 botao.disabled = false;
             }
+        }
+    }
+
+    let resumoWhatsappEnviando = false;
+
+    async function enviarResumoWhatsapp() {
+        if (resumoWhatsappEnviando) {
+            return;
+        }
+
+        const overlay = document.getElementById('chamadaDownloadOverlay');
+        const overlayTexto = document.getElementById('chamadaDownloadOverlayText');
+        const botaoWhatsapp = document.getElementById('btn-enviar-resumo-whatsapp');
+        const confirmarWhatsapp = document.getElementById('confirmarResumoWhatsapp');
+        const modalResumoEl = document.getElementById('modalResumoWhatsapp');
+
+        resumoWhatsappEnviando = true;
+
+        try {
+            if (botaoWhatsapp) {
+                botaoWhatsapp.disabled = true;
+            }
+            if (confirmarWhatsapp) {
+                confirmarWhatsapp.disabled = true;
+            }
+            if (modalResumoEl) {
+                bootstrap.Modal.getOrCreateInstance(modalResumoEl).hide();
+            }
+            if (overlayTexto) {
+                overlayTexto.textContent = 'Resumo da chamada sendo enviado';
+            }
+            if (overlay) {
+                overlay.classList.add('is-visible');
+            }
+
+            const response = await fetch('<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/resumo-whatsapp', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    NNomeCurso: '<?php echo addslashes((string)$NNomeCurso); ?>',
+                    NNomeTurma: '<?php echo addslashes((string)$NNomeTurma); ?>',
+                    dataSelecionada: document.getElementById('dataSelecionada')?.value || ''
+                })
+            });
+
+            const data = await response.json().catch(() => ({}));
+            const mensagem = data.message || 'Não foi possível enviar o resumo pelo WhatsApp. Tente novamente.';
+
+            if (!response.ok || data.success === false) {
+                throw new Error(mensagem);
+            }
+
+            toastr.success(mensagem || 'Resumo enviado para o seu WhatsApp.');
+        } catch (err) {
+            toastr.error(err.message || 'Não foi possível enviar o resumo pelo WhatsApp. Tente novamente.', 'Erro');
+        } finally {
+            if (overlay) {
+                overlay.classList.remove('is-visible');
+            }
+            if (botaoWhatsapp && <?php echo $colaboradorTemWhatsapp ? 'true' : 'false'; ?>) {
+                botaoWhatsapp.disabled = false;
+            }
+            if (confirmarWhatsapp) {
+                confirmarWhatsapp.disabled = false;
+            }
+            resumoWhatsappEnviando = false;
         }
     }
 
