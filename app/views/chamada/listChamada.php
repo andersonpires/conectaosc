@@ -316,6 +316,50 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             display: inline-flex;
         }
 
+        .chamada-download-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(15, 23, 42, .32);
+            backdrop-filter: blur(2px);
+            padding: 1rem;
+        }
+
+        .chamada-download-overlay.is-visible {
+            display: flex;
+        }
+
+        .chamada-download-box {
+            width: min(92vw, 360px);
+            border-radius: .75rem;
+            background: #fff;
+            border: 1px solid #dbe3ef;
+            box-shadow: 0 20px 50px rgba(15, 23, 42, .22);
+            padding: 1.35rem 1.25rem;
+            text-align: center;
+            color: #1e293b;
+            font-weight: 700;
+        }
+
+        .chamada-download-spinner {
+            width: 38px;
+            height: 38px;
+            margin: 1rem auto 0;
+            border: 4px solid #dbeafe;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: chamadaDownloadSpin .85s linear infinite;
+        }
+
+        @keyframes chamadaDownloadSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
         .plano-topicos-box {
             border: 1px solid #dbe5f3;
             border-radius: .65rem;
@@ -692,6 +736,13 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             <footer class="footer">
                 <?php require_once $BASE_para_PATH . '/app/views/partials/footer.php'; ?>
             </footer>
+        </div>
+    </div>
+
+    <div class="chamada-download-overlay" id="chamadaDownloadOverlay" aria-live="polite" aria-busy="true">
+        <div class="chamada-download-box" role="status">
+            <div>Suas fotos estão sendo preparadas</div>
+            <div class="chamada-download-spinner" aria-hidden="true"></div>
         </div>
     </div>
 
@@ -1204,12 +1255,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
         const btnBaixarFotos = document.getElementById('btn-baixar-fotos');
         if (btnBaixarFotos) {
             btnBaixarFotos.addEventListener('click', function() {
-                const params = new URLSearchParams({
-                    NNomeCurso: '<?php echo addslashes((string)$NNomeCurso); ?>',
-                    NNomeTurma: '<?php echo addslashes((string)$NNomeTurma); ?>',
-                    dataSelecionada: document.getElementById('dataSelecionada')?.value || ''
-                });
-                window.location.href = '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/fotos?' + params.toString();
+                baixarFotosChamada();
             });
         }
     });
@@ -1231,6 +1277,57 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
         return getVisibleStudentCards()
             .map(card => Number((card.id || '').split('_')[1] || 0))
             .filter(id => id > 0);
+    }
+
+    function nomeArquivoDownloadFotos(response) {
+        const disposition = response.headers.get('Content-Disposition') || '';
+        const match = disposition.match(/filename="?([^"]+)"?/i);
+        return match ? match[1] : 'fotos_chamada.zip';
+    }
+
+    async function baixarFotosChamada() {
+        const overlay = document.getElementById('chamadaDownloadOverlay');
+        const botao = document.getElementById('btn-baixar-fotos');
+        const params = new URLSearchParams({
+            NNomeCurso: '<?php echo addslashes((string)$NNomeCurso); ?>',
+            NNomeTurma: '<?php echo addslashes((string)$NNomeTurma); ?>',
+            dataSelecionada: document.getElementById('dataSelecionada')?.value || ''
+        });
+        const url = '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/fotos?' + params.toString();
+
+        try {
+            if (botao) {
+                botao.disabled = true;
+            }
+            if (overlay) {
+                overlay.classList.add('is-visible');
+            }
+
+            const response = await fetch(url, { credentials: 'same-origin' });
+            if (!response.ok) {
+                const erro = await response.text();
+                throw new Error(erro || 'Não foi possível preparar as fotos.');
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = nomeArquivoDownloadFotos(response);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(downloadUrl);
+        } catch (err) {
+            toastr.error(err.message || 'Erro ao baixar fotos.', 'Erro');
+        } finally {
+            if (overlay) {
+                overlay.classList.remove('is-visible');
+            }
+            if (botao) {
+                botao.disabled = false;
+            }
+        }
     }
 
     function confirmarAcaoLote(titulo, mensagemInicial, mensagemFinal, classeBotao) {
