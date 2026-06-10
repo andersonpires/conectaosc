@@ -225,6 +225,125 @@ function chamadaResumoWhatsappMontarPayload(array $colaborador, string $whatsapp
     return $payload;
 }
 
+function chamadaResumoWhatsappEnviarWebhook(string $webhookUrl, array $payload, int $timeoutSegundos = 25): array
+{
+    $json = json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    if ($json === false) {
+        return [
+            'success' => false,
+            'message' => 'Não foi possível preparar o resumo para envio.',
+            'status' => 500,
+        ];
+    }
+
+    if (function_exists('curl_init')) {
+        $ch = curl_init($webhookUrl);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => $json,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+                'Accept: application/json',
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 10,
+            CURLOPT_TIMEOUT => $timeoutSegundos,
+        ]);
+
+        $responseBody = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $curlErrno = curl_errno($ch);
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+
+        if ($responseBody === false) {
+            if ($curlErrno === 28) {
+                return [
+                    'success' => false,
+                    'message' => 'O envio demorou mais que o esperado. Verifique o WhatsApp em alguns instantes ou tente novamente.',
+                    'status' => 504,
+                    'technical_message' => $curlError,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => 'Não foi possível enviar o resumo pelo WhatsApp. Tente novamente.',
+                'status' => 502,
+                'technical_message' => $curlError,
+            ];
+        }
+
+        return chamadaResumoWhatsappInterpretarRespostaWebhook((string)$responseBody, $httpCode);
+    }
+
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\nAccept: application/json\r\n",
+            'content' => $json,
+            'timeout' => $timeoutSegundos,
+            'ignore_errors' => true,
+        ],
+    ]);
+
+    $responseBody = @file_get_contents($webhookUrl, false, $context);
+    if ($responseBody === false) {
+        return [
+            'success' => false,
+            'message' => 'Não foi possível enviar o resumo pelo WhatsApp. Tente novamente.',
+            'status' => 502,
+        ];
+    }
+
+    $httpCode = 0;
+    foreach (($http_response_header ?? []) as $header) {
+        if (preg_match('#^HTTP/\S+\s+(\d{3})#', (string)$header, $matches)) {
+            $httpCode = (int)$matches[1];
+            break;
+        }
+    }
+
+    return chamadaResumoWhatsappInterpretarRespostaWebhook((string)$responseBody, $httpCode);
+}
+
+function chamadaResumoWhatsappInterpretarRespostaWebhook(string $responseBody, int $httpCode): array
+{
+    $decoded = json_decode($responseBody, true);
+    if ($httpCode >= 400) {
+        return [
+            'success' => false,
+            'message' => 'Não foi possível enviar o resumo pelo WhatsApp. Tente novamente.',
+            'status' => 502,
+            'technical_message' => 'HTTP ' . $httpCode,
+        ];
+    }
+
+    if (!is_array($decoded) || !array_key_exists('success', $decoded)) {
+        return [
+            'success' => false,
+            'message' => 'Não foi possível enviar o resumo pelo WhatsApp. Tente novamente.',
+            'status' => 502,
+            'technical_message' => 'Resposta inesperada do webhook.',
+        ];
+    }
+
+    if ((bool)$decoded['success'] === true) {
+        return [
+            'success' => true,
+            'message' => 'Resumo enviado para o seu WhatsApp.',
+            'status' => 200,
+        ];
+    }
+
+    $message = trim((string)($decoded['message'] ?? ''));
+    return [
+        'success' => false,
+        'message' => $message !== '' ? $message : 'Não foi possível enviar o resumo pelo WhatsApp. Tente novamente.',
+        'status' => 502,
+    ];
+}
+
 if (!isset($_SESSION['Cod'])) {
     chamadaResumoWhatsappResponder([
         'success' => false,
@@ -272,7 +391,6 @@ try {
         ], 400);
     }
 
-    $nomeCompleto = trim((string)(($colaborador['Nome'] ?? '') . ' ' . ($colaborador['Sobrenome'] ?? '')));
     $rows = chamadaResumoWhatsappBuscarDados($pdo, $idCurso, $idTurma, $dataIso);
     if ($rows === []) {
         chamadaResumoWhatsappResponder([
@@ -282,23 +400,23 @@ try {
     }
 
     $payload = chamadaResumoWhatsappMontarPayload($colaborador, $whatsapp, $idCurso, $idTurma, $dataSelecionada, $rows);
+    $webhookUrl = bootstrap_env('N8N_WEBHOOK_RESUMO_CHAMADA', '');
+    if ($webhookUrl === '') {
+        chamadaResumoWhatsappResponder([
+            'success' => false,
+            'message' => 'Webhook de envio não configurado.',
+        ], 500);
+    }
+
+    $resultadoWebhook = chamadaResumoWhatsappEnviarWebhook($webhookUrl, $payload);
+    if (!empty($resultadoWebhook['technical_message'])) {
+        error_log('[resumo-whatsapp] Falha no webhook: ' . (string)$resultadoWebhook['technical_message']);
+    }
 
     chamadaResumoWhatsappResponder([
-        'success' => true,
-        'message' => 'Resumo da chamada preparado.',
-        'data' => [
-            'colaborador' => [
-                'id_colaborador' => (int)$colaborador['IdColaborador'],
-                'nome' => $nomeCompleto,
-                'whatsapp_mascarado' => chamadaResumoWhatsappMascarar($whatsapp),
-                'email' => (string)($colaborador['Email'] ?? ''),
-            ],
-            'chamada' => $payload['chamada'],
-            'totais' => $payload['totais'],
-            'alunos' => $payload['alunos'],
-            'mensagem' => $payload['mensagem'],
-        ],
-    ]);
+        'success' => (bool)$resultadoWebhook['success'],
+        'message' => (string)$resultadoWebhook['message'],
+    ], (int)$resultadoWebhook['status']);
 } catch (Throwable $e) {
     error_log('[resumo-whatsapp] Falha ao validar colaborador: ' . $e->getMessage());
     chamadaResumoWhatsappResponder([
