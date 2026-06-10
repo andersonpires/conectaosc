@@ -1285,6 +1285,14 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
         return match ? match[1] : 'fotos_chamada.zip';
     }
 
+    function montarUrlFotosChamada(params) {
+        const endpoint = new URL('<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/fotos', window.location.href);
+        endpoint.protocol = window.location.protocol;
+        endpoint.host = window.location.host;
+        endpoint.search = params.toString();
+        return endpoint.toString();
+    }
+
     async function baixarFotosChamada() {
         const overlay = document.getElementById('chamadaDownloadOverlay');
         const botao = document.getElementById('btn-baixar-fotos');
@@ -1293,7 +1301,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             NNomeTurma: '<?php echo addslashes((string)$NNomeTurma); ?>',
             dataSelecionada: document.getElementById('dataSelecionada')?.value || ''
         });
-        const url = '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/fotos?' + params.toString();
+        const url = montarUrlFotosChamada(params);
 
         try {
             if (botao) {
