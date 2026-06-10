@@ -9,6 +9,10 @@ bootstrap_apply_php_runtime();
 
 function chamadaAbortarDownloadFotos(int $statusCode, string $message): void
 {
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+
     http_response_code($statusCode);
     header('Content-Type: text/plain; charset=utf-8');
     echo $message;
@@ -97,12 +101,33 @@ if ($adicionados !== count($rows)) {
 
 $downloadName = chamadaNomeZipFotos($dataSelecionada);
 
+if (function_exists('ini_set')) {
+    ini_set('zlib.output_compression', 'Off');
+    ini_set('output_buffering', 'Off');
+}
+
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
+
 header('Content-Type: application/zip');
 header('Content-Disposition: attachment; filename="' . $downloadName . '"');
-header('Content-Length: ' . filesize($zipPath));
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');
+header('X-Content-Type-Options: nosniff');
+header('X-Accel-Buffering: no');
 
-readfile($zipPath);
+$handle = fopen($zipPath, 'rb');
+if ($handle === false) {
+    @unlink($zipPath);
+    chamadaAbortarDownloadFotos(500, 'Não foi possível ler o arquivo ZIP gerado.');
+}
+
+while (!feof($handle)) {
+    echo fread($handle, 1048576);
+    flush();
+}
+
+fclose($handle);
 @unlink($zipPath);
 exit;
