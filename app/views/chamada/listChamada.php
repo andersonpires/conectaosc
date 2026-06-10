@@ -182,6 +182,94 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             text-decoration: none;
         }
 
+        .chamada-actions-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: .9rem auto 1rem;
+            padding: 0 .75rem;
+            width: 100%;
+        }
+
+        .chamada-actions-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            flex-wrap: nowrap;
+            max-width: 100%;
+        }
+
+        .chamada-actions-group .dropdown {
+            min-width: 0;
+        }
+
+        .chamada-action-main {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: .4rem;
+            min-height: 42px;
+            max-width: calc(100vw - 88px);
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #334155;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .chamada-action-main:hover,
+        .chamada-action-main:focus {
+            background: #f8fafc;
+            border-color: #94a3b8;
+            color: #1e293b;
+        }
+
+        .chamada-action-photo {
+            width: 46px;
+            min-width: 46px;
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #0f766e;
+        }
+
+        .chamada-action-photo:hover,
+        .chamada-action-photo:focus {
+            background: #ecfdf5;
+            border-color: #99f6e4;
+            color: #115e59;
+        }
+
+        .chamada-action-presenca {
+            color: #16a34a;
+            font-weight: 600;
+        }
+
+        .chamada-action-falta {
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .chamada-action-redefinir {
+            color: #b91c1c;
+            font-weight: 600;
+        }
+
+        .chamada-action-redefinir.is-disabled {
+            color: #64748b;
+            cursor: not-allowed;
+            opacity: .68;
+        }
+
+        .chamada-actions-group .dropdown-menu {
+            border-color: #dbe3ef;
+            box-shadow: 0 14px 35px rgba(15, 23, 42, .14);
+        }
+
         .plano-topicos-box {
             border: 1px solid #dbe5f3;
             border-radius: .65rem;
@@ -369,6 +457,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                 }
                 $resultado = turma_foto($pdo, $dataSelecionada, $dataSelecionada, $NNomeCurso, $NNomeTurma, (string)$BASE_para_URL, $viewChamada);
                 $TotalCards = $resultado['totalCards'];
+                $podeRedefinirChamada = chamadaUsuarioPodeRedefinir($_SESSION);
                 ?>
                 <div class="info-container">
                     <h2>Dados selecionados</h2>
@@ -398,6 +487,61 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                         <button type="submit" id="turma-nome" class="btn btn-primary">Ir</button>
 
                     </form>
+                </div>
+
+                <div class="chamada-actions-container" aria-label="Ações de chamada">
+                    <div class="chamada-actions-group">
+                        <div class="dropdown">
+                            <button
+                                class="btn chamada-action-main dropdown-toggle"
+                                type="button"
+                                id="dropdownOpcoesChamada"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false">
+                                <i class="bi bi-gear" aria-hidden="true"></i>
+                                <span>Opções de Chamada</span>
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="dropdownOpcoesChamada">
+                                <li>
+                                    <button class="dropdown-item chamada-action-presenca" type="button" data-chamada-lote="P">
+                                        <i class="bi bi-check2-all me-2" aria-hidden="true"></i>Presença Geral
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item chamada-action-falta" type="button" data-chamada-lote="F">
+                                        <i class="bi bi-x-lg me-2" aria-hidden="true"></i>Falta Geral
+                                    </button>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <?php if ($podeRedefinirChamada): ?>
+                                        <button class="dropdown-item chamada-action-redefinir" type="button" data-chamada-lote="reset">
+                                            <i class="bi bi-trash3 me-2" aria-hidden="true"></i>Redefinir Chamada
+                                        </button>
+                                    <?php else: ?>
+                                        <span data-bs-toggle="tooltip" title="Permissão de Admin necessária">
+                                            <button
+                                                class="dropdown-item chamada-action-redefinir is-disabled"
+                                                type="button"
+                                                disabled>
+                                                <i class="bi bi-lock me-2" aria-hidden="true"></i>Redefinir Chamada
+                                            </button>
+                                        </span>
+                                    <?php endif; ?>
+                                </li>
+                            </ul>
+                        </div>
+
+                        <button
+                            class="btn chamada-action-photo"
+                            type="button"
+                            id="btn-baixar-fotos"
+                            data-bs-toggle="tooltip"
+                            title="Baixar fotos"
+                            aria-label="Baixar fotos">
+                            <i class="bi bi-camera" aria-hidden="true"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <div class="container">
