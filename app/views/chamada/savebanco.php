@@ -3,9 +3,49 @@ $runtime = require __DIR__ . '/../../../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
 require_once __DIR__ . '/../../../api/conectabd/conexao.php';
+require_once __DIR__ . '/funcoes.php';
 
 // Habilitar relatórios de erros para depuração
 bootstrap_apply_php_runtime();
+
+function chamadaResponderJson(array $payload): void
+{
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+function chamadaIdsMatriculaPost(): array
+{
+    $ids = $_POST['idsMatricula'] ?? [];
+    if (!is_array($ids)) {
+        $ids = explode(',', (string)$ids);
+    }
+
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn($id) => $id > 0)));
+    return $ids;
+}
+
+function chamadaValidarDataPost(?string $dataSelecionada): ?array
+{
+    $dataSelecionada = trim((string)$dataSelecionada);
+    $partes = explode('/', $dataSelecionada);
+    if (count($partes) !== 3) {
+        return null;
+    }
+
+    [$dia, $mes, $ano] = array_map('intval', $partes);
+    if (!checkdate($mes, $dia, $ano)) {
+        return null;
+    }
+
+    return [
+        'dia' => $dia,
+        'mes' => $mes,
+        'ano' => $ano,
+        'iso' => sprintf('%04d-%02d-%02d', $ano, $mes, $dia),
+    ];
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $action = $_POST['action'] ?? null;
@@ -125,6 +165,125 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         } catch (PDOException $e) {
             echo json_encode(["status" => "error", "message" => $e->getMessage()]);
+        }
+    } elseif ($action === 'bulkChamada') {
+        try {
+            $idCurso = (int)($_POST['idCurso'] ?? 0);
+            $idTurma = (int)($_POST['idTurma'] ?? 0);
+            $idColaborador = (int)($_POST['idColaborador'] ?? 0);
+            $selectedAction = (string)($_POST['selectedAction'] ?? '');
+            $dataInfo = chamadaValidarDataPost($_POST['dataSelecionada'] ?? null);
+            $idsMatricula = chamadaIdsMatriculaPost();
+
+            if (!in_array($selectedAction, ['P', 'F'], true)) {
+                chamadaResponderJson(['success' => false, 'message' => 'Ação em lote inválida.']);
+            }
+            if ($idCurso <= 0 || $idTurma <= 0 || !$dataInfo || $idsMatricula === []) {
+                chamadaResponderJson(['success' => false, 'message' => 'Dados insuficientes para atualizar a chamada.']);
+            }
+
+            $placeholders = implode(',', array_fill(0, count($idsMatricula), '?'));
+            $stmtAlunos = $pdo->prepare("
+                SELECT IdMatricula, IdUsuario AS IdAluno
+                FROM tbMatricula
+                WHERE IdCurso = ?
+                  AND IdTurma = ?
+                  AND Habilitado = 1
+                  AND IdMatricula IN ($placeholders)
+            ");
+            $stmtAlunos->execute(array_merge([$idCurso, $idTurma], $idsMatricula));
+            $matriculas = $stmtAlunos->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($matriculas === []) {
+                chamadaResponderJson(['success' => false, 'message' => 'Nenhuma matrícula válida foi encontrada para a listagem atual.']);
+            }
+
+            $presenca = $selectedAction === 'P' ? 1 : 0;
+            $falta = $selectedAction === 'F' ? 1 : 0;
+            $faltajust = 0;
+
+            $sqlInsert = "
+                INSERT INTO tbChamada (IdCurso, IdTurma, IdMatricula, IdAluno, Dia, Mes, Ano, Data, presenca, falta, faltajust, IdColaborador)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE
+                    IdAluno = VALUES(IdAluno),
+                    presenca = VALUES(presenca),
+                    falta = VALUES(falta),
+                    faltajust = VALUES(faltajust),
+                    IdColaborador = VALUES(IdColaborador)
+            ";
+            $stmt = $pdo->prepare($sqlInsert);
+
+            $pdo->beginTransaction();
+            foreach ($matriculas as $matricula) {
+                $stmt->execute([
+                    $idCurso,
+                    $idTurma,
+                    (int)$matricula['IdMatricula'],
+                    (int)$matricula['IdAluno'],
+                    $dataInfo['dia'],
+                    $dataInfo['mes'],
+                    $dataInfo['ano'],
+                    $dataInfo['iso'],
+                    $presenca,
+                    $falta,
+                    $faltajust,
+                    $idColaborador,
+                ]);
+            }
+            $pdo->commit();
+
+            chamadaResponderJson([
+                'success' => true,
+                'message' => 'Chamada atualizada com sucesso.',
+                'total' => count($matriculas),
+            ]);
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            chamadaResponderJson(['success' => false, 'message' => 'Erro ao atualizar chamada em lote: ' . $e->getMessage()]);
+        }
+    } elseif ($action === 'resetChamada') {
+        try {
+            if (!chamadaUsuarioPodeRedefinir($_SESSION ?? [])) {
+                chamadaResponderJson(['success' => false, 'message' => 'Permissão de Admin necessária.']);
+            }
+
+            $idCurso = (int)($_POST['idCurso'] ?? 0);
+            $idTurma = (int)($_POST['idTurma'] ?? 0);
+            $dataInfo = chamadaValidarDataPost($_POST['dataSelecionada'] ?? null);
+            $idsMatricula = chamadaIdsMatriculaPost();
+
+            if ($idCurso <= 0 || $idTurma <= 0 || !$dataInfo || $idsMatricula === []) {
+                chamadaResponderJson(['success' => false, 'message' => 'Dados insuficientes para redefinir a chamada.']);
+            }
+
+            $placeholders = implode(',', array_fill(0, count($idsMatricula), '?'));
+            $stmt = $pdo->prepare("
+                DELETE FROM tbChamada
+                WHERE IdCurso = ?
+                  AND IdTurma = ?
+                  AND Dia = ?
+                  AND Mes = ?
+                  AND Ano = ?
+                  AND IdMatricula IN ($placeholders)
+            ");
+            $stmt->execute(array_merge([
+                $idCurso,
+                $idTurma,
+                $dataInfo['dia'],
+                $dataInfo['mes'],
+                $dataInfo['ano'],
+            ], $idsMatricula));
+
+            chamadaResponderJson([
+                'success' => true,
+                'message' => 'Chamada redefinida com sucesso.',
+                'total' => $stmt->rowCount(),
+            ]);
+        } catch (Throwable $e) {
+            chamadaResponderJson(['success' => false, 'message' => 'Erro ao redefinir chamada: ' . $e->getMessage()]);
         }
     } elseif ($action === 'loadObs') {
         try {

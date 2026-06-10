@@ -668,6 +668,22 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="modalConfirmacaoLote" tabindex="-1" aria-labelledby="modalConfirmacaoLoteLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalConfirmacaoLoteLabel">Confirmar ação</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body" id="modalConfirmacaoLoteMensagem"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" id="confirmarAcaoLote">Continuar</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <!-- Modal de mensagem de retorno -->
     <div class="modal fade" id="modalMensagem" tabindex="-1" aria-labelledby="modalMensagemLabel" aria-hidden="true">
         <div class="modal-dialog">
@@ -1124,12 +1140,187 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
         btnNenhum.addEventListener('click', function() {
             toggleNenhumButton(true);
         });
+
+        document.querySelectorAll('[data-chamada-lote]').forEach(button => {
+            button.addEventListener('click', function() {
+                if (this.disabled) {
+                    return;
+                }
+                executarAcaoLote(this.dataset.chamadaLote || '');
+            });
+        });
     });
 </script>
 
 <script>
     function getStudentCards() {
         return document.querySelectorAll('.chamada-student-item[id^="card_"]');
+    }
+
+    function getVisibleStudentCards() {
+        return Array.from(getStudentCards()).filter(card => {
+            const style = window.getComputedStyle(card);
+            return style.display !== 'none' && style.visibility !== 'hidden';
+        });
+    }
+
+    function getVisibleMatriculaIds() {
+        return getVisibleStudentCards()
+            .map(card => Number((card.id || '').split('_')[1] || 0))
+            .filter(id => id > 0);
+    }
+
+    function confirmarAcaoLote(titulo, mensagemInicial, mensagemFinal, classeBotao) {
+        return new Promise(resolve => {
+            const modalEl = document.getElementById('modalConfirmacaoLote');
+            const tituloEl = document.getElementById('modalConfirmacaoLoteLabel');
+            const mensagemEl = document.getElementById('modalConfirmacaoLoteMensagem');
+            const confirmarBtn = document.getElementById('confirmarAcaoLote');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            let etapa = 1;
+
+            tituloEl.textContent = titulo;
+            mensagemEl.textContent = mensagemInicial;
+            confirmarBtn.textContent = 'Continuar';
+            confirmarBtn.className = `btn ${classeBotao || 'btn-success'}`;
+
+            const limpar = () => {
+                confirmarBtn.removeEventListener('click', onConfirmar);
+                modalEl.removeEventListener('hidden.bs.modal', onFechar);
+            };
+
+            const onFechar = () => {
+                limpar();
+                resolve(false);
+            };
+
+            const onConfirmar = () => {
+                if (etapa === 1) {
+                    etapa = 2;
+                    mensagemEl.textContent = mensagemFinal;
+                    confirmarBtn.textContent = 'Confirmar';
+                    return;
+                }
+
+                limpar();
+                modal.hide();
+                resolve(true);
+            };
+
+            confirmarBtn.addEventListener('click', onConfirmar);
+            modalEl.addEventListener('hidden.bs.modal', onFechar);
+            modal.show();
+        });
+    }
+
+    function aplicarEstadoLoteNoFront(acao) {
+        const cards = getVisibleStudentCards();
+        cards.forEach(card => {
+            const botoesChamada = card.querySelectorAll('.btn[id^="P-"], .btn[id^="F-"], .btn[id^="FJ-"]');
+            botoesChamada.forEach(botao => {
+                botao.style.backgroundColor = '#a3a3a3';
+                botao.classList.remove('selecionado');
+            });
+
+            if (acao === 'P') {
+                const botaoPresenca = card.querySelector('.btn[id^="P-"]');
+                if (botaoPresenca) {
+                    botaoPresenca.style.backgroundColor = '#008000';
+                    botaoPresenca.classList.add('selecionado');
+                }
+            }
+
+            if (acao === 'F') {
+                const botaoFalta = card.querySelector('.btn[id^="F-"]');
+                if (botaoFalta) {
+                    botaoFalta.style.backgroundColor = '#FF0000';
+                    botaoFalta.classList.add('selecionado');
+                }
+            }
+        });
+        updateButtonCount();
+    }
+
+    async function executarAcaoLote(acao) {
+        const idsMatricula = getVisibleMatriculaIds();
+        if (!idsMatricula.length) {
+            toastr.warning('Nenhum aluno visível foi encontrado para aplicar a ação.');
+            return;
+        }
+
+        const total = idsMatricula.length;
+        const config = {
+            P: {
+                action: 'bulkChamada',
+                selectedAction: 'P',
+                titulo: 'Confirmar presença geral',
+                inicial: `Esta ação marcará presença para ${total} aluno(s) da listagem atual. Deseja continuar?`,
+                final: 'Confirme novamente para salvar a presença geral.',
+                botao: 'btn-success',
+                sucesso: 'Presença geral salva com sucesso.'
+            },
+            F: {
+                action: 'bulkChamada',
+                selectedAction: 'F',
+                titulo: 'Confirmar falta geral',
+                inicial: `Esta ação marcará falta para ${total} aluno(s) da listagem atual. Deseja continuar?`,
+                final: 'Confirme novamente para salvar a falta geral.',
+                botao: 'btn-danger',
+                sucesso: 'Falta geral salva com sucesso.'
+            },
+            reset: {
+                action: 'resetChamada',
+                selectedAction: '',
+                titulo: 'Redefinir chamada',
+                inicial: 'ATENÇÃO: Esta ação apagará todas as marcações salvas do dia de hoje. Confirmar redefinição?',
+                final: 'Confirme novamente para redefinir a chamada da listagem atual.',
+                botao: 'btn-danger',
+                sucesso: 'Chamada redefinida com sucesso.'
+            }
+        }[acao];
+
+        if (!config) {
+            return;
+        }
+
+        const confirmado = await confirmarAcaoLote(config.titulo, config.inicial, config.final, config.botao);
+        if (!confirmado) {
+            return;
+        }
+
+        $.ajax({
+            url: '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/salvar/',
+            type: 'POST',
+            data: {
+                action: config.action,
+                selectedAction: config.selectedAction,
+                idsMatricula: idsMatricula,
+                idCurso: '<?php echo addslashes((string)$NNomeCurso); ?>',
+                idTurma: '<?php echo addslashes((string)$NNomeTurma); ?>',
+                idColaborador: '<?php echo (int)$cod; ?>',
+                dataSelecionada: document.getElementById('dataSelecionada')?.value || ''
+            },
+            success: function(response) {
+                try {
+                    const data = typeof response === 'string' ? JSON.parse(response) : response;
+                    if (!data.success) {
+                        toastr.error(data.message || 'Não foi possível concluir a ação em lote.', 'Erro');
+                        return;
+                    }
+
+                    aplicarEstadoLoteNoFront(acao);
+                    toastr.success(data.message || config.sucesso);
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 900);
+                } catch (e) {
+                    toastr.error('Erro inesperado ao processar a resposta do servidor.', 'Erro');
+                }
+            },
+            error: function() {
+                toastr.error('Erro na comunicação com o servidor.', 'Erro');
+            }
+        });
     }
 
     function alterarCor(botao, cor) {
