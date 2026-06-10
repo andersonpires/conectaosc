@@ -30,6 +30,11 @@ final class ChamadaController
         $this->render('/app/views/chamada/savebanco.php');
     }
 
+    public function fotos(): void
+    {
+        $this->render('/app/views/chamada/downloadFotos.php');
+    }
+
     private function render(string $relativePath): void
     {
         $candidate = $this->basePath . $relativePath;

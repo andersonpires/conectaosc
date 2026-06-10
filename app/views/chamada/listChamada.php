@@ -1200,6 +1200,18 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                 executarAcaoLote(this.dataset.chamadaLote || '');
             });
         });
+
+        const btnBaixarFotos = document.getElementById('btn-baixar-fotos');
+        if (btnBaixarFotos) {
+            btnBaixarFotos.addEventListener('click', function() {
+                const params = new URLSearchParams({
+                    NNomeCurso: '<?php echo addslashes((string)$NNomeCurso); ?>',
+                    NNomeTurma: '<?php echo addslashes((string)$NNomeTurma); ?>',
+                    dataSelecionada: document.getElementById('dataSelecionada')?.value || ''
+                });
+                window.location.href = '<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/fotos?' + params.toString();
+            });
+        }
     });
 </script>
 

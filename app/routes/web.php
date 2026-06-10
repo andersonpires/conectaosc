@@ -71,6 +71,7 @@ $router->get('/chamada', [$chamadaController, 'tipo']);
 $router->get('/chamada/lista', [$chamadaController, 'lista']);
 $router->get('/chamada/faltas', [$chamadaController, 'faltas']);
 $router->get('/chamada/lista/listTotalChamada.php', [$chamadaController, 'faltas']);
+$router->get('/chamada/fotos', [$chamadaController, 'fotos']);
 $router->post('/chamada/salvar', [$chamadaController, 'salvar']);
 $router->get('/swot', [$swotController, 'index']);
 $router->post('/swot', [$swotController, 'index']);
