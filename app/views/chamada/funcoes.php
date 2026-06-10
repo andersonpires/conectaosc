@@ -59,7 +59,7 @@ function chamadaAniversarioProximo(?string $nascimento, ?string $dataSelecionada
         $acaoIdade = 'completa';
     } elseif ($menorDiferenca < 0) {
         $dias = abs($menorDiferenca);
-        $mensagem = 'Aniversariou ha ' . $dias . ' dia' . ($dias > 1 ? 's' : '');
+        $mensagem = 'Aniversariou há ' . $dias . ' dia' . ($dias > 1 ? 's' : '');
         $acaoIdade = 'completou';
     } else {
         $mensagem = 'Aniversaria em ' . $menorDiferenca . ' dia' . ($menorDiferenca > 1 ? 's' : '');
@@ -78,6 +78,102 @@ function chamadaDataBrParaIso(?string $data): ?string
 {
     $date = chamadaCriarDataBase($data);
     return $date ? $date->format('Y-m-d') : null;
+}
+
+function chamadaUsuarioPodeRedefinir(?array $sessao = null): bool
+{
+    $sessao = $sessao ?? $_SESSION;
+    $tipo = (string)($sessao['Tipo'] ?? '');
+    $idPermissao = (int)($sessao['IdPermissao'] ?? 0);
+
+    return $idPermissao === 4 || in_array($tipo, ['Geral', 'Administrador', 'Superadministrador'], true);
+}
+
+function chamadaRemoverAcentos(string $valor): string
+{
+    $valor = strtr($valor, [
+        'Á' => 'A', 'À' => 'A', 'Â' => 'A', 'Ã' => 'A', 'Ä' => 'A', 'Å' => 'A',
+        'á' => 'a', 'à' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'å' => 'a',
+        'É' => 'E', 'È' => 'E', 'Ê' => 'E', 'Ë' => 'E',
+        'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+        'Í' => 'I', 'Ì' => 'I', 'Î' => 'I', 'Ï' => 'I',
+        'í' => 'i', 'ì' => 'i', 'î' => 'i', 'ï' => 'i',
+        'Ó' => 'O', 'Ò' => 'O', 'Ô' => 'O', 'Õ' => 'O', 'Ö' => 'O',
+        'ó' => 'o', 'ò' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o',
+        'Ú' => 'U', 'Ù' => 'U', 'Û' => 'U', 'Ü' => 'U',
+        'ú' => 'u', 'ù' => 'u', 'û' => 'u', 'ü' => 'u',
+        'Ç' => 'C', 'ç' => 'c', 'Ñ' => 'N', 'ñ' => 'n',
+    ]);
+
+    if (class_exists('Transliterator')) {
+        $transliterador = Transliterator::create('Any-Latin; Latin-ASCII;');
+        if ($transliterador instanceof Transliterator) {
+            $valor = $transliterador->transliterate($valor);
+        }
+    } else {
+        $convertido = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $valor);
+        if ($convertido !== false) {
+            $valor = $convertido;
+        }
+    }
+
+    return $valor;
+}
+
+function chamadaNomeFotoParaZip(string $nomeAluno): string
+{
+    $nome = chamadaRemoverAcentos(trim($nomeAluno));
+    $nome = preg_replace('/[^A-Za-z0-9\s]/', ' ', $nome) ?? '';
+    $partes = preg_split('/\s+/', trim($nome), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+    if ($partes === []) {
+        return 'Aluno.jpg';
+    }
+
+    $nomeBase = implode(' ', $partes);
+    if (strlen($nomeBase) > 15 && count($partes) > 3) {
+        $preposicoes = ['da', 'das', 'de', 'do', 'dos', 'e'];
+        $quantidadePrimeiras = in_array(strtolower($partes[1] ?? ''), $preposicoes, true) && count($partes) > 4 ? 3 : 2;
+        $primeiras = array_slice($partes, 0, $quantidadePrimeiras);
+        $ultima = $partes[count($partes) - 1];
+        $intermediarias = array_slice($partes, $quantidadePrimeiras, -1);
+        $iniciais = [];
+
+        foreach ($intermediarias as $parte) {
+            if (in_array(strtolower($parte), $preposicoes, true)) {
+                continue;
+            }
+            $iniciais[] = strtoupper(substr($parte, 0, 1));
+        }
+
+        $partes = array_merge($primeiras, $iniciais, [$ultima]);
+    }
+
+    $arquivo = implode('_', $partes);
+    $arquivo = preg_replace('/_+/', '_', $arquivo) ?? 'Aluno';
+    $arquivo = trim($arquivo, '_');
+
+    return ($arquivo !== '' ? $arquivo : 'Aluno') . '.jpg';
+}
+
+function chamadaResolverFotoAlunoPath(?string $foto): string
+{
+    $foto = trim((string)$foto);
+    if ($foto !== '' && !preg_match('/^https?:\/\//i', $foto)) {
+        $resolvida = bootstrap_resolve_assets_img_file($foto);
+        if ($resolvida !== '') {
+            return $resolvida;
+        }
+    }
+
+    foreach (['padrao.jfif', 'padrao.jpg', 'padrao.png'] as $arquivoPadrao) {
+        $padrao = bootstrap_resolve_assets_img_file($arquivoPadrao);
+        if ($padrao !== '') {
+            return $padrao;
+        }
+    }
+
+    return '';
 }
 
 function buscarAlunosChamada($pdo, $dataSelecionada, $NNomeCurso, $NNomeTurma): array

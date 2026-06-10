@@ -863,7 +863,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                 try {
                     let data = JSON.parse(response); // Tenta analisar a resposta como JSON
 
-                    // Verifica se h? um erro na resposta
+                    // Verifica se há um erro na resposta
                     if (data.erro) {
                         console.warn("Erro retornado pelo servidor:", data.erro);
                         alert(data.erro); // Mostra a mensagem de erro retornada
@@ -895,7 +895,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                 updateButtonCount();
             },
             error: function(xhr, status, error) {
-                console.error("Erro na requisicao AJAX:", status, error); // Mostra detalhes do erro
+                console.error("Erro na requisição AJAX:", status, error); // Mostra detalhes do erro
                 alert('Ocorreu um erro ao carregar os dados.');
             }
         });
@@ -903,7 +903,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
         $(document).on('click', '.btnp', function() {
             const buttonId = $(this).attr('id');
 
-            // Extrai apenas as letras antes do tra?o (-)
+            // Extrai apenas as letras antes do traço (-)
             const action = buttonId.split('-')[0];
 
             const card = $(this).closest('.chamada-student-item');
@@ -1077,23 +1077,23 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
         if (isClickEvent) {
             if (isActive) {
-                // Bot?o desativado
+                // Botão desativado
                 btnNenhum.style.backgroundColor = '#a3a3a3';
                 btnNenhum.style.color = '#fff';
-                btnNenhum.querySelector('i').classList.replace('bi-lightbulb', 'bi-lightbulb-off'); // Alterar ?cone
+                btnNenhum.querySelector('i').classList.replace('bi-lightbulb', 'bi-lightbulb-off'); // Alterar ícone
                 filterCardsGray('none'); // Esconde os cards
             } else {
-                // Bot?o ativado
+                // Botão ativado
                 btnNenhum.style.backgroundColor = 'lightgray';
                 btnNenhum.style.color = 'black';
-                btnNenhum.querySelector('i').classList.replace('bi-lightbulb-off', 'bi-lightbulb'); // Alterar ?cone
+                btnNenhum.querySelector('i').classList.replace('bi-lightbulb-off', 'bi-lightbulb'); // Alterar ícone
                 filterCardsGray('block'); // Mostra todos os cards
             }
         } else {
             if (!isActive) {
                 btnNenhum.style.backgroundColor = 'lightgray';
                 btnNenhum.style.color = 'black';
-                btnNenhum.querySelector('i').classList.replace('bi-lightbulb-off', 'bi-lightbulb'); // Alterar ?cone para "lampada acesa"
+                btnNenhum.querySelector('i').classList.replace('bi-lightbulb-off', 'bi-lightbulb'); // Alterar ícone para "lâmpada acesa"
                 filterCardsGray('block'); // Mostrar todos os cards
             }
         }
@@ -1137,11 +1137,11 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                             modal.find('#observacoes').focus();
                         }, 500);
                     } catch (e) {
-                        alert('Erro na requisicao');
+                        alert('Erro na requisição');
                     }
                 },
                 error: function(xhr, status, error) {
-                    console.error('Erro na requisicao AJAX:', status, error);
+                    console.error('Erro na requisição AJAX:', status, error);
                     alert('Erro ao carregar os dados do banco.');
                 }
             });
@@ -1190,7 +1190,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Erro na requisicao AJAX:', status, error);
+                console.error('Erro na requisição AJAX:', status, error);
                 alert('Erro ao salvar observação.');
             }
         });

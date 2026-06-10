@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $action = $_POST['action'] ?? null;
 
     if ($action === 'loadData') {
-        // Obt?m a data selecionada enviada pelo AJAX
+        // Obtém a data selecionada enviada pelo AJAX
         $dataSelecionada = $_POST['dataSelecionada'];
         list($dia, $mes, $ano) = explode('/', $dataSelecionada); // Divide a data em dia, mês e ano
 
@@ -79,7 +79,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         exit;
     } elseif ($action === 'insertData') {
         try {
-            // L?gica para inserir os dados
+            // Lógica para inserir os dados
             $idCurso = $_POST['idCurso'];
             $idTurma = $_POST['idTurma'];
             $cod = $_POST['idColaborador'];
@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         ";
             $stmt = $pdo->prepare($sqlInsert);
 
-            // Vinculando os par?metros ? statement
+            // Vinculando os parâmetros ao statement
             $stmt->bindParam(1, $idCurso, PDO::PARAM_INT);
             $stmt->bindParam(2, $idTurma, PDO::PARAM_INT);
             $stmt->bindParam(3, $idMatricula, PDO::PARAM_INT);
@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                     AND Mes = :mes AND Ano = :ano
                                 ");
 
-            // Bind dos par?metros
+            // Bind dos parâmetros
             $stmt->bindParam(':idCurso', $idCurso, PDO::PARAM_INT);
             $stmt->bindParam(':idTurma', $idTurma, PDO::PARAM_INT);
             $stmt->bindParam(':idMatricula', $idMatricula, PDO::PARAM_INT);
@@ -187,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Divide a data selecionada em dia, mês e ano
             list($dia, $mes, $ano) = explode('/', $dataSelecionada);
             $data = $ano . '-' . $mes . '-' . $dia;
-            // Converte valores vazios ou somente espa?os para NULL
+            // Converte valores vazios ou somente espaços para NULL
             $obsValue = trim($observacoes) === '' ? null : $observacoes;
 
             // Prepara a consulta com ON DUPLICATE KEY UPDATE
@@ -203,7 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             // Define o valor do último parâmetro, simulando NULL corretamente
             $dummy = $obsValue;
 
-            // Vinculando os par?metros ? statement
+            // Vinculando os parâmetros ao statement
             $stmt->bindParam(1, $idCurso, PDO::PARAM_INT);
             $stmt->bindParam(2, $idTurma, PDO::PARAM_INT);
             $stmt->bindParam(3, $idMatricula, PDO::PARAM_INT);
@@ -348,7 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 // // Verifica se o arquivo foi aberto com sucesso
 // if ($arquivo) {
-//     // Obt?m a data e hora atual
+//     // Obtém a data e hora atual
 //     $dataHora = date("Y-m-d H:i:s");
 
 //     // Grava a data e hora, e os dados do POST no arquivo
