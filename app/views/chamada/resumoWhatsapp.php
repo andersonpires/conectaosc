@@ -174,6 +174,62 @@ function chamadaResumoWhatsappMontarMensagem(array $payload, array $nomesPorGrup
     return implode("\n", $linhas);
 }
 
+function chamadaResumoWhatsappMontarMensagemFormatada(array $payload, array $nomesPorGrupo): string
+{
+    $totais = $payload['totais'];
+    $chamada = $payload['chamada'];
+    $emojiResumo = "\u{1F4DD}";
+    $emojiCurso = "\u{1F4DA}";
+    $emojiTurma = "\u{1F465}";
+    $emojiData = "\u{1F4C5}";
+    $emojiEnvio = "\u{23F0}";
+    $emojiPresenca = "\u{2705}";
+    $emojiFaltaJustificada = "\u{1F7E1}";
+    $emojiFalta = "\u{274C}";
+    $emojiSemChamada = "\u{26AA}";
+    $emojiTotais = "\u{1F4CA}";
+    $emojiAlunos = "\u{1F393}";
+
+    $linhas = [
+        $emojiResumo . ' *Resumo da chamada*',
+        '',
+        $emojiCurso . ' *Curso:* ' . $chamada['curso']['nome'],
+        $emojiTurma . ' *Turma:* ' . $chamada['turma']['nome'],
+        $emojiData . ' *Data da chamada:* ' . $chamada['data'],
+        $emojiEnvio . ' *Enviado em:* ' . $payload['enviado_em_br'],
+        '',
+    ];
+
+    $secoes = [
+        $emojiPresenca . ' *Presencas:*' => 'presencas',
+        $emojiFaltaJustificada . ' *Faltas justificadas:*' => 'faltas_justificadas',
+        $emojiFalta . ' *Faltas nao justificadas:*' => 'faltas_nao_justificadas',
+        $emojiSemChamada . ' *Sem chamada realizada:*' => 'sem_chamada',
+    ];
+
+    foreach ($secoes as $titulo => $grupo) {
+        $linhas[] = $titulo;
+        $nomes = $nomesPorGrupo[$grupo] ?? [];
+        if ($nomes === []) {
+            $linhas[] = '- Nenhum aluno';
+        } else {
+            foreach ($nomes as $nome) {
+                $linhas[] = '- ' . $nome;
+            }
+        }
+        $linhas[] = '';
+    }
+
+    $linhas[] = $emojiTotais . ' *Totais:*';
+    $linhas[] = $emojiPresenca . ' Presencas: ' . $totais['presencas'];
+    $linhas[] = $emojiFaltaJustificada . ' Faltas justificadas: ' . $totais['faltas_justificadas'];
+    $linhas[] = $emojiFalta . ' Faltas nao justificadas: ' . $totais['faltas_nao_justificadas'];
+    $linhas[] = $emojiSemChamada . ' Sem chamada: ' . $totais['sem_chamada'];
+    $linhas[] = $emojiAlunos . ' Total de alunos: ' . $totais['alunos'];
+
+    return implode("\n", $linhas);
+}
+
 function chamadaResumoWhatsappMontarPayload(array $colaborador, string $whatsapp, int $idCurso, int $idTurma, string $dataSelecionada, array $rows): array
 {
     $agora = new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo'));
@@ -243,7 +299,7 @@ function chamadaResumoWhatsappMontarPayload(array $colaborador, string $whatsapp
         'mensagem' => '',
     ];
 
-    $payload['mensagem'] = chamadaResumoWhatsappMontarMensagem($payload, $nomesPorGrupo);
+    $payload['mensagem'] = chamadaResumoWhatsappMontarMensagemFormatada($payload, $nomesPorGrupo);
     return $payload;
 }
 
