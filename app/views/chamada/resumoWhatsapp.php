@@ -36,9 +36,31 @@ function chamadaResumoWhatsappSomenteDigitos(?string $valor): string
     return preg_replace('/\D+/', '', (string)$valor) ?? '';
 }
 
-function chamadaResumoWhatsappMascarar(?string $whatsapp): string
+function chamadaResumoWhatsappNormalizarDestino(?string $whatsapp): string
 {
     $digitos = chamadaResumoWhatsappSomenteDigitos($whatsapp);
+    if ($digitos === '') {
+        return '';
+    }
+
+    if (str_starts_with($digitos, '55') && strlen($digitos) >= 12) {
+        return $digitos;
+    }
+
+    if (str_starts_with($digitos, '0')) {
+        $digitos = ltrim($digitos, '0');
+    }
+
+    if (strlen($digitos) === 10 || strlen($digitos) === 11) {
+        return '55' . $digitos;
+    }
+
+    return $digitos;
+}
+
+function chamadaResumoWhatsappMascarar(?string $whatsapp): string
+{
+    $digitos = chamadaResumoWhatsappNormalizarDestino($whatsapp);
     if ($digitos === '') {
         return '';
     }
@@ -383,7 +405,7 @@ try {
         ], 404);
     }
 
-    $whatsapp = chamadaResumoWhatsappSomenteDigitos((string)($colaborador['WhatsApp'] ?? ''));
+    $whatsapp = chamadaResumoWhatsappNormalizarDestino((string)($colaborador['WhatsApp'] ?? ''));
     if ($whatsapp === '') {
         chamadaResumoWhatsappResponder([
             'success' => false,
