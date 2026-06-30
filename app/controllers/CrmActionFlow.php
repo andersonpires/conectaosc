@@ -49,7 +49,20 @@ final class CrmActionFlow
                 break;
 
             case 'buscarAlunosFaltosos':
-                echo json_encode(['status' => 'ok', 'alunos' => $service->buscarAlunosFaltosos($_POST, true)], JSON_UNESCAPED_UNICODE);
+                try {
+                    echo json_encode(['status' => 'ok', 'alunos' => $service->buscarAlunosFaltosos($_POST, true)], JSON_UNESCAPED_UNICODE);
+                } catch (Throwable $e) {
+                    echo json_encode(['status' => 'erro', 'mensagem' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+                }
+                break;
+
+            case 'exportarFrequenciaBuscaCrm':
+                try {
+                    $excel = $service->exportarFrequenciaBuscaCrm($_POST, true);
+                    echo json_encode(['status' => 'ok', 'dados' => $excel], JSON_UNESCAPED_UNICODE);
+                } catch (Throwable $e) {
+                    echo json_encode(['status' => 'erro', 'mensagem' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+                }
                 break;
 
             case 'dadosAluno':
@@ -179,4 +192,3 @@ final class CrmActionFlow
         }
     }
 }
-

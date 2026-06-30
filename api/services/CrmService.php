@@ -45,14 +45,59 @@ final class CrmService
 
     public function buscarAlunosFaltosos(array $payload, bool $considerarMatricula): array
     {
+        $statusFrequencia = $this->normalizarStatusFrequencia((string)($payload['statusFrequencia'] ?? 'F'));
+        $quantidadeMinima = (int)($payload['quantidadeMinima'] ?? ($payload['faltas'] ?? 0));
+        $dataInicioRaw = (string)($payload['dataInicio'] ?? '');
+        $dataFimRaw = (string)($payload['dataFim'] ?? '');
+        $dataInicio = $this->normalizarData($dataInicioRaw);
+        $dataFim = $this->normalizarData($dataFimRaw);
+
+        if ((trim($dataInicioRaw) !== '' && $dataInicio === '') || (trim($dataFimRaw) !== '' && $dataFim === '')) {
+            throw new \InvalidArgumentException('Informe datas válidas para início e fim.');
+        }
+        if (($dataInicio === '') !== ($dataFim === '')) {
+            throw new \InvalidArgumentException('Informe a data de início e a data de fim.');
+        }
+        if ($dataInicio !== '' && $dataFim !== '' && $dataInicio > $dataFim) {
+            throw new \InvalidArgumentException('A data de início não pode ser maior que a data de fim.');
+        }
+
         return $this->repository->buscarAlunosFaltosos(
             (string)($payload['curso'] ?? ''),
             (string)($payload['turma'] ?? ''),
-            (int)($payload['faltas'] ?? 0),
+            $quantidadeMinima,
             (int)($payload['dias'] ?? 0),
             $considerarMatricula,
-            (int)($payload['somenteMatriculados'] ?? 1)
+            (int)($payload['somenteMatriculados'] ?? 1),
+            $statusFrequencia,
+            $dataInicio,
+            $dataFim
         );
+    }
+
+    public function exportarFrequenciaBuscaCrm(array $payload, bool $considerarMatricula): array
+    {
+        $dataInicioRaw = (string)($payload['dataInicio'] ?? '');
+        $dataFimRaw = (string)($payload['dataFim'] ?? '');
+        $dataInicio = $this->normalizarData($dataInicioRaw);
+        $dataFim = $this->normalizarData($dataFimRaw);
+        if ((trim($dataInicioRaw) !== '' && $dataInicio === '') || (trim($dataFimRaw) !== '' && $dataFim === '')) {
+            throw new \InvalidArgumentException('Informe datas válidas para início e fim.');
+        }
+        if ($dataInicio === '' || $dataFim === '') {
+            throw new \InvalidArgumentException('Informe a data de início e a data de fim para exportar.');
+        }
+        if ($dataInicio > $dataFim) {
+            throw new \InvalidArgumentException('A data de início não pode ser maior que a data de fim.');
+        }
+
+        $alunosBusca = $this->buscarAlunosFaltosos($payload, $considerarMatricula);
+        if ($alunosBusca === []) {
+            return [];
+        }
+
+        $frequencias = $this->repository->listarFrequenciaDetalhadaPorAlunos($alunosBusca, $dataInicio, $dataFim);
+        return $this->montarExcelFrequenciaCrm($alunosBusca, $frequencias, $dataInicio, $dataFim);
     }
 
     public function dadosAluno(int $idUsuario, bool $incluirIdsCursoTurma): ?array
@@ -193,5 +238,133 @@ final class CrmService
             rtrim($baseDir, '/\\') . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'img',
             rtrim($baseUrl, '/') . '/assets/img',
         ];
+    }
+
+    private function normalizarStatusFrequencia(string $status): string
+    {
+        $status = strtoupper(trim($status));
+        return in_array($status, ['P', 'F', 'FJ'], true) ? $status : 'F';
+    }
+
+    private function normalizarData(string $data): string
+    {
+        $data = trim($data);
+        if ($data === '') {
+            return '';
+        }
+
+        $timestamp = strtotime($data);
+        if ($timestamp === false) {
+            return '';
+        }
+
+        return date('Y-m-d', $timestamp);
+    }
+
+    private function montarExcelFrequenciaCrm(array $alunosBusca, array $frequencias, string $dataInicio, string $dataFim): array
+    {
+        $dias = [];
+        $tabela = [];
+        $alunos = [];
+
+        foreach ($alunosBusca as $alunoBusca) {
+            $key = $this->chaveAlunoFrequencia($alunoBusca);
+            $alunos[$key] = [
+                'nome' => (string)($alunoBusca['Nome'] ?? ''),
+                'turma' => (string)($alunoBusca['NomeTurma'] ?? ''),
+                'curso' => (string)($alunoBusca['NomeCurso'] ?? ''),
+            ];
+            $tabela[$key] = [];
+        }
+
+        foreach ($frequencias as $row) {
+            $key = $this->chaveAlunoFrequencia([
+                'IdUsuario' => $row['IdUsuario'] ?? 0,
+                'IdCurso' => $row['IdCurso'] ?? 0,
+                'IdTurma' => $row['IdTurma'] ?? 0,
+            ]);
+            if (!isset($alunos[$key])) {
+                continue;
+            }
+
+            $data = (string)($row['Data'] ?? '');
+            if ($data === '') {
+                continue;
+            }
+            if (!in_array($data, $dias, true)) {
+                $dias[] = $data;
+            }
+
+            $status = 'NA';
+            if ((int)($row['presenca'] ?? 0) === 1) {
+                $status = 'P';
+            } elseif ((int)($row['falta'] ?? 0) === 1) {
+                $status = 'F';
+            } elseif ((int)($row['faltajust'] ?? 0) === 1) {
+                $status = 'FJ';
+            }
+            $tabela[$key][$data] = $status;
+        }
+
+        usort($dias, static fn(string $a, string $b): int => strtotime($a) <=> strtotime($b));
+
+        $cursos = array_values(array_unique(array_filter(array_column($alunos, 'curso'))));
+        $turmas = array_values(array_unique(array_filter(array_column($alunos, 'turma'))));
+        $cursoNome = count($cursos) === 1 ? $cursos[0] : 'TODOS';
+        $turmaNome = count($turmas) === 1 ? $turmas[0] : 'TODAS';
+
+        $excelData = [];
+        $excelData[] = ['SISTEMA DE FREQUÊNCIA'];
+        $excelData[] = ['Curso: ' . $cursoNome];
+        $excelData[] = ['Turma: ' . $turmaNome];
+        $excelData[] = ['De ' . date('d/m/Y', strtotime($dataInicio)) . ' a ' . date('d/m/Y', strtotime($dataFim))];
+        $excelData[] = [''];
+        $excelData[] = array_merge(
+            ['No', 'Nome do Aluno', 'Turma', 'Qtd P', 'Qtd F', 'Qtd FJ', 'Qtd Aulas'],
+            array_map(static fn(string $dia): string => date('d/m/y', strtotime($dia)), $dias)
+        );
+
+        $contador = 1;
+        foreach ($alunos as $key => $aluno) {
+            $totalP = 0;
+            $totalF = 0;
+            $totalFJ = 0;
+
+            foreach ($dias as $dia) {
+                $status = $tabela[$key][$dia] ?? 'NA';
+                if ($status === 'P') {
+                    $totalP++;
+                } elseif ($status === 'F') {
+                    $totalF++;
+                } elseif ($status === 'FJ') {
+                    $totalFJ++;
+                }
+            }
+
+            $rowData = [
+                $contador++,
+                $aluno['nome'],
+                $aluno['turma'],
+                $totalP,
+                $totalF,
+                $totalFJ,
+                $totalP + $totalF + $totalFJ,
+            ];
+
+            foreach ($dias as $dia) {
+                $rowData[] = $tabela[$key][$dia] ?? 'NA';
+            }
+
+            $excelData[] = $rowData;
+        }
+
+        $excelData[] = [''];
+        $excelData[] = ['Obs.: P = Presença; F = Falta; FJ = Falta Justificada; e NA = Não se Aplica.'];
+        return $excelData;
+    }
+
+    private function chaveAlunoFrequencia(array $row): string
+    {
+        return (int)($row['IdUsuario'] ?? 0) . '|' . (int)($row['IdCurso'] ?? 0) . '|' . (int)($row['IdTurma'] ?? 0);
     }
 }

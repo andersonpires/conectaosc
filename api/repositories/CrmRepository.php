@@ -39,20 +39,29 @@ class CrmRepository
     public function buscarAlunosFaltosos(
         string $idCurso,
         string $idTurma,
-        int $minFaltas,
+        int $quantidadeMinima,
         int $dias,
         bool $considerarMatricula,
-        int $somenteMatriculados
+        int $somenteMatriculados,
+        string $statusFrequencia = 'F',
+        string $dataInicio = '',
+        string $dataFim = ''
     ): array {
+        $statusColumnMap = [
+            'P' => 'c.presenca',
+            'F' => 'c.falta',
+            'FJ' => 'c.faltajust',
+        ];
+        $statusColumn = $statusColumnMap[$statusFrequencia] ?? $statusColumnMap['F'];
         $params = [];
-        $where = "WHERE c.falta = 1";
+        $where = "WHERE {$statusColumn} = 1";
 
         if ($idCurso !== '' && $idCurso !== '0') {
-            $where .= " AND t.IdCurso = ?";
+            $where .= " AND c.IdCurso = ?";
             $params[] = $idCurso;
         }
         if ($idTurma !== '') {
-            $where .= " AND t.IdTurma = ?";
+            $where .= " AND c.IdTurma = ?";
             $params[] = $idTurma;
         }
 
@@ -68,7 +77,11 @@ class CrmRepository
             }
         }
 
-        if ($dias > 0) {
+        if ($dataInicio !== '' && $dataFim !== '') {
+            $where .= " AND c.Data >= ? AND c.Data <= ?";
+            $params[] = $dataInicio;
+            $params[] = $dataFim;
+        } elseif ($dias > 0) {
             $dataInicio = (new \DateTime())->modify("-$dias days")->format('Y-m-d');
             $where .= " AND c.Data >= ?";
             $params[] = $dataInicio;
@@ -76,7 +89,9 @@ class CrmRepository
 
         $sql = "SELECT a.IdUsuario, a.Nome, a.Apelido, a.Foto, a.Telefone, a.WhatsApp, a.Endereco, a.Bairro, a.Cidade, a.UF,
                        cu.NomeCurso, t.NomeTurma $extraSelect,
-                       COUNT(c.falta) AS TotalFaltas,
+                       COUNT(*) AS TotalStatus,
+                       COUNT(*) AS TotalFaltas,
+                       ? AS StatusFrequencia,
                        (SELECT COUNT(*) FROM tbNota n WHERE n.IdUsuario = a.IdUsuario) AS TotalNotas,
                        (SELECT COUNT(*) FROM tbTarefa tt WHERE tt.IdUsuario = a.IdUsuario AND tt.Status = 'pendente') AS TotalTarefas
                 FROM tbChamada c
@@ -85,11 +100,54 @@ class CrmRepository
                 JOIN tbTurma t ON c.IdTurma = t.IdTurma
                 $joinMatricula
                 $where
-                GROUP BY a.IdUsuario
-                HAVING TotalFaltas >= ?
+                GROUP BY a.IdUsuario, cu.IdCurso, t.IdTurma, cu.NomeCurso, t.NomeTurma, a.Nome, a.Apelido, a.Foto, a.Telefone, a.WhatsApp, a.Endereco, a.Bairro, a.Cidade, a.UF" . ($considerarMatricula ? ", m.Habilitado" : "") . "
+                HAVING TotalStatus >= ?
                 ORDER BY a.Nome";
 
-        $params[] = $minFaltas > 0 ? $minFaltas : 1;
+        array_unshift($params, $statusFrequencia);
+        $params[] = $quantidadeMinima > 0 ? $quantidadeMinima : 1;
+
+        $stmt = $this->pdo()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function listarFrequenciaDetalhadaPorAlunos(array $alunos, string $dataInicio, string $dataFim): array
+    {
+        if ($alunos === []) {
+            return [];
+        }
+
+        $clauses = [];
+        $params = [$dataInicio, $dataFim];
+        foreach ($alunos as $aluno) {
+            $idUsuario = (int)($aluno['IdUsuario'] ?? 0);
+            $idCurso = (int)($aluno['IdCurso'] ?? 0);
+            $idTurma = (int)($aluno['IdTurma'] ?? 0);
+            if ($idUsuario <= 0 || $idCurso <= 0 || $idTurma <= 0) {
+                continue;
+            }
+            $clauses[] = '(c.IdAluno = ? AND c.IdCurso = ? AND c.IdTurma = ?)';
+            $params[] = $idUsuario;
+            $params[] = $idCurso;
+            $params[] = $idTurma;
+        }
+
+        if ($clauses === []) {
+            return [];
+        }
+
+        $whereAlunos = implode(' OR ', $clauses);
+        $sql = "SELECT a.IdUsuario AS IdAluno, a.IdUsuario, a.Nome AS Aluno, c.IdCurso, c.IdTurma, c.Data,
+                       c.presenca, c.falta, c.faltajust, cu.NomeCurso, t.NomeTurma
+                FROM tbChamada c
+                INNER JOIN tbAluno a ON c.IdAluno = a.IdUsuario
+                INNER JOIN tbCurso cu ON c.IdCurso = cu.IdCurso
+                INNER JOIN tbTurma t ON c.IdTurma = t.IdTurma
+                WHERE c.Data >= ? AND c.Data <= ?
+                  AND (c.presenca = 1 OR c.falta = 1 OR c.faltajust = 1)
+                  AND ($whereAlunos)
+                ORDER BY t.NomeTurma, a.Nome, c.Data";
 
         $stmt = $this->pdo()->prepare($sql);
         $stmt->execute($params);

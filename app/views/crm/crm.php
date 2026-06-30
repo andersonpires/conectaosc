@@ -12,7 +12,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
     // Salva a URL atual para redirecionar o usuario apos o login
     $redirect_url = urlencode($_SERVER['REQUEST_URI']); // Codifica o endereco atual
     header("Location: " . rtrim((string) ($BASE_para_URL ?? ''), '/') . "/login/?redirect=$redirect_url");
-    exit(); // Garante que o codigo abaixo nao sera executado
+    exit(); // Garante que o código abaixo não será executado
 }
 
 require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
@@ -35,6 +35,7 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
 <head>
     <?php require_once $BASE_para_PATH . '/app/views/partials/header.php'; ?>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.css">
     <script src="https://cdn.tiny.cloud/1/maa7p6ervwrty9h84gphxrsrfking1awabjrp7tak98iuwjh/tinymce/7/tinymce.min.js" referrerpolicy="origin"></script>
@@ -48,6 +49,10 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
 
         .card-hover:hover {
             transform: scale(1.02);
+        }
+
+        #formBusca .col-md-2:has(#dias) {
+            display: none;
         }
 
         .custom-context-menu {
@@ -155,7 +160,7 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
                 }
                 if (area === 'notificacoes') carregarPreferencias();
             } else {
-                console.warn('Div nao encontrada:', id);
+                console.warn('Div não encontrada:', id);
             }
         }
 
@@ -282,8 +287,8 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
                             <div class="card-body">
                                 <!-- Formulario de busca e exibicao dos cards aqui -->
                                 <form id="formBusca" class="mb-4">
-                                    <div class="row mb-4">
-                                        <div class="col-md-3">
+                                    <div class="row mb-4 g-3">
+                                        <div class="col-md-6 col-lg-2">
                                             <label class="form-label" for="curso">Curso</label>
                                             <select name="curso" id="curso" class="form-select" onchange="carregarTurmas()">
                                                 <option value="">Selecione aqui...</option>
@@ -301,16 +306,32 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
                                             </select>
 
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-6 col-lg-2">
                                             <label class="form-label" for="turma">Turma</label>
                                             <select name="turma" id="turma" class="form-select" disabled>
                                                 <option value="">Selecione um curso primeiro...</option>
                                             </select>
 
                                         </div>
-                                        <div class="col-md-2">
-                                            <label class="form-label" for="faltas">Faltou</label>
-                                            <input type="number" min="0" name="faltas" id="faltas" class="form-control" placeholder="Ex: 3">
+                                        <div class="col-md-6 col-lg-2">
+                                            <label class="form-label" for="statusFrequencia">Tipo</label>
+                                            <select name="statusFrequencia" id="statusFrequencia" class="form-select">
+                                                <option value="F">Falta</option>
+                                                <option value="FJ">Falta justificada</option>
+                                                <option value="P">Presen&ccedil;a</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 col-lg-2">
+                                            <label class="form-label" for="quantidadeMinima">Quantidade m&iacute;nima</label>
+                                            <input type="number" min="1" name="quantidadeMinima" id="quantidadeMinima" class="form-control" placeholder="Ex: 3">
+                                        </div>
+                                        <div class="col-md-6 col-lg-2">
+                                            <label class="form-label" for="dataInicio">Data de in&iacute;cio</label>
+                                            <input type="date" name="dataInicio" id="dataInicio" class="form-control">
+                                        </div>
+                                        <div class="col-md-6 col-lg-2">
+                                            <label class="form-label" for="dataFim">Data de fim</label>
+                                            <input type="date" name="dataFim" id="dataFim" class="form-control">
                                         </div>
                                         <div class="col-md-2">
                                             <label class="form-label" for="dias">Nos últimos (dias)</label>
@@ -322,13 +343,16 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
                                             </button>
                                         </div>
                                     </div>
-                                    <div class="col-md-2 d-flex align-items-end">
+                                    <div class="d-flex flex-wrap align-items-center gap-3">
                                         <div class="form-check">
                                             <input class="form-check-input" type="checkbox" id="somenteMatriculados" name="somenteMatriculados" checked>
                                             <label class="form-check-label" for="somenteMatriculados">
                                                 Somente Matriculados
                                             </label>
                                         </div>
+                                        <button type="button" id="exportarBuscaExcel" class="btn btn-outline-success btn-sm" style="display: none;" onclick="exportarBuscaFrequenciaExcel()">
+                                            <i class="fa-solid fa-file-excel"></i> Exportar Excel
+                                        </button>
                                     </div>
                                     <div id="resultadoBuscaCount" class="text-muted small mt-4 mb-3"></div>
                                 </form>
@@ -866,11 +890,58 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
             }
         }
 
+        let ultimosFiltrosBuscaCrm = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const diasLegado = document.getElementById('dias');
+            const wrapperDiasLegado = diasLegado ? diasLegado.closest('.col-md-2') : null;
+            if (wrapperDiasLegado) {
+                wrapperDiasLegado.style.display = 'none';
+            }
+        });
+
+        function labelStatusFrequencia(status, total) {
+            const plural = Number(total) !== 1;
+            if (status === 'P') {
+                return plural ? 'presenças' : 'presença';
+            }
+            if (status === 'FJ') {
+                return plural ? 'faltas justificadas' : 'falta justificada';
+            }
+            return plural ? 'faltas' : 'falta';
+        }
+
+        function validarFiltrosBuscaCrm() {
+            const quantidade = Number(document.getElementById('quantidadeMinima').value || 0);
+            const dataInicio = document.getElementById('dataInicio').value;
+            const dataFim = document.getElementById('dataFim').value;
+
+            if (quantidade < 1) {
+                alert('Informe uma quantidade mínima maior ou igual a 1.');
+                return false;
+            }
+            if (!dataInicio || !dataFim) {
+                alert('Informe a data de início e a data de fim.');
+                return false;
+            }
+            if (dataInicio > dataFim) {
+                alert('A data de início não pode ser maior que a data de fim.');
+                return false;
+            }
+            return true;
+        }
+
         function buscarAlunos() {
+            if (!validarFiltrosBuscaCrm()) {
+                return;
+            }
             const form = document.getElementById('formBusca');
             const formData = new FormData(form);
+            const statusSelecionado = String(document.getElementById('statusFrequencia').value || 'F');
             formData.append('action', 'buscarAlunosFaltosos');
             formData.append('somenteMatriculados', document.getElementById('somenteMatriculados').checked ? 1 : 0);
+            ultimosFiltrosBuscaCrm = new URLSearchParams(formData);
+            document.getElementById('exportarBuscaExcel').style.display = 'none';
 
             fetch('<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/crm/salvar/', {
                     method: 'POST',
@@ -880,19 +951,15 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
                 .then(data => {
                     const container = document.getElementById('cardsAlunos');
                     container.innerHTML = '';
+                    if (data.status === 'erro') {
+                        container.innerHTML = `<div class="alert alert-danger">${data.mensagem || 'Erro ao buscar alunos.'}</div>`;
+                        document.getElementById('resultadoBuscaCount').textContent = '';
+                        return;
+                    }
                     if (data.status === 'ok' && data.alunos.length > 0) {
                         data.alunos.forEach(aluno => {
-                            let infoExtras = '';
-                            if (aluno.TotalTarefas > 0) {
-                                infoExtras += `<span class="badge bg-primary rounded-circle me-1" style="font-size: 0.7rem; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;">${aluno.TotalTarefas}</span>`;
-                            }
-                            if (aluno.TotalNotas > 0) {
-                                infoExtras += `<span class="badge bg-success rounded-circle" style="font-size: 0.7rem; width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center;">${aluno.TotalNotas}</span>`;
-                            }
-                            if (aluno.Habilitado == 0) {
-                                infoExtras += `<span class="badge bg-secondary ms-1" style="font-size: 0.7rem;">Desmatriculado</span>`;
-                            }
-
+                            const totalStatus = Number(aluno.TotalStatus ?? aluno.TotalFaltas ?? 0);
+                            const textoStatus = labelStatusFrequencia(statusSelecionado, totalStatus);
                             const card = document.createElement('div');
                             card.className = 'col-md-4';
 
@@ -908,7 +975,7 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
                                                     <img src="<?php echo rtrim(bootstrap_assets_img_url(), '/'); ?>/fotos/${aluno.Foto || 'padrao.jpg'}" class="rounded-circle me-3" width="50" height="50" alt="Foto">
                                                     <div class="flex-grow-1">
                                                         ${badgeStatus}
-                                                        <strong>${aluno.Apelido ? `(${aluno.Apelido}) ` : ''}${aluno.Nome} (${aluno.TotalFaltas} faltas)</strong><br>
+                                                        <strong>${aluno.Apelido ? `(${aluno.Apelido}) ` : ''}${aluno.Nome} (${totalStatus} ${textoStatus})</strong><br>
                                                         <small>${aluno.NomeCurso}</small><br>
                                                         <small>${aluno.NomeTurma}</small>
                                                     </div>
@@ -937,10 +1004,57 @@ $cursosDisponiveis = $relatorioService->cursosOptions(0);
                         });
 
                         document.getElementById('resultadoBuscaCount').textContent = `Foram encontrados ${data.alunos.length} registro(s)`;
+                        document.getElementById('exportarBuscaExcel').style.display = 'inline-block';
                     } else {
-                        container.innerHTML = '<div class="alert alert-warning">Nenhum aluno encontrado com os criterios informados.</div>';
-                        document.getElementById('resultadoBuscaCount').textContent = 'Nenhum aluno encontrado com os criterios informados.';
+                        container.innerHTML = '<div class="alert alert-warning">Nenhum aluno encontrado com os critérios informados.</div>';
+                        document.getElementById('resultadoBuscaCount').textContent = 'Nenhum aluno encontrado com os critérios informados.';
+                        document.getElementById('exportarBuscaExcel').style.display = 'none';
                     }
+                })
+                .catch(() => {
+                    document.getElementById('cardsAlunos').innerHTML = '<div class="alert alert-danger">Erro ao buscar alunos.</div>';
+                    document.getElementById('exportarBuscaExcel').style.display = 'none';
+                });
+        }
+
+        function gerarExcelBuscaCrm(dados, nomeArquivo) {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet(dados);
+            const header = dados.find(row => Array.isArray(row) && row.includes('Nome do Aluno')) || [];
+            ws['!cols'] = header.map((_, index) => ({
+                wch: index === 1 ? 32 : 12
+            }));
+            XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
+            XLSX.writeFile(wb, nomeArquivo);
+        }
+
+        function exportarBuscaFrequenciaExcel() {
+            if (!ultimosFiltrosBuscaCrm) {
+                alert('Faça uma busca antes de exportar.');
+                return;
+            }
+
+            const params = new URLSearchParams(ultimosFiltrosBuscaCrm);
+            params.set('action', 'exportarFrequenciaBuscaCrm');
+            params.set('somenteMatriculados', document.getElementById('somenteMatriculados').checked ? 1 : 0);
+
+            fetch('<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/crm/salvar/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: params
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 'ok' || !Array.isArray(data.dados) || data.dados.length === 0) {
+                        alert(data.mensagem || 'Nenhum dado encontrado para exportar.');
+                        return;
+                    }
+                    gerarExcelBuscaCrm(data.dados, 'BuscaFrequenciaCRM.xlsx');
+                })
+                .catch(() => {
+                    alert('Erro ao exportar Excel.');
                 });
         }
 
