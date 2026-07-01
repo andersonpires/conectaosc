@@ -19,7 +19,6 @@ function updateTabelaChamada() {
     const btnFalta = document.getElementById('btn-falta');
     const btnFaltaJust = document.getElementById('btn-falta-justificada');
     const btnNenhum = document.getElementById('btn-nenhum');
-    const resumoFrequencia = document.getElementById('resumo-frequencia-aluno');
     if (!btnPresenca || !btnFalta || !btnFaltaJust || !btnNenhum) {
         return;
     }
@@ -114,11 +113,16 @@ function updateButtonCounts() {
 
     if (resumoFrequencia) {
         const totalAulas = countPresenca + countFalta + countFaltaJust;
-        const frequencia = totalAulas > 0 ? ((countPresenca + countFaltaJust) / totalAulas) * 100 : 0;
+        const frequencia = totalAulas > 0 ? (countPresenca / totalAulas) * 100 : 0;
         const percentualFalta = totalAulas > 0 ? (countFalta / totalAulas) * 100 : 0;
+        const percentualFaltaJust = totalAulas > 0 ? (countFaltaJust / totalAulas) * 100 : 0;
+        const formatarPercentual = (valor) => valor.toLocaleString('pt-BR', {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1
+        });
 
         resumoFrequencia.textContent =
-            `O aluno teve ${totalAulas} aulas, com ${frequencia.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% de frequência e ${percentualFalta.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}% de falta.`;
+            `O aluno teve ${totalAulas} aulas, com ${formatarPercentual(frequencia)}% de frequência, ${formatarPercentual(percentualFalta)}% de falta e ${formatarPercentual(percentualFaltaJust)}% de falta justificada.`;
     }
 }
 
