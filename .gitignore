@@ -3,12 +3,7 @@
 /*.zip
 /*.MD
 temp/*
-!temp/*.php
-!temp/*.log
-!temp/.env.example
-!/app/assets/img/fotos/*
-!/app/assets/img/fotos/padrao.jfif
-!/app/assets/img/fotos/padrao.jpg
+app/assets/img/
 app/storage/assinatura/assinados/*
 zz_Suporte/
 /.vscode/
@@ -17,9 +12,9 @@ zz_Suporte/
 /clinica/zz_Suporte/
 /get/
 /api/cron/logs/
-!/storage/
+/storage/
 /tools/
-!vendor/
+vendor/
 /.codex_root_page.html
 /.editorconfig
 !temp/FAQ.MD
