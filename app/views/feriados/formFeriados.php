@@ -3,6 +3,9 @@ $runtime = require __DIR__ . '/../../../bootstrap/runtime.php';
 $BASE_para_PATH = $runtime['base_para_path'];
 $BASE_para_URL = $runtime['base_para_url'];
 require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
+
+$dataAtual = (string) ($_POST['DataFeriado'] ?? '');
+$tipoAtual = preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $dataAtual) ? 'pontual' : 'recorrente';
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -41,8 +44,19 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                 </div>
 
                                 <div class="mb-3">
-                                    <label for="DataFeriado" class="form-label">Data (dd/mm)</label>
-                                    <input type="text" class="form-control" id="DataFeriado" name="DataFeriado" placeholder="dd/mm" value="<?= htmlspecialchars($_POST['DataFeriado'] ?? '') ?>" required>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input tipo-ocorrencia" type="radio" name="TipoOcorrencia" id="TipoOcorrenciaRecorrente" value="recorrente" <?= $tipoAtual === 'recorrente' ? 'checked' : '' ?>>
+                                        <label class="form-check-label" for="TipoOcorrenciaRecorrente">Ocorre todo ano</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input tipo-ocorrencia" type="radio" name="TipoOcorrencia" id="TipoOcorrenciaPontual" value="pontual" <?= $tipoAtual === 'pontual' ? 'checked' : '' ?>>
+                                        <label class="form-check-label" for="TipoOcorrenciaPontual">Ocorre apenas uma vez</label>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="DataFeriado" class="form-label" id="DataFeriadoLabel">Data (dd/mm)</label>
+                                    <input type="text" class="form-control" id="DataFeriado" name="DataFeriado" placeholder="dd/mm" value="<?= htmlspecialchars($dataAtual) ?>" required>
                                 </div>
 
                                 <button type="submit" name="acao" value="salvar" class="btn btn-primary">Salvar</button>
@@ -58,6 +72,7 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                     <thead>
                                         <tr>
                                             <th>Data</th>
+                                            <th>Tipo</th>
                                             <th>Nome</th>
                                             <th>Cadastrado por</th>
                                             <th>Ações</th>
@@ -70,11 +85,13 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                                 $idItem = intval($item['IdFeriado'] ?? 0);
                                                 $nomeItem = $item['Nome'] ?? '';
                                                 $dataItem = $item['DataFeriado'] ?? '';
+                                                $tipoItem = preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $dataItem) ? 'Pontual' : 'Recorrente';
                                                 $autor = trim(($item['NomeUsuario'] ?? '') . ' ' . ($item['SobrenomeUsuario'] ?? ''));
                                                 $isOwner = intval($item['IdColaborador'] ?? 0) === intval($_SESSION['Cod'] ?? 0);
                                                 ?>
                                                 <tr>
                                                     <td><?= htmlspecialchars($dataItem) ?></td>
+                                                    <td><?= htmlspecialchars($tipoItem) ?></td>
                                                     <td><?= htmlspecialchars($nomeItem) ?></td>
                                                     <td><?= htmlspecialchars($autor ?: '-') ?></td>
                                                     <td>
@@ -98,7 +115,7 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
                                             <?php endforeach; ?>
                                         <?php else: ?>
                                             <tr>
-                                                <td colspan="4">Nenhum feriado cadastrado.</td>
+                                                <td colspan="5">Nenhum feriado cadastrado.</td>
                                             </tr>
                                         <?php endif; ?>
                                     </tbody>
@@ -115,22 +132,37 @@ require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
     </div>
 
     <script>
+        const dataInput = document.getElementById('DataFeriado');
+        const dataLabel = document.getElementById('DataFeriadoLabel');
+        const radiosOcorrencia = document.querySelectorAll('.tipo-ocorrencia');
+
+        function atualizarFormatoData() {
+            const pontual = document.getElementById('TipoOcorrenciaPontual').checked;
+            dataLabel.textContent = pontual ? 'Data (dd/mm/aaaa)' : 'Data (dd/mm)';
+            dataInput.placeholder = pontual ? 'dd/mm/aaaa' : 'dd/mm';
+            dataInput.maxLength = pontual ? 10 : 5;
+        }
+
+        radiosOcorrencia.forEach((radio) => {
+            radio.addEventListener('change', atualizarFormatoData);
+        });
+
         document.querySelectorAll('.btn-editar-feriado').forEach((btn) => {
             btn.addEventListener('click', () => {
+                const data = btn.getAttribute('data-data') || '';
                 document.getElementById('IdFeriado').value = btn.getAttribute('data-id');
                 document.getElementById('NomeFeriado').value = btn.getAttribute('data-nome');
-                document.getElementById('DataFeriado').value = btn.getAttribute('data-data');
+                dataInput.value = data;
+                document.getElementById(data.length === 10 ? 'TipoOcorrenciaPontual' : 'TipoOcorrenciaRecorrente').checked = true;
+                atualizarFormatoData();
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         });
+
+        atualizarFormatoData();
     </script>
 
     <script src="<?php echo $BASE_para_URL; ?>/assets/js/app.js"></script>
 </body>
 
 </html>
-
-
-
-
-

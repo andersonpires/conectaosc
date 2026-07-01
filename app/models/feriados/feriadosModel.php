@@ -6,9 +6,39 @@ require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
 
 class FeriadosModel
 {
+    private static bool $dataFeriadoColumnChecked = false;
+
+    private static function ensureDataFeriadoSupportsAno(): void
+    {
+        global $pdo;
+
+        if (self::$dataFeriadoColumnChecked) {
+            return;
+        }
+
+        self::$dataFeriadoColumnChecked = true;
+
+        try {
+            $stmt = $pdo->query("SHOW COLUMNS FROM tb_feriados LIKE 'DataFeriado'");
+            $coluna = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$coluna) {
+                return;
+            }
+
+            $tipo = strtolower((string) ($coluna['Type'] ?? ''));
+            if (preg_match('/^(?:var)?char\((\d+)\)/', $tipo, $matches) && (int) $matches[1] < 10) {
+                $pdo->exec("ALTER TABLE tb_feriados MODIFY DataFeriado CHAR(10) NOT NULL");
+            }
+        } catch (Throwable $e) {
+            error_log('[feriados] Nao foi possivel validar/ampliar DataFeriado: ' . $e->getMessage());
+        }
+    }
+
     private static function getValidColumns()
     {
         global $pdo;
+        self::ensureDataFeriadoSupportsAno();
+
         $colunasValidas = [];
         $stmt = $pdo->query("DESCRIBE tb_feriados");
         while ($linha = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -20,6 +50,8 @@ class FeriadosModel
     public static function listAll()
     {
         global $pdo;
+        self::ensureDataFeriadoSupportsAno();
+
         $stmt = $pdo->query("
             SELECT f.*, u.Nome AS NomeUsuario, u.Sobrenome AS SobrenomeUsuario
             FROM tb_feriados f
@@ -32,6 +64,8 @@ class FeriadosModel
     public static function getById($id)
     {
         global $pdo;
+        self::ensureDataFeriadoSupportsAno();
+
         $stmt = $pdo->prepare("SELECT * FROM tb_feriados WHERE IdFeriado = ?");
         $stmt->execute([intval($id)]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -40,6 +74,8 @@ class FeriadosModel
     public static function existsByNome($nome, $idIgnorar = 0)
     {
         global $pdo;
+        self::ensureDataFeriadoSupportsAno();
+
         $stmt = $pdo->prepare("SELECT IdFeriado FROM tb_feriados WHERE Nome = ? AND IdFeriado <> ? LIMIT 1");
         $stmt->execute([$nome, intval($idIgnorar)]);
         return (bool) $stmt->fetch(PDO::FETCH_ASSOC);
@@ -48,6 +84,8 @@ class FeriadosModel
     public static function getByDiasMes(array $diasMes)
     {
         global $pdo;
+        self::ensureDataFeriadoSupportsAno();
+
         $diasMes = array_values(array_filter($diasMes, fn($d) => is_string($d) && $d !== ''));
         if (empty($diasMes)) {
             return [];

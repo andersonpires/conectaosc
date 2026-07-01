@@ -50,14 +50,17 @@ final class FeriadoFlow
             if ($acao === 'salvar') {
                 $id = (int) ($_POST['IdFeriado'] ?? 0);
                 $nome = trim((string) ($_POST['Nome'] ?? ''));
-                $dataFeriado = $this->normalizarDataFeriado($_POST['DataFeriado'] ?? '');
+                $tipoOcorrencia = (string) ($_POST['TipoOcorrencia'] ?? 'recorrente');
+                $apenasUmaVez = $tipoOcorrencia === 'pontual';
+                $dataFeriado = $this->normalizarDataFeriado($_POST['DataFeriado'] ?? '', $apenasUmaVez);
 
                 if ($nome === '') {
                     header("Location: {$feriadosRoute}/?erro=" . urlencode('Informe o nome do feriado.'));
                     exit;
                 }
                 if (!$dataFeriado) {
-                    header("Location: {$feriadosRoute}/?erro=" . urlencode('Informe a data no formato dd/mm.'));
+                    $formatoEsperado = $apenasUmaVez ? 'dd/mm/aaaa' : 'dd/mm';
+                    header("Location: {$feriadosRoute}/?erro=" . urlencode("Informe a data no formato {$formatoEsperado}."));
                     exit;
                 }
                 if ($idColaborador <= 0) {
@@ -124,19 +127,40 @@ final class FeriadoFlow
         exit;
     }
 
-    private function normalizarDataFeriado(mixed $valor): ?string
+    private function normalizarDataFeriado(mixed $valor, bool $apenasUmaVez): ?string
     {
         $valor = trim((string) $valor);
         if ($valor === '') {
             return null;
         }
-        if (preg_match('/^\d{2}\/\d{2}$/', $valor)) {
-            return $valor;
+
+        if ($apenasUmaVez) {
+            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $valor, $matches)) {
+                $dia = (int) $matches[1];
+                $mes = (int) $matches[2];
+                $ano = (int) $matches[3];
+                return checkdate($mes, $dia, $ano) ? sprintf('%02d/%02d/%04d', $dia, $mes, $ano) : null;
+            }
+
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $valor)) {
+                $data = DateTime::createFromFormat('!Y-m-d', $valor);
+                return $data && $data->format('Y-m-d') === $valor ? $data->format('d/m/Y') : null;
+            }
+
+            return null;
         }
+
+        if (preg_match('/^(\d{2})\/(\d{2})$/', $valor, $matches)) {
+            $dia = (int) $matches[1];
+            $mes = (int) $matches[2];
+            return checkdate($mes, $dia, 2000) ? sprintf('%02d/%02d', $dia, $mes) : null;
+        }
+
         if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $valor)) {
-            $data = DateTime::createFromFormat('Y-m-d', $valor);
+            $data = DateTime::createFromFormat('!Y-m-d', $valor);
             return $data ? $data->format('d/m') : null;
         }
+
         return null;
     }
 
@@ -157,21 +181,27 @@ final class FeriadoFlow
         })));
 
         $diasMes = [];
+        $datasComAno = [];
         $anos = [];
         foreach ($datas as $data) {
             $dataObj = DateTime::createFromFormat('Y-m-d', $data);
             if ($dataObj) {
                 $diasMes[] = $dataObj->format('d/m');
+                $datasComAno[] = $dataObj->format('d/m/Y');
                 $anos[$dataObj->format('Y')] = true;
             }
         }
 
-        $feriadosLocais = \FeriadosModel::getByDiasMes(array_values(array_unique($diasMes)));
-        $mapLocal = [];
+        $datasLocais = array_values(array_unique(array_merge($diasMes, $datasComAno)));
+        $feriadosLocais = \FeriadosModel::getByDiasMes($datasLocais);
+        $mapLocalRecorrente = [];
+        $mapLocalPontual = [];
         foreach ($feriadosLocais as $feriado) {
-            $diaMes = $feriado['DataFeriado'] ?? '';
-            if ($diaMes !== '') {
-                $mapLocal[$diaMes] = $feriado['Nome'] ?? 'Feriado';
+            $dataFeriado = $feriado['DataFeriado'] ?? '';
+            if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $dataFeriado)) {
+                $mapLocalPontual[$dataFeriado] = $feriado['Nome'] ?? 'Feriado';
+            } elseif (preg_match('/^\d{2}\/\d{2}$/', $dataFeriado)) {
+                $mapLocalRecorrente[$dataFeriado] = $feriado['Nome'] ?? 'Feriado';
             }
         }
 
@@ -194,8 +224,11 @@ final class FeriadoFlow
         foreach ($datas as $data) {
             $dataObj = DateTime::createFromFormat('Y-m-d', $data);
             $diaMes = $dataObj ? $dataObj->format('d/m') : '';
-            if ($diaMes !== '' && isset($mapLocal[$diaMes])) {
-                $resultado[$data] = ['feriado' => true, 'nome' => $mapLocal[$diaMes], 'fonte' => 'local'];
+            $dataComAno = $dataObj ? $dataObj->format('d/m/Y') : '';
+            if ($dataComAno !== '' && isset($mapLocalPontual[$dataComAno])) {
+                $resultado[$data] = ['feriado' => true, 'nome' => $mapLocalPontual[$dataComAno], 'fonte' => 'local'];
+            } elseif ($diaMes !== '' && isset($mapLocalRecorrente[$diaMes])) {
+                $resultado[$data] = ['feriado' => true, 'nome' => $mapLocalRecorrente[$diaMes], 'fonte' => 'local'];
             } elseif (isset($mapApi[$data])) {
                 $resultado[$data] = ['feriado' => true, 'nome' => $mapApi[$data], 'fonte' => 'api'];
             } else {

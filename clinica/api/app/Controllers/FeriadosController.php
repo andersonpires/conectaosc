@@ -33,29 +33,32 @@ class FeriadosController
         $resultado = [];
         $anos = array_unique(array_map(fn($d) => substr($d, 0, 4), $datas));
 
-        // 1. Buscar em tb_feriados (DataFeriado formato dd/mm)
-        $mapLocal = [];
+        // 1. Buscar em tb_feriados (DataFeriado nos formatos dd/mm e dd/mm/aaaa)
+        $mapLocalRecorrente = [];
+        $mapLocalPontual = [];
         $dataToDdmm = [];
+        $dataToDdmmYyyy = [];
         foreach ($datas as $data) {
             $dt = \DateTime::createFromFormat('Y-m-d', $data);
             if ($dt) {
                 $dataToDdmm[$data] = $dt->format('d/m');
+                $dataToDdmmYyyy[$data] = $dt->format('d/m/Y');
             }
         }
-        $diasMesUnicos = array_values(array_unique($dataToDdmm));
-        if (!empty($diasMesUnicos)) {
+
+        $datasLocais = array_values(array_unique(array_merge($dataToDdmm, $dataToDdmmYyyy)));
+        if (!empty($datasLocais)) {
             try {
                 $pdo = Database::getConnection();
-                $placeholders = implode(',', array_fill(0, count($diasMesUnicos), '?'));
+                $placeholders = implode(',', array_fill(0, count($datasLocais), '?'));
                 $stmt = $pdo->prepare("SELECT DataFeriado, Nome FROM tb_feriados WHERE DataFeriado IN ($placeholders)");
-                $stmt->execute($diasMesUnicos);
-                $feriadosLocais = [];
+                $stmt->execute($datasLocais);
                 while ($row = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-                    $feriadosLocais[$row['DataFeriado']] = $row['Nome'] ?? 'Feriado';
-                }
-                foreach ($dataToDdmm as $dataStr => $ddmm) {
-                    if (isset($feriadosLocais[$ddmm])) {
-                        $mapLocal[$dataStr] = $feriadosLocais[$ddmm];
+                    $dataFeriado = $row['DataFeriado'] ?? '';
+                    if (preg_match('/^\d{2}\/\d{2}\/\d{4}$/', $dataFeriado)) {
+                        $mapLocalPontual[$dataFeriado] = $row['Nome'] ?? 'Feriado';
+                    } elseif (preg_match('/^\d{2}\/\d{2}$/', $dataFeriado)) {
+                        $mapLocalRecorrente[$dataFeriado] = $row['Nome'] ?? 'Feriado';
                     }
                 }
             } catch (\Throwable $e) {
@@ -67,7 +70,7 @@ class FeriadosController
         $mapApi = [];
         foreach ($anos as $ano) {
             try {
-                $feriados = BrasilApiFeriadosService::buscarFeriadosNacionais((int)$ano);
+                $feriados = BrasilApiFeriadosService::buscarFeriadosNacionais((int) $ano);
                 foreach ($feriados as $dataApi => $nome) {
                     if (in_array($dataApi, $datas, true)) {
                         $mapApi[$dataApi] = $nome;
@@ -80,8 +83,12 @@ class FeriadosController
 
         // 3. Montar resultado (local tem prioridade sobre API)
         foreach ($datas as $data) {
-            if (isset($mapLocal[$data])) {
-                $resultado[$data] = ['feriado' => true, 'nome' => $mapLocal[$data], 'fonte' => 'local'];
+            $dataPontual = $dataToDdmmYyyy[$data] ?? '';
+            $dataRecorrente = $dataToDdmm[$data] ?? '';
+            if ($dataPontual !== '' && isset($mapLocalPontual[$dataPontual])) {
+                $resultado[$data] = ['feriado' => true, 'nome' => $mapLocalPontual[$dataPontual], 'fonte' => 'local'];
+            } elseif ($dataRecorrente !== '' && isset($mapLocalRecorrente[$dataRecorrente])) {
+                $resultado[$data] = ['feriado' => true, 'nome' => $mapLocalRecorrente[$dataRecorrente], 'fonte' => 'local'];
             } elseif (isset($mapApi[$data])) {
                 $resultado[$data] = ['feriado' => true, 'nome' => $mapApi[$data], 'fonte' => 'api'];
             } else {
