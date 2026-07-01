@@ -325,6 +325,96 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
             padding-top: 0;
         }
 
+        .chamada-beneficiario-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+            padding: 1rem;
+        }
+
+        .chamada-beneficiario-overlay.show {
+            display: flex;
+        }
+
+        .chamada-beneficiario-modal {
+            width: min(520px, 100%);
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, .25);
+        }
+
+        .chamada-beneficiario-modal h3 {
+            margin: 0 0 .35rem;
+            font-size: 1.6rem;
+            color: #1f2937;
+        }
+
+        .chamada-beneficiario-modal .status-chip {
+            display: inline-block;
+            margin-bottom: 1rem;
+            padding: .25rem .7rem;
+            border-radius: 999px;
+            background: #d1fae5;
+            color: #065f46;
+            font-size: .85rem;
+            font-weight: 600;
+        }
+
+        .chamada-beneficiario-modal .modal-info {
+            color: #4b5563;
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .chamada-beneficiario-modal .acoes {
+            display: grid;
+            gap: .75rem;
+            margin-bottom: 1rem;
+        }
+
+        .chamada-beneficiario-modal .acao-btn {
+            width: 100%;
+            border: 0;
+            border-radius: 12px;
+            color: #fff;
+            text-decoration: none;
+            text-align: center;
+            font-weight: 700;
+            padding: .85rem 1rem;
+            display: block;
+        }
+
+        .chamada-beneficiario-modal .acao-cadastro {
+            background: #1f2f46;
+        }
+
+        .chamada-beneficiario-modal .acao-frequencia {
+            background: #f59e0b;
+        }
+
+        .chamada-beneficiario-modal .acao-turma {
+            background: #0f9d70;
+        }
+
+        .chamada-beneficiario-modal .fechar-btn {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            color: #374151;
+            border-radius: 12px;
+            padding: .75rem 1rem;
+            font-weight: 600;
+        }
+
+        body.chamada-modal-acoes-open {
+            overflow: hidden;
+        }
+
         .chamada-confirmacao-icone {
             display: none;
             width: 58px;
@@ -807,6 +897,25 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
         </div>
     </div>
 
+    <!-- Modal de ações do beneficiário -->
+    <div id="chamadaBeneficiarioAcoesOverlay" class="chamada-beneficiario-overlay" aria-hidden="true">
+        <div class="chamada-beneficiario-modal" role="dialog" aria-modal="true" aria-labelledby="chamadaBeneficiarioModalNome">
+            <h3 id="chamadaBeneficiarioModalNome">Beneficiário</h3>
+            <span class="status-chip">Selecionado</span>
+            <div class="modal-info">
+                <div id="chamadaBeneficiarioModalLinha1"></div>
+                <div id="chamadaBeneficiarioModalLinha2"></div>
+                <div id="chamadaBeneficiarioModalLinha3"></div>
+            </div>
+            <div class="acoes">
+                <a id="chamadaBeneficiarioBtnCadastro" class="acao-btn acao-cadastro" href="#" target="_blank" rel="noopener noreferrer">Ver/Alterar dados do beneficiário</a>
+                <a id="chamadaBeneficiarioBtnFrequencia" class="acao-btn acao-frequencia" href="#" target="_blank" rel="noopener noreferrer">Acompanhar registro diário de frequência</a>
+                <a id="chamadaBeneficiarioBtnTurma" class="acao-btn acao-turma" href="#" target="_blank" rel="noopener noreferrer">Informações sobre a turma</a>
+            </div>
+            <button type="button" class="fechar-btn" data-modal-close-chamada-beneficiario>Fechar</button>
+        </div>
+    </div>
+
     <!-- Modal para confirmar exclusão de presença -->
     <div class="modal fade" id="modalExcluirPresenca" tabindex="-1" aria-labelledby="modalExcluirPresencaLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -1226,6 +1335,58 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 </script>
 
 <script>
+    const abrirModalBeneficiarioChamada = (dados) => {
+        $('#chamadaBeneficiarioModalNome').text(dados.nome || 'Beneficiário');
+        $('#chamadaBeneficiarioModalLinha1').text(`${dados.cursoNome || 'Curso não informado'} • ${dados.turmaNome || 'Turma não informada'}`);
+        $('#chamadaBeneficiarioModalLinha2').text(`Data de referência: ${dados.dataSelecionada || 'Não informada'}`);
+        $('#chamadaBeneficiarioModalLinha3').text(`CPF: ${dados.cpfFormatado || 'Não informado'}`);
+
+        $('#chamadaBeneficiarioBtnCadastro').attr('href', dados.urlCadastro || '#');
+        $('#chamadaBeneficiarioBtnFrequencia').attr('href', dados.urlFrequencia || '#');
+        $('#chamadaBeneficiarioBtnTurma').attr('href', dados.urlTurma || '#');
+
+        $('#chamadaBeneficiarioAcoesOverlay').addClass('show').attr('aria-hidden', 'false');
+        $('body').addClass('chamada-modal-acoes-open');
+    };
+
+    const fecharModalBeneficiarioChamada = () => {
+        $('#chamadaBeneficiarioAcoesOverlay').removeClass('show').attr('aria-hidden', 'true');
+        $('body').removeClass('chamada-modal-acoes-open');
+    };
+
+    $(document).on('click', '.js-beneficiario-chamada-modal', function(e) {
+        e.preventDefault();
+        const payload = $(this).attr('data-aluno');
+        if (!payload) {
+            window.location.href = $(this).attr('href');
+            return;
+        }
+        try {
+            const dados = JSON.parse(decodeURIComponent(payload));
+            abrirModalBeneficiarioChamada(dados);
+        } catch (error) {
+            window.location.href = $(this).attr('href');
+        }
+    });
+
+    $(document).on('click', '[data-modal-close-chamada-beneficiario]', function() {
+        fecharModalBeneficiarioChamada();
+    });
+
+    $(document).on('click', '#chamadaBeneficiarioAcoesOverlay', function(e) {
+        if (e.target === this) {
+            fecharModalBeneficiarioChamada();
+        }
+    });
+
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Escape') {
+            fecharModalBeneficiarioChamada();
+        }
+    });
+</script>
+
+<script>
     $(document).ready(function() {
         let dataSelecionada = "<?= $dataSelecionada ?>";
 
@@ -1328,16 +1489,13 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
                             try {
                                 let faltasData = JSON.parse(faltasResponse);
                                 if (faltasData.totalFaltas !== undefined) {
-                                    let link = `<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/faltas?idAluno=${idAluno}&dataSelecionada=${encodeURIComponent(dataSelecionada)}&NNomeCurso=${encodeURIComponent(NNomeCurso)}&NNomeTurma=${encodeURIComponent(NNomeTurma)}`;
-                                    let h4 = card.find('h4');
-                                    if (h4.length) {
-                                        let nomeAluno = h4.clone().children().remove().end().text().trim(); // Remove link anterior
-                                        h4.html(`${nomeAluno} <a href="${link}" class="text-decoration-none js-faltas-link">(${faltasData.totalFaltas} faltas)</a>`);
-                                    } else {
-                                        card.find('.js-faltas-link')
-                                            .attr('href', link)
-                                            .text(`${faltasData.totalFaltas} faltas`);
-                                    }
+                                    const totalFaltas = Number(faltasData.totalFaltas || 0);
+                                    const totalFaltasJustificadas = Number(faltasData.totalFaltasJustificadas || 0);
+                                    const textoFaltas = `(${totalFaltas} F e ${totalFaltasJustificadas} FJ)`;
+                                    const link = `<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/chamada/faltas?chamada=1&idAluno=${idAluno}&dataSelecionada=${encodeURIComponent(dataSelecionada)}&NNomeCurso=${encodeURIComponent(NNomeCurso)}&NNomeTurma=${encodeURIComponent(NNomeTurma)}`;
+                                    card.find('.js-faltas-link')
+                                        .attr('href', link)
+                                        .text(textoFaltas);
                                 }
                             } catch (e) {
                                 console.error('Erro ao processar resposta:', e);

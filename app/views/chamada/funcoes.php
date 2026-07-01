@@ -80,6 +80,21 @@ function chamadaDataBrParaIso(?string $data): ?string
     return $date ? $date->format('Y-m-d') : null;
 }
 
+function chamadaSomenteDigitos(?string $valor): string
+{
+    return preg_replace('/\D+/', '', (string)$valor) ?? '';
+}
+
+function chamadaFormatarCpf(?string $cpf): string
+{
+    $digitos = chamadaSomenteDigitos($cpf);
+    if (strlen($digitos) !== 11) {
+        return trim((string)$cpf);
+    }
+
+    return substr($digitos, 0, 3) . '.' . substr($digitos, 3, 3) . '.' . substr($digitos, 6, 3) . '-' . substr($digitos, 9, 2);
+}
+
 function chamadaUsuarioPodeRedefinir(?array $sessao = null): bool
 {
     $sessao = $sessao ?? $_SESSION;
@@ -187,9 +202,13 @@ function buscarAlunosChamada($pdo, $dataSelecionada, $NNomeCurso, $NNomeTurma): 
         tbAluno.IdUsuario AS IdAluno,
         tbAluno.Nome,
         tbAluno.Apelido,
+        tbAluno.CPF,
         tbAluno.Foto,
         tbAluno.Nascimento,
-        (SELECT COUNT(*) FROM tbChamada WHERE tbChamada.IdMatricula = tbMatricula.IdMatricula AND tbChamada.Falta = 1) AS totalFaltas,
+        tbCurso.NomeCurso,
+        tbTurma.NomeTurma,
+        (SELECT COUNT(*) FROM tbChamada WHERE tbChamada.IdMatricula = tbMatricula.IdMatricula AND tbChamada.falta = 1) AS totalFaltas,
+        (SELECT COUNT(*) FROM tbChamada WHERE tbChamada.IdMatricula = tbMatricula.IdMatricula AND tbChamada.faltajust = 1) AS totalFaltasJustificadas,
         ch.IdChamada,
         ch.IdColaborador,
         CONCAT_WS(' ', u.Nome, u.Sobrenome) AS NomeColaboradorChamada
@@ -243,6 +262,12 @@ function chamadaPrepararAluno(array $row, ?string $dataSelecionada, array $alert
     $apelido = $row['Apelido'] ?? null;
     $nascimento = (string)($row['Nascimento'] ?? '');
     $totalFaltas = (int)$row['totalFaltas'];
+    $totalFaltasJustificadas = (int)($row['totalFaltasJustificadas'] ?? 0);
+    $cpf = (string)($row['CPF'] ?? '');
+    $cpfDigitos = chamadaSomenteDigitos($cpf);
+    $cpfFormatado = chamadaFormatarCpf($cpf);
+    $nomeCurso = (string)($row['NomeCurso'] ?? '');
+    $nomeTurma = (string)($row['NomeTurma'] ?? '');
 
     if (isset($apelido) && $apelido !== '' && $apelido !== null) {
         $nome = '(' . $apelido . ') ' . $nome;
@@ -276,7 +301,31 @@ function chamadaPrepararAluno(array $row, ?string $dataSelecionada, array $alert
         $infoAniversario = "<p class='birthday-info'>{$aniversarioTexto}</p>";
     }
 
-    $link = rtrim((string)$baseUrl, '/') . "/chamada/faltas?chamada=1&idAluno={$idAluno}&dataSelecionada=" . urlencode((string)$dataSelecionada) . '&NNomeCurso=' . urlencode((string)$NNomeCurso) . '&NNomeTurma=' . urlencode((string)$NNomeTurma);
+    $baseUrl = rtrim((string)$baseUrl, '/');
+    $linkFrequencia = $baseUrl . "/chamada/faltas?chamada=1&idAluno={$idAluno}&dataSelecionada=" . urlencode((string)$dataSelecionada) . '&NNomeCurso=' . urlencode((string)$NNomeCurso) . '&NNomeTurma=' . urlencode((string)$NNomeTurma);
+    $linkCadastro = $baseUrl . '/beneficiarios/cadastro';
+    $cadastroParams = [];
+    if (strlen($cpfDigitos) === 11) {
+        $cadastroParams['cpf'] = $cpfDigitos;
+    }
+    if ($idAluno > 0) {
+        $cadastroParams['id'] = (string)$idAluno;
+    }
+    if ($cadastroParams !== []) {
+        $linkCadastro .= '?' . http_build_query($cadastroParams);
+    }
+    $linkTurma = $baseUrl . '/matriculas/turma?turma=' . urlencode((string)$idTurma);
+    $textoFaltas = "{$totalFaltas} F e {$totalFaltasJustificadas} FJ";
+    $modalPayload = rawurlencode(json_encode([
+        'nome' => $nome,
+        'cpfFormatado' => $cpfFormatado !== '' ? $cpfFormatado : 'Não informado',
+        'cursoNome' => $nomeCurso,
+        'turmaNome' => $nomeTurma,
+        'dataSelecionada' => (string)$dataSelecionada,
+        'urlCadastro' => $linkCadastro,
+        'urlFrequencia' => $linkFrequencia,
+        'urlTurma' => $linkTurma,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '{}');
 
     return [
         'idMatricula' => $idMatricula,
@@ -287,12 +336,15 @@ function chamadaPrepararAluno(array $row, ?string $dataSelecionada, array $alert
         'nome' => $nome,
         'foto' => $foto,
         'totalFaltas' => $totalFaltas,
+        'totalFaltasJustificadas' => $totalFaltasJustificadas,
+        'textoFaltas' => $textoFaltas,
         'corCard' => $corCard,
         'classeAniversario' => $classeAniversario,
         'badgeAniversario' => $badgeAniversario,
         'infoAniversario' => $infoAniversario,
         'aniversarioTexto' => $aniversarioTexto,
-        'linkFaltas' => $link,
+        'linkFaltas' => $linkFrequencia,
+        'modalPayload' => $modalPayload,
         'nomeColaboradorChamada' => trim((string)($row['NomeColaboradorChamada'] ?? '')),
     ];
 }
@@ -319,7 +371,7 @@ function renderizarGridChamada(array $rows, $pdo, $dataSelecionada, $NNomeCurso,
                             style='background-color: " . htmlspecialchars($aluno['corCard'], ENT_QUOTES, 'UTF-8') . ";'>";
             $output .= $aluno['badgeAniversario'];
             $output .= "<img src='" . htmlspecialchars($aluno['foto'], ENT_QUOTES, 'UTF-8') . "' alt='Foto_de_{$nomeEsc}'>";
-            $output .= '<h4>' . $nomeEsc . " <a href='" . htmlspecialchars($aluno['linkFaltas'], ENT_QUOTES, 'UTF-8') . "' class='text-decoration-none js-faltas-link'>({$aluno['totalFaltas']} faltas)</a></h4>";
+            $output .= '<h4>' . $nomeEsc . " <a href='" . htmlspecialchars($aluno['linkFaltas'], ENT_QUOTES, 'UTF-8') . "' class='text-decoration-none js-faltas-link js-beneficiario-chamada-modal' data-aluno='" . htmlspecialchars($aluno['modalPayload'], ENT_QUOTES, 'UTF-8') . "'>({$aluno['textoFaltas']})</a></h4>";
             $output .= $aluno['infoAniversario'];
             $output .= renderizarBotoes($aluno['idMatricula'], $aluno['foto'], $aluno['nome'], 'T00');
             $output .= '</div>';
@@ -347,6 +399,7 @@ function renderizarListaChamada(array $rows, $pdo, $dataSelecionada, $NNomeCurso
             $aniversario = htmlspecialchars($aluno['aniversarioTexto'], ENT_QUOTES, 'UTF-8');
             $colaborador = htmlspecialchars($aluno['nomeColaboradorChamada'], ENT_QUOTES, 'UTF-8');
             $link = htmlspecialchars($aluno['linkFaltas'], ENT_QUOTES, 'UTF-8');
+            $payload = htmlspecialchars($aluno['modalPayload'], ENT_QUOTES, 'UTF-8');
 
             $body .= "<tr class='chamada-student-item'
                             id='card_{$aluno['idMatricula']}_{$aluno['idTurma']}_{$aluno['idCurso']}_{$aluno['idAluno']}'
@@ -354,7 +407,7 @@ function renderizarListaChamada(array $rows, $pdo, $dataSelecionada, $NNomeCurso
             $body .= "<td><img src='{$fotoEsc}' alt='Foto_de_{$nomeEsc}' class='chamada-list-foto'></td>";
             $body .= "<td class='chamada-list-nome'>{$nomeEsc}</td>";
             $body .= '<td>' . renderizarBotoes($aluno['idMatricula'], $aluno['foto'], $aluno['nome'], 'T00') . '</td>';
-            $body .= "<td><a href='{$link}' class='text-decoration-none js-faltas-link'>{$aluno['totalFaltas']} faltas</a></td>";
+            $body .= "<td><a href='{$link}' class='text-decoration-none js-faltas-link js-beneficiario-chamada-modal' data-aluno='{$payload}'>({$aluno['textoFaltas']})</a></td>";
             $body .= "<td>{$aniversario}</td>";
             $body .= "<td class='js-colaborador-chamada'>{$colaborador}</td>";
             $body .= '</tr>';

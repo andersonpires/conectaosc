@@ -385,14 +385,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         try {
             $idMatricula = $_POST['id__Matricula'];
             $stmt = $pdo->prepare("
-                SELECT COUNT(*) AS totalFaltas 
+                SELECT
+                    SUM(CASE WHEN falta = 1 THEN 1 ELSE 0 END) AS totalFaltas,
+                    SUM(CASE WHEN faltajust = 1 THEN 1 ELSE 0 END) AS totalFaltasJustificadas
                 FROM tbChamada 
-                WHERE IdMatricula = ? AND falta = 1
+                WHERE IdMatricula = ?
             ");
             $stmt->execute([$idMatricula]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            echo json_encode(['totalFaltas' => $row['totalFaltas']]);
+            echo json_encode([
+                'totalFaltas' => (int)($row['totalFaltas'] ?? 0),
+                'totalFaltasJustificadas' => (int)($row['totalFaltasJustificadas'] ?? 0),
+            ]);
         } catch (PDOException $e) {
             echo json_encode(["status" => "error", "message" => $e->getMessage()]);
         }
