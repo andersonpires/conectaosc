@@ -182,6 +182,20 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
             <button id="overlayBtnOk" class="btn btn-primary mt-3" style="display: none;">OK</button>
         </div>
     </div>
+    <div class="modal fade" id="modalAvisoAvaliacao" tabindex="-1" aria-labelledby="modalAvisoAvaliacaoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="modalAvisoAvaliacaoLabel">Atenção!</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body" id="modalAvisoAvaliacaoMensagem"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="wrapper">
         <?php require_once $BASE_para_PATH . '/app/views/partials/menu.php'; ?>
 
@@ -2105,11 +2119,11 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
 
         function mostrarMensagemAvaliacao(mensagem) {
             const texto = mensagem || 'Erro ao gerar avaliação.';
-            if (typeof mostrarOverlay === 'function') {
-                mostrarOverlay({
-                    mensagem: texto,
-                    carregando: false
-                });
+            const modalEl = document.getElementById('modalAvisoAvaliacao');
+            const mensagemEl = document.getElementById('modalAvisoAvaliacaoMensagem');
+            if (modalEl && mensagemEl && typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                mensagemEl.textContent = texto;
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
                 return;
             }
             if (typeof toastr !== 'undefined') {
