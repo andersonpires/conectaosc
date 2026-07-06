@@ -298,6 +298,7 @@ if (isset($_GET['IdMatricula'])) {
 
 <script>
     const ID_TURMA = <?php echo (int)$IdTurma; ?>;
+    const ID_CURSO_TURMA = <?php echo (int)$IdCursoTurma; ?>;
     const SOMENTE_ATIVAS = <?php echo (int)$Habilitado; ?>;
     const TIPO_USUARIO = "<?php echo addslashes($_SESSION['Tipo'] ?? ''); ?>";
     const SOLICITAR_TURMA_URL = "<?php echo rtrim((string)$BASE_para_URL, '/'); ?>/matriculas/contratos/turma/solicitar";
@@ -387,15 +388,71 @@ if (isset($_GET['IdMatricula'])) {
         return '';
     }
 
+    async function buscarTurmasPorCurso(idCurso) {
+        const resp = await fetch(`${resolveApiBase()}/turmas/por-curso?IdCurso=${encodeURIComponent(idCurso)}&somenteAtivos=0`, {
+            headers: { Accept: 'application/json' },
+            credentials: 'same-origin'
+        });
+        const data = await resp.json();
+        if (!resp.ok || !data.success) {
+            throw new Error(data.message || 'Erro ao carregar turmas do curso.');
+        }
+        return data.data || [];
+    }
+
+    function definirEstadoTurmas(mensagem, disabled = true) {
+        const editTurma = document.getElementById('edit_idturma');
+        editTurma.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = mensagem;
+        editTurma.appendChild(option);
+        editTurma.disabled = disabled;
+    }
+
+    function preencherTurmasDoCurso(turmas, turmaSelecionada = '') {
+        const editTurma = document.getElementById('edit_idturma');
+        editTurma.innerHTML = '';
+
+        if (!Array.isArray(turmas) || turmas.length === 0) {
+            definirEstadoTurmas('Nenhuma turma cadastrada neste curso', true);
+            return;
+        }
+
+        turmas.forEach((turma) => {
+            const option = document.createElement('option');
+            option.value = turma.IdTurma;
+            option.textContent = turma.NomeTurma || turma.IdTurma;
+            editTurma.appendChild(option);
+        });
+
+        editTurma.disabled = false;
+        if (turmaSelecionada !== '') {
+            editTurma.value = String(turmaSelecionada);
+        }
+    }
+
+    let carregarTurmasSeq = 0;
+    async function carregarTurmasDoCurso(idCurso, turmaSelecionada = '') {
+        if (!idCurso) {
+            definirEstadoTurmas('Selecione um curso primeiro', true);
+            return [];
+        }
+
+        const seq = ++carregarTurmasSeq;
+        definirEstadoTurmas('Carregando turmas...', true);
+        const turmas = await buscarTurmasPorCurso(idCurso);
+        if (seq !== carregarTurmasSeq) {
+            return turmas;
+        }
+        preencherTurmasDoCurso(turmas, turmaSelecionada);
+        return turmas;
+    }
+
     async function carregarSelects() {
-        const [cursosResp, turmasResp] = await Promise.all([
-            fetch(`${resolveApiBase()}/cursos`, { headers: { Accept: 'application/json' }, credentials: 'same-origin' }),
-            fetch(`${resolveApiBase()}/turmas`, { headers: { Accept: 'application/json' }, credentials: 'same-origin' }),
-        ]);
+        const cursosResp = await fetch(`${resolveApiBase()}/cursos`, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
         const cursosData = await cursosResp.json();
-        const turmasData = await turmasResp.json();
         if (!cursosResp.ok || !cursosData.success) throw new Error('Erro ao carregar cursos');
-        if (!turmasResp.ok || !turmasData.success) throw new Error('Erro ao carregar turmas');
 
         const editCurso = document.getElementById('edit_curso');
         editCurso.innerHTML = '';
@@ -406,18 +463,14 @@ if (isset($_GET['IdMatricula'])) {
             editCurso.appendChild(option);
         });
 
-        const editTurma = document.getElementById('edit_idturma');
-        editTurma.innerHTML = '';
-        (turmasData.data || []).forEach((turma) => {
-            const option = document.createElement('option');
-            option.value = turma.IdTurma;
-            option.textContent = turma.NomeTurma || turma.NomeCurso || turma.IdTurma;
-            editTurma.appendChild(option);
-        });
+        definirEstadoTurmas('Selecione um curso primeiro', true);
 
-        const turmaAtual = (turmasData.data || []).find((t) => Number(t.IdTurma) === Number(ID_TURMA));
-        if (turmaAtual) {
-            document.getElementById('titulo').innerHTML += ` <span style="color: blue;">${escapeHtml(turmaAtual.NomeTurma || '')}</span>`;
+        if (ID_CURSO_TURMA > 0) {
+            const turmasCursoAtual = await carregarTurmasDoCurso(ID_CURSO_TURMA, ID_TURMA);
+            const turmaAtual = turmasCursoAtual.find((t) => Number(t.IdTurma) === Number(ID_TURMA));
+            if (turmaAtual) {
+                document.getElementById('titulo').innerHTML += ` <span style="color: blue;">${escapeHtml(turmaAtual.NomeTurma || '')}</span>`;
+            }
         }
     }
 
@@ -461,16 +514,30 @@ if (isset($_GET['IdMatricula'])) {
     }
 
     $(function() {
-        $('#editarModal').on('show.bs.modal', function(event) {
+        $('#edit_curso').on('change', function() {
+            carregarTurmasDoCurso(this.value).catch((err) => {
+                definirEstadoTurmas(err.message || 'Erro ao carregar turmas.', true);
+            });
+        });
+
+        $('#editarModal').on('show.bs.modal', async function(event) {
             const button = $(event.relatedTarget);
+            const cursoAtual = button.data('curso');
+            const turmaAtual = button.data('idturma');
+
             $('#edit_fotoaluno').attr('src', button.data('fotoaluno'));
             $('#edit_nomealuno').val(button.data('nomealuno'));
             $('#edit_idaluno').val(button.data('idaluno'));
             $('#edit_idmatricula').val(button.data('idmatricula'));
-            $('#edit_curso').val(button.data('curso'));
-            $('#edit_idturma').val(button.data('idturma'));
+            $('#edit_curso').val(cursoAtual);
             $('#edit_municipio').val(button.data('municipio'));
             $('#edit_datamatricula').val(button.data('datamatricula'));
+
+            try {
+                await carregarTurmasDoCurso(cursoAtual, turmaAtual);
+            } catch (err) {
+                definirEstadoTurmas(err.message || 'Erro ao carregar turmas.', true);
+            }
         });
 
         $('#excluirModal').on('show.bs.modal', function(event) {
