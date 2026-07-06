@@ -27,7 +27,21 @@ $beneficiariosCadastroUrl = rtrim((string) $BASE_para_URL, '/') . '/beneficiario
 $idUsuario = $_POST['IdUsuario'] ?? null;
 
 if (!$idUsuario || !is_numeric($idUsuario)) {
-    header("Location: {$beneficiariosCadastroUrl}?erro=Usuário inválido");
+    header("Location: {$beneficiariosCadastroUrl}?tab=vulnerabilidade&erro=" . urlencode('Usuário inválido'));
+    exit;
+}
+
+$stmt = $pdo->prepare('
+    SELECT *
+    FROM tbAluno
+    WHERE IdUsuario = ?
+      AND Habilitado = 1
+');
+$stmt->execute([(int) $idUsuario]);
+$aluno = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$aluno) {
+    header("Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&tab=vulnerabilidade&erro=" . urlencode('Beneficiário não encontrado ou inativo.'));
     exit;
 }
 
@@ -76,13 +90,13 @@ $labels = [
 $camposFaltantes = [];
 
 foreach ($camposObrigatorios as $campo) {
-    if (!array_key_exists($campo, $_POST)) {
+    if (!array_key_exists($campo, $aluno)) {
         $camposFaltantes[] = $labels[$campo] ?? $campo;
         continue;
     }
 
-    $valor = $_POST[$campo];
-    if ($valor === '' || $valor === null) {
+    $valor = $aluno[$campo];
+    if ($valor === '' || $valor === null || trim((string) $valor) === '') {
         $camposFaltantes[] = $labels[$campo] ?? $campo;
     }
 }
@@ -90,8 +104,8 @@ foreach ($camposObrigatorios as $campo) {
 if (!empty($camposFaltantes)) {
     $lista = implode(', ', $camposFaltantes);
     header(
-        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&erro=" .
-            urlencode("Dados incompletos. Preencha: {$lista}")
+        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&tab=vulnerabilidade&erro=" .
+            urlencode("Dados incompletos no cadastro salvo. Confira: {$lista}")
     );
     exit;
 }
@@ -103,7 +117,7 @@ if (!empty($camposFaltantes)) {
 */
 $descricao = "Avaliação socioassistencial baseada nos seguintes dados:\n\n";
 
-foreach ($_POST as $campo => $valor) {
+foreach ($aluno as $campo => $valor) {
     if (is_array($valor)) {
         $valor = implode(', ', $valor);
     }
@@ -145,7 +159,7 @@ PROMPT;
 -------------------------------------------------------
 */
 if (!$apiKey || strlen(trim($apiKey)) < 20) {
-    header("Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&erro=Chave da OpenAI não configurada");
+    header("Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&tab=vulnerabilidade&erro=" . urlencode('Chave da OpenAI não configurada'));
     exit;
 }
 
@@ -176,7 +190,7 @@ curl_close($ch);
 
 if ($curlErrno) {
     header(
-        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&erro=" .
+        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&tab=vulnerabilidade&erro=" .
             urlencode("Erro de comunicação com a OpenAI: {$curlError}")
     );
     exit;
@@ -186,7 +200,7 @@ $data = json_decode((string) $response, true);
 
 if (!is_array($data)) {
     header(
-        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&erro=" .
+        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&tab=vulnerabilidade&erro=" .
             urlencode('Resposta inválida da OpenAI.')
     );
     exit;
@@ -195,7 +209,7 @@ if (!is_array($data)) {
 if ($httpCode < 200 || $httpCode >= 300) {
     $msg = $data['error']['message'] ?? 'Erro desconhecido da OpenAI';
     header(
-        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&erro=" .
+        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&tab=vulnerabilidade&erro=" .
             urlencode("Erro OpenAI: {$msg}")
     );
     exit;
@@ -232,7 +246,7 @@ $resultado = formatarAvaliacaoIA($resultado);
 
 if ($resultado === '') {
     header(
-        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&erro=" .
+        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&tab=vulnerabilidade&erro=" .
             urlencode('A IA não retornou uma avaliação válida.')
     );
     exit;
@@ -243,17 +257,11 @@ if ($resultado === '') {
  Salva no banco
 -------------------------------------------------------
 */
-$stmt = $pdo->prepare('
-    SELECT AvaliacaoVulnerabilidadeIA
-    FROM tbAluno
-    WHERE IdUsuario = ?
-');
-$stmt->execute([$idUsuario]);
-$jaExiste = $stmt->fetchColumn();
+$jaExiste = $aluno['AvaliacaoVulnerabilidadeIA'] ?? null;
 
 if (!empty($jaExiste)) {
     header(
-        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&erro=" .
+        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&tab=vulnerabilidade&erro=" .
             urlencode('Avaliação já existente. Utilize Reavaliar se necessário.')
     );
     exit;
@@ -268,7 +276,7 @@ $ok = $upd->execute([$resultado, $idUsuario]);
 
 if (!$ok) {
     header(
-        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&erro=" .
+        "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&tab=vulnerabilidade&erro=" .
             urlencode('Falha ao salvar a avaliação no banco.')
     );
     exit;
@@ -280,7 +288,7 @@ if (!$ok) {
 -------------------------------------------------------
 */
 header(
-    "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&msg=" .
+    "Location: {$beneficiariosCadastroUrl}?id={$idUsuario}&tab=vulnerabilidade&msg=" .
         urlencode('Avaliação de vulnerabilidade realizada com sucesso')
 );
 exit;

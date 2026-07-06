@@ -58,6 +58,20 @@ if (!$idUsuario || !is_numeric($idUsuario)) {
     exit;
 }
 
+$stmt = $pdo->prepare('
+    SELECT *
+    FROM tbAluno
+    WHERE IdUsuario = ?
+      AND Habilitado = 1
+');
+$stmt->execute([(int) $idUsuario]);
+$aluno = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$aluno) {
+    enviarEvento('error', 'Beneficiário não encontrado ou inativo.');
+    exit;
+}
+
 $camposObrigatorios = [
     'Nome',
     'Nascimento',
@@ -92,35 +106,29 @@ $labels = [
 
 $camposFaltantes = [];
 foreach ($camposObrigatorios as $campo) {
-    if (!array_key_exists($campo, $_POST)) {
+    if (!array_key_exists($campo, $aluno)) {
         $camposFaltantes[] = $labels[$campo] ?? $campo;
         continue;
     }
-    $valor = $_POST[$campo];
-    if ($valor === '' || $valor === null) {
+    $valor = $aluno[$campo];
+    if ($valor === '' || $valor === null || trim((string) $valor) === '') {
         $camposFaltantes[] = $labels[$campo] ?? $campo;
     }
 }
 
 if (!empty($camposFaltantes)) {
-    enviarEvento('error', 'Dados incompletos. Preencha: ' . implode(', ', $camposFaltantes));
+    enviarEvento('error', 'Dados incompletos no cadastro salvo. Confira: ' . implode(', ', $camposFaltantes));
     exit;
 }
 
-$stmt = $pdo->prepare('
-    SELECT AvaliacaoVulnerabilidadeIA
-    FROM tbAluno
-    WHERE IdUsuario = ?
-');
-$stmt->execute([$idUsuario]);
-$jaExiste = $stmt->fetchColumn();
+$jaExiste = $aluno['AvaliacaoVulnerabilidadeIA'] ?? null;
 if (!empty($jaExiste)) {
     enviarEvento('error', 'Avaliação já existente. Utilize Reavaliar se necessário.');
     exit;
 }
 
 $descricao = "Avaliação socioassistencial baseada nos seguintes dados:\n\n";
-foreach ($_POST as $campo => $valor) {
+foreach ($aluno as $campo => $valor) {
     if (is_array($valor)) {
         $valor = implode(', ', $valor);
     }

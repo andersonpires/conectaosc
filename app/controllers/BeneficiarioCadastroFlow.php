@@ -57,7 +57,7 @@ final class BeneficiarioCadastroFlow
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $tab = $_POST['tab'] ?? '';
-            $tabsValidos = ['inscricao', 'socio', 'medico', 'ipai', 'outros'];
+            $tabsValidos = ['inscricao', 'socio', 'vulnerabilidade', 'medico', 'ipai', 'outros'];
             $tab = in_array($tab, $tabsValidos, true) ? $tab : null;
             $fecharCadastro = !empty($_POST['fechar']);
 

@@ -48,6 +48,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
         :root {
             --tab-inscricao: #1e88e5;
             --tab-socio: #2e7d32;
+            --tab-vulnerabilidade: #c77800;
             --tab-medico: #ef6c00;
             --tab-ipai: #00838f;
             --tab-outros: #6a1b9a;
@@ -83,6 +84,16 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
         .nav-pills .nav-link.tab-socio.active {
             background: var(--tab-socio);
             border-color: var(--tab-socio);
+        }
+
+        .nav-pills .nav-link.tab-vulnerabilidade {
+            color: var(--tab-vulnerabilidade);
+            border-color: var(--tab-vulnerabilidade);
+        }
+
+        .nav-pills .nav-link.tab-vulnerabilidade.active {
+            background: var(--tab-vulnerabilidade);
+            border-color: var(--tab-vulnerabilidade);
         }
 
         .nav-pills .nav-link.tab-medico {
@@ -121,6 +132,10 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
 
         #tab-socio {
             --tab-color: var(--tab-socio);
+        }
+
+        #tab-vulnerabilidade {
+            --tab-color: var(--tab-vulnerabilidade);
         }
 
         #tab-medico {
@@ -198,7 +213,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                     $cpfInformado = isset($_POST['CPF']) || $modoCrianca;
                     $cpfNaoEncontrado = isset($cpfNaoEncontrado) ? $cpfNaoEncontrado : false;
                     $tabAtiva = $_GET['tab'] ?? 'inscricao';
-                    $tabsValidas = ['inscricao', 'socio', 'medico', 'ipai', 'outros'];
+                    $tabsValidas = ['inscricao', 'socio', 'vulnerabilidade', 'medico', 'ipai', 'outros'];
                     if (!in_array($tabAtiva, $tabsValidas, true)) {
                         $tabAtiva = 'inscricao';
                     }
@@ -326,6 +341,11 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
         <li class="nav-item" role="presentation">
             <button class="nav-link tab-socio <?= $tabAtiva === 'socio' ? 'active' : '' ?>" id="tab-socio-btn" data-bs-toggle="tab" data-bs-target="#tab-socio" type="button" role="tab" aria-controls="tab-socio" aria-selected="<?= $tabAtiva === 'socio' ? 'true' : 'false' ?>" data-tab="socio">
                 Dados Econômicos e Socioassistenciais
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link tab-vulnerabilidade <?= $tabAtiva === 'vulnerabilidade' ? 'active' : '' ?>" id="tab-vulnerabilidade-btn" data-bs-toggle="tab" data-bs-target="#tab-vulnerabilidade" type="button" role="tab" aria-controls="tab-vulnerabilidade" aria-selected="<?= $tabAtiva === 'vulnerabilidade' ? 'true' : 'false' ?>" data-tab="vulnerabilidade">
+                Avaliação de Vulnerabilidade
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -850,8 +870,28 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                         <input type="text" name="NomeContatoCuidador" placeholder="Nome e contato do cuidador" class="form-control mt-2" value="<?= $_POST['NomeContatoCuidador'] ?? '' ?>">
                     </div>
                 </div>
-                <hr>
+                <div class="d-flex justify-content-end gap-2 flex-wrap">
+                    <button type="submit" name="acao" value="salvar" class="btn btn-outline-secondary" data-acao="fechar">
+                        Salvar e fechar
+                    </button>
+                    <button type="submit" name="acao" value="salvar" class="btn btn-primary" data-acao="continuar" data-next-tab="vulnerabilidade">
+                        Salvar e continuar
+                    </button>
+                </div>
 
+            </div>
+        </div>
+    </div>
+
+
+        </div>
+        <div class="tab-pane fade <?= $tabAtiva === 'vulnerabilidade' ? 'show active' : '' ?>" id="tab-vulnerabilidade" role="tabpanel" aria-labelledby="tab-vulnerabilidade-btn">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h1 class="h3 mb-0 section-title">AVALIAÇÃO DE VULNERABILIDADE</h1>
+            </div>
+    <div class="col-11">
+        <div class="card shadow-lg">
+            <div class="card-body">
                 <div class="mb-3">
                     <?php if ($modoEdicao): ?>
                         <button type="submit" name="acao" value="avaliar_vulnerabilidade" class="btn btn-warning" id="btnAvaliarVuln">
@@ -862,7 +902,6 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                             Avaliar Vulnerabilidade Social (salve o cadastro primeiro)
                         </button>
                     <?php endif; ?>
-
                 </div>
 
                 <div class="mb-3">
@@ -870,9 +909,8 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                     <textarea
                         name="AvaliacaoVulnerabilidadeIA"
                         class="form-control"
-                        rows="6"
+                        rows="8"
                         readonly><?= $_POST['AvaliacaoVulnerabilidadeIA'] ?? '' ?></textarea>
-
                 </div>
 
                 <div class="d-flex justify-content-end gap-2 flex-wrap">
@@ -883,12 +921,9 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                         Salvar e continuar
                     </button>
                 </div>
-
             </div>
         </div>
     </div>
-
-
         </div>
         <div class="tab-pane fade <?= $tabAtiva === 'medico' ? 'show active' : '' ?>" id="tab-medico" role="tabpanel" aria-labelledby="tab-medico-btn">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
@@ -2068,6 +2103,20 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
             hidden.value = valor;
         }
 
+        function mostrarMensagemAvaliacao(mensagem) {
+            const texto = mensagem || 'Erro ao gerar avaliação.';
+            if (typeof mostrarOverlay === 'function') {
+                mostrarOverlay({
+                    mensagem: texto,
+                    carregando: false
+                });
+                return;
+            }
+            if (typeof toastr !== 'undefined') {
+                toastr.error(texto);
+            }
+        }
+
         form.addEventListener('submit', function handler(e) {
             const btn = e.submitter; // botao clicado (quando existe)
             const acao = (btn && btn.name === 'acao') ? btn.value : '';
@@ -2193,7 +2242,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                                 // Ignorado: os status sao controlados no cliente
                             } else if (evento === 'error') {
                                 pararStatus();
-                                alert(payload.trim());
+                                mostrarMensagemAvaliacao(payload.trim());
                             } else if (evento === 'done') {
                                 pararStatus();
                                 if (textarea) textarea.value = payload;
@@ -2206,14 +2255,7 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                     return reader.read().then(processarChunk);
                 }).catch(err => {
                     pararStatus();
-                    if (typeof mostrarOverlay === 'function') {
-                        mostrarOverlay({
-                            mensagem: err.message || 'Erro ao gerar avaliação.',
-                            carregando: false
-                        });
-                    } else {
-                        alert(err.message || 'Erro ao gerar avaliação.');
-                    }
+                    mostrarMensagemAvaliacao(err.message || 'Erro ao gerar avaliação.');
                 }).finally(() => {
                     submitted = false;
                 });
