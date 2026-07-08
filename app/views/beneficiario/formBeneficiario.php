@@ -516,18 +516,18 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                 </div>
                 <?php if ($modoCrianca): ?>
                     <br>
-                    <h5>RESPONSÁVEL <small class="text-danger">(obrigatório para criança sem CPF)</small></h5>
+                    <h5>RESPONSÁVEL <small class="text-danger">(obrigatório apenas para menor sem CPF)</small></h5>
                     <hr class="close-hr"><br>
                     <div class="mb-3">
-                        <label for="NomeResp1" class="form-label">Nome do Responsável 1*</label>
+                        <label for="NomeResp1" class="form-label">Nome do Responsável 1</label>
                         <input type="text" class="form-control" id="NomeResp1" name="NomeResp1"
                                value="<?= htmlspecialchars($_POST['NomeResp1'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                               required autocomplete="off">
+                               autocomplete="off">
                     </div>
                     <div class="row mb-3">
                         <div class="col-6">
-                            <label for="Parentesco" class="form-label">Parentesco*</label>
-                            <select class="form-select" id="Parentesco" name="Parentesco" required>
+                            <label for="Parentesco" class="form-label">Parentesco</label>
+                            <select class="form-select" id="Parentesco" name="Parentesco">
                                 <?php
                                 $opcoesParentesco = [
                                     '' => 'Selecione',
@@ -548,18 +548,18 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
                             </select>
                         </div>
                         <div class="col-6">
-                            <label for="CpfResp1" class="form-label">CPF do Responsável*</label>
+                            <label for="CpfResp1" class="form-label">CPF do Responsável</label>
                             <input type="text" class="form-control" id="CpfResp1" name="CpfResp1"
                                    value="<?= htmlspecialchars($_POST['CpfResp1'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                   required autocomplete="off">
+                                   autocomplete="off">
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-6">
-                            <label for="WhatsAppResp1" class="form-label">WhatsApp do Responsável*</label>
+                            <label for="WhatsAppResp1" class="form-label">WhatsApp do Responsável</label>
                             <input type="text" class="form-control" id="WhatsAppResp1" name="WhatsAppResp1"
                                    value="<?= htmlspecialchars($_POST['WhatsAppResp1'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
-                                   required autocomplete="off">
+                                   autocomplete="off">
                         </div>
                         <div class="col-6">
                             <label for="TelefoneResp1" class="form-label">Telefone do Responsável</label>

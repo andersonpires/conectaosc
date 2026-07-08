@@ -248,9 +248,8 @@ final class BeneficiarioCadastroFlow
 
     private function postIndicaCriancaSemCpf(array $dados): bool
     {
-        $modo = (string)($dados['modo'] ?? '');
         $cpf = $this->cpfSomenteDigitos($dados['CPF'] ?? '');
-        return $modo === 'crianca' || $cpf === '';
+        return $cpf === '';
     }
 
     private function prepararDadosCriancaSemCpf(array &$dados): void
@@ -266,6 +265,10 @@ final class BeneficiarioCadastroFlow
     private function validarCriancaSemCpf(array $dados): ?string
     {
         if (!$this->postIndicaCriancaSemCpf($dados)) {
+            return null;
+        }
+
+        if ($this->beneficiarioMaiorDeIdade($dados['Nascimento'] ?? null)) {
             return null;
         }
 
@@ -288,6 +291,21 @@ final class BeneficiarioCadastroFlow
         }
 
         return null;
+    }
+
+    private function beneficiarioMaiorDeIdade(mixed $nascimento): bool
+    {
+        $valor = trim((string)$nascimento);
+        if ($valor === '') {
+            return false;
+        }
+
+        $data = \DateTimeImmutable::createFromFormat('!d/m/Y', $valor);
+        if (!$data instanceof \DateTimeImmutable || $data->format('d/m/Y') !== $valor) {
+            return false;
+        }
+
+        return $data->diff(new \DateTimeImmutable('today'))->y >= 18;
     }
 
     private function processUploadFoto(): void
