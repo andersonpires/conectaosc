@@ -16,6 +16,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
 require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
 require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
+require_once $BASE_para_PATH . '/app/views/partials/cpfBadgeHelper.php';
 $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 0;
 ?>
 <!DOCTYPE html>
@@ -102,6 +103,7 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
                                     <th class="text-center">Id</th>
                                     <th class="text-center">Foto</th>
                                     <th>Nome</th>
+                                    <th class="text-center">Situação CPF</th>
                                     <th>Turmas Ativas</th>
                                     <th>Histórico de turmas</th>
                                     <th class="text-center">Nascimento</th>
@@ -134,11 +136,15 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
                                     $apelido = trim((string)($dados['Apelido'] ?? ''));
                                     if ($apelido !== '') $nome = '(' . $apelido . ') ' . $nome;
                                     $cpf = preg_replace('/\D/', '', (string)($dados['CPF'] ?? ''));
+                                    $urlCadastroBadge = $BASE_para_URL . '/beneficiarios/cadastro?id=' . $id;
+                                    $urlCadastroBadge .= ($cpf !== '') ? '&cpf=' . urlencode((string)$cpf) : '&modo=crianca';
+                                    $badgeCpf = conectaosc_cpf_badge((string)($dados['CPF'] ?? ''), (string)($dados['Nascimento'] ?? ''), $urlCadastroBadge);
                                     echo '<tr>';
                                     echo '<td class="text-center"><input type="checkbox" class="form-radio-input doacao" name="checkbox[]" value="' . $id . '"></td>';
                                     echo '<td class="text-center">' . $id . '</td>';
                                     echo '<td class="text-center"><span class="hover-container"><img src="' . htmlspecialchars($FOTO_PADRAO_URL) . '" data-foto-id="' . $id . '" class="rounded-circle img-cover hover-img beneficiario-foto js-foto-pendente" width="40" height="40" loading="lazy" decoding="async" alt="Foto de beneficiário"></span></td>';
                                     echo '<td>' . htmlspecialchars($nome) . '</td>';
+                                    echo '<td class="text-center">' . $badgeCpf . '</td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['TurmasAtivas'] ?? '')) . '</td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['HistoricoTurmas'] ?? '')) . '</td>';
                                     echo '<td class="text-center">' . htmlspecialchars((string)($dados['Nascimento'] ?? '')) . '</td>';

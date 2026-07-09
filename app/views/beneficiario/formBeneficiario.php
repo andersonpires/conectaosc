@@ -5,6 +5,7 @@ $BASE_para_URL = $runtime['base_para_url'];
 $invertextoApiToken = bootstrap_invertexto_api_token($BASE_para_PATH);
 require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
 require_once $BASE_para_PATH . '/app/models/BeneficiarioModel.php';
+require_once $BASE_para_PATH . '/app/views/partials/cpfBadgeHelper.php';
 
 $tipoPermissao = $_SESSION['Tipo'] ?? '';
 $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administrador', 'Superadministrador'], true);
@@ -345,6 +346,12 @@ $podeUsarVersatilis = in_array($tipoPermissao, ['Geral', 'Versatilis', 'Administ
     <?php else: ?>
         <input type="hidden" name="IdColaboradorEnt" value="<?= (int)($_SESSION['Cod'] ?? 0) ?>">
         <input type="hidden" name="TimeEntrada" value="<?= date('Y-m-d H:i:s') ?>">
+    <?php endif; ?>
+    <?php if ($modoEdicao && conectaosc_cpf_pendente((string)($_POST['CPF'] ?? ''), (string)($_POST['Nascimento'] ?? ''))): ?>
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-3" role="alert">
+            <span class="badge bg-danger">Ver CPF</span>
+            <span>Este beneficiário está com o CPF em branco ou inválido. Corrija o campo CPF na guia <strong>Outros Dados</strong>.</span>
+        </div>
     <?php endif; ?>
     <ul class="nav nav-pills gap-2 mb-4" id="benefTabs" role="tablist">
         <li class="nav-item" role="presentation">

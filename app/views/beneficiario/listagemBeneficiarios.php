@@ -16,6 +16,7 @@ if (!isset($BASE_para_PATH) || !isset($BASE_para_URL)) {
 
 require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
 require_once $BASE_para_PATH . '/api/conectabd/conexao.php';
+require_once $BASE_para_PATH . '/app/views/partials/cpfBadgeHelper.php';
 
 $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 0;
 ?>
@@ -39,8 +40,8 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
         #minhaTabela td:nth-child(5),
         #minhaTabela td:nth-child(7),
         #minhaTabela td:nth-child(8),
-        #minhaTabela td:nth-child(13),
-        #minhaTabela td:nth-child(22) { white-space: normal; min-width: 180px; }
+        #minhaTabela td:nth-child(14),
+        #minhaTabela td:nth-child(23) { white-space: normal; min-width: 180px; }
         .datatable-toolbar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
         .datatable-toolbar .dataTables_filter { margin-left: auto; }
         #matricularAluno { position: fixed; right: 10px; top: 100px; z-index: 100; border-radius: 50%; width: 80px; height: 80px; border: none; font-weight: bold; text-align: center; padding: 5px; display: flex; justify-content: center; align-items: center; }
@@ -110,6 +111,7 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
                                 <tr>
                                     <th>*</th><th>Id</th><th>Foto</th><th>Nome</th><th>Interesses</th><th>Paciente</th>
                                     <th>Turmas Ativas</th><th>Histórico de turmas</th><th>Nascimento</th><th>Idade</th><th>CPF</th>
+                                    <th class="text-center">Situação CPF</th>
                                     <th>Identidade</th><th>Endereço</th><th>Bairro</th><th>Cidade</th><th>Telefone</th>
                                     <th>WhatsApp</th><th>Responsável</th><th>Contato</th><th>PCD em casa</th><th>Deficiência(s)</th><th>Obs</th><th>Ações</th>
                                 </tr>
@@ -209,6 +211,7 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
                                     echo '<td>' . htmlspecialchars($nascimento) . '</td>';
                                     echo '<td>' . htmlspecialchars($idade) . '</td>';
                                     echo '<td>' . ($cpf !== '' ? htmlspecialchars($cpf) : '<em class="text-muted">' . htmlspecialchars($textoCpfVazio) . '</em>') . '</td>';
+                                    echo '<td class="text-center">' . conectaosc_cpf_badge($cpf, $nascimento, $urlCadastro) . '</td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['Identidade'] ?? '')) . '</td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['Endereco'] ?? '')) . '</td>';
                                     echo '<td>' . htmlspecialchars((string)($dados['Bairro'] ?? '')) . '</td>';
@@ -404,7 +407,7 @@ $matricula = (isset($_GET['matricula']) && (int)$_GET['matricula'] === 1) ? 1 : 
         const headers = ['ID','Nome','Interesses','Paciente','Turmas Ativas','Histórico de turmas','Nascimento','CPF','Endereço','Bairro','Cidade','Telefone','WhatsApp','Responsável','Contato','Obs'];
         const dadosFormatados = [];
         dadosFiltrados.each(function(row) {
-            dadosFormatados.push([row[1], extrairTexto(row[3]), row[4], extrairPaciente(row[5]), row[6], row[7], row[8], extrairTexto(row[10]) || 'Sem CPF', row[12], row[13], row[14], row[15], row[16], row[17], row[18], row[21]]);
+            dadosFormatados.push([row[1], extrairTexto(row[3]), row[4], extrairPaciente(row[5]), row[6], row[7], row[8], extrairTexto(row[10]) || 'Sem CPF', row[13], row[14], row[15], row[16], row[17], row[18], row[19], row[22]]);
         });
 
         const wb = XLSX.utils.book_new();
