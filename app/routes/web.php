@@ -14,6 +14,7 @@ use FrontEnd\Controllers\CrmController;
 use FrontEnd\Controllers\ColaboradorController;
 use FrontEnd\Controllers\ConfiguracaoController;
 use FrontEnd\Controllers\EventoController;
+use FrontEnd\Controllers\ExportacaoArquivosController;
 use FrontEnd\Controllers\FeriadoController;
 use FrontEnd\Controllers\MatriculaController;
 use FrontEnd\Controllers\PerfilController;
@@ -41,6 +42,7 @@ $chamadaController = new ChamadaController($basePath);
 $assinaturaController = new AssinaturaController($basePath);
 $swotController = new SwotController($basePath);
 $feriadoController = new FeriadoController($basePath);
+$exportacaoController = new ExportacaoArquivosController($basePath);
 $projetoController = new ProjetoController($basePath);
 $matriculaController = new MatriculaController($basePath);
 $eventoController = new EventoController($baseUrl, $basePath);
@@ -89,6 +91,9 @@ $router->post('/assinatura/pdf/finalizar', [$assinaturaController, 'finalizar'])
 $router->get('/assinatura/pdf/validar', [$assinaturaController, 'validar']);
 $router->get('/backup', [$backupController, 'configuracao']);
 $router->get('/backup/dados', [$backupController, 'dados']);
+// Exportacao de arquivos para migracao (slug secreto + sessao de admin)
+$router->get('/exportar-arquivos-ibpbf-n743k', [$exportacaoController, 'pagina']);
+$router->get('/exportar-arquivos-ibpbf-n743k/gerar', [$exportacaoController, 'gerar']);
 $router->get('/bia', [$biaController, 'index']);
 $router->post('/bia', [$biaController, 'index']);
 $router->post('/bia/stream', [$biaController, 'stream']);
