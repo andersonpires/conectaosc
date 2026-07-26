@@ -14,16 +14,85 @@ if (!function_exists('exportacaoCandidatos')) {
     function exportacaoCandidatos(string $base): array
     {
         $base = rtrim(str_replace('\\', '/', $base), '/');
+        // Alem dos caminhos relativos a base, tentamos os absolutos conhecidos
+        // do VPS — caso $BASE_para_PATH resolva para outro lugar.
+        $absolutos = [
+            'img' => ['/var/www/html/conectaosc/app/assets/img'],
+            'storage' => ['/var/www/html/conectaosc/storage'],
+        ];
         return [
-            'img' => [
+            'img' => array_values(array_unique(array_merge([
                 $base . '/app/assets/img',
                 $base . '/assets/img',
-            ],
-            'storage' => [
+            ], $absolutos['img']))),
+            'storage' => array_values(array_unique(array_merge([
                 $base . '/storage',
                 $base . '/app/storage',
-            ],
+                dirname($base) . '/storage',
+            ], $absolutos['storage']))),
         ];
+    }
+}
+
+if (!function_exists('exportacaoInspecionar')) {
+    /**
+     * Radiografia de uma pasta: existe? da para ler? quantos arquivos tem (sem
+     * aplicar exclusoes) e quais subpastas de 1o nivel, com contagem. Serve para
+     * descobrir onde os arquivos realmente estao no servidor.
+     */
+    function exportacaoInspecionar(string $dir): array
+    {
+        $info = [
+            'caminho' => $dir,
+            'existe' => is_dir($dir),
+            'legivel' => false,
+            'link' => is_link($dir) ? (readlink($dir) ?: '?') : null,
+            'real' => null,
+            'arquivos' => 0,
+            'sub' => [],
+            'erro' => null,
+        ];
+        if (!$info['existe']) {
+            return $info;
+        }
+        $info['legivel'] = is_readable($dir);
+        $info['real'] = realpath($dir) ?: null;
+        if (!$info['legivel']) {
+            $info['erro'] = 'sem permissao de leitura para o usuario do PHP';
+            return $info;
+        }
+        try {
+            foreach (new DirectoryIterator($dir) as $item) {
+                if ($item->isDot()) {
+                    continue;
+                }
+                if ($item->isDir()) {
+                    $n = 0;
+                    try {
+                        $it = new RecursiveIteratorIterator(
+                            new RecursiveDirectoryIterator($item->getPathname(), FilesystemIterator::SKIP_DOTS),
+                            RecursiveIteratorIterator::LEAVES_ONLY
+                        );
+                        foreach ($it as $f) {
+                            if ($f->isFile()) {
+                                $n++;
+                            }
+                        }
+                    } catch (Throwable $e) {
+                        $n = -1;
+                    }
+                    $info['sub'][$item->getFilename()] = $n;
+                    if ($n > 0) {
+                        $info['arquivos'] += $n;
+                    }
+                } elseif ($item->isFile()) {
+                    $info['arquivos']++;
+                }
+            }
+        } catch (Throwable $e) {
+            $info['erro'] = $e->getMessage();
+        }
+        return $info;
     }
 }
 

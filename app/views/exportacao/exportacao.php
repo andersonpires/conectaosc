@@ -74,19 +74,23 @@ $resumoStorage = exportacaoResumo('storage', $origens['storage'] ?? []);
 $totalArquivos = $resumoImg['arquivos'] + $resumoStorage['arquivos'];
 $totalBytes = $resumoImg['bytes'] + $resumoStorage['bytes'];
 
-// Diagnostico: mostra todos os candidatos, existam ou nao, com a contagem
+// Diagnostico: radiografia de cada candidato + a propria base, para descobrir
+// onde os arquivos estao de verdade neste servidor.
 $diagnostico = [];
 foreach (exportacaoCandidatos($BASE_para_PATH) as $prefixo => $candidatos) {
     foreach ($candidatos as $dir) {
-        $existe = is_dir($dir);
-        $diagnostico[] = [
-            'prefixo' => $prefixo,
-            'caminho' => $dir,
-            'existe' => $existe,
-            'arquivos' => $existe ? exportacaoResumoPasta($prefixo, $dir)['arquivos'] : 0,
-        ];
+        $diagnostico[] = ['prefixo' => $prefixo] + exportacaoInspecionar($dir);
     }
 }
+$inspecaoBase = exportacaoInspecionar($BASE_para_PATH);
+$ambiente = [
+    'BASE_para_PATH' => $BASE_para_PATH,
+    'DOCUMENT_ROOT' => (string) ($_SERVER['DOCUMENT_ROOT'] ?? ''),
+    'getcwd()' => (string) (getcwd() ?: ''),
+    'usuario do PHP' => function_exists('posix_getpwuid') && function_exists('posix_geteuid')
+        ? (string) ((posix_getpwuid(posix_geteuid())['name'] ?? '?'))
+        : (string) (get_current_user() ?: '?'),
+];
 
 $espacoLivre = @disk_free_space(sys_get_temp_dir());
 $espacoOk = $espacoLivre === false ? true : ($espacoLivre > $totalBytes * 1.2);
@@ -193,26 +197,59 @@ $espacoOk = $espacoLivre === false ? true : ($espacoLivre > $totalBytes * 1.2);
                                     <h5 class="card-title mb-0">Caminhos verificados</h5>
                                     <h6 class="card-subtitle text-muted">Onde o sistema procurou os arquivos</h6>
                                 </div>
-                                <div class="card-body">
-                                    <table class="table table-sm mb-0" style="font-size: 12px;">
-                                        <tbody>
-                                            <?php foreach ($diagnostico as $d) { ?>
-                                                <tr>
-                                                    <td style="word-break: break-all;">
-                                                        <span class="badge bg-secondary"><?php echo htmlspecialchars($d['prefixo'], ENT_QUOTES); ?></span>
-                                                        <code><?php echo htmlspecialchars($d['caminho'], ENT_QUOTES); ?></code>
-                                                    </td>
-                                                    <td class="text-end text-nowrap">
-                                                        <?php if (!$d['existe']) { ?>
-                                                            <span class="text-muted">não existe</span>
-                                                        <?php } else { ?>
-                                                            <strong><?php echo number_format($d['arquivos'], 0, ',', '.'); ?></strong> arq.
-                                                        <?php } ?>
-                                                    </td>
-                                                </tr>
+                                <div class="card-body" style="font-size: 12px;">
+                                    <p class="mb-1"><strong>Ambiente</strong></p>
+                                    <ul class="ps-3 mb-3" style="word-break: break-all;">
+                                        <?php foreach ($ambiente as $k => $v) { ?>
+                                            <li><?php echo htmlspecialchars((string) $k, ENT_QUOTES); ?>:
+                                                <code><?php echo htmlspecialchars($v !== '' ? $v : '(vazio)', ENT_QUOTES); ?></code></li>
+                                        <?php } ?>
+                                    </ul>
+
+                                    <p class="mb-1"><strong>Conteúdo da base</strong></p>
+                                    <p class="mb-3" style="word-break: break-all;">
+                                        <?php if (empty($inspecaoBase['sub'])) { ?>
+                                            <span class="text-muted">nenhuma subpasta listada</span>
+                                        <?php } else { ?>
+                                            <?php foreach ($inspecaoBase['sub'] as $nome => $n) { ?>
+                                                <span class="badge bg-light text-dark me-1 mb-1">
+                                                    <?php echo htmlspecialchars((string) $nome, ENT_QUOTES); ?>
+                                                    (<?php echo $n < 0 ? 'erro' : number_format($n, 0, ',', '.'); ?>)
+                                                </span>
                                             <?php } ?>
-                                        </tbody>
-                                    </table>
+                                        <?php } ?>
+                                    </p>
+
+                                    <p class="mb-1"><strong>Candidatos</strong></p>
+                                    <?php foreach ($diagnostico as $d) { ?>
+                                        <div class="mb-2 pb-2 border-bottom" style="word-break: break-all;">
+                                            <span class="badge bg-secondary"><?php echo htmlspecialchars($d['prefixo'], ENT_QUOTES); ?></span>
+                                            <code><?php echo htmlspecialchars($d['caminho'], ENT_QUOTES); ?></code>
+                                            <br>
+                                            <?php if (!$d['existe']) { ?>
+                                                <span class="text-muted">não existe</span>
+                                            <?php } elseif (!$d['legivel']) { ?>
+                                                <span class="text-danger">existe, mas SEM PERMISSÃO de leitura</span>
+                                            <?php } else { ?>
+                                                <strong><?php echo number_format($d['arquivos'], 0, ',', '.'); ?></strong> arquivo(s)
+                                                <?php if ($d['link']) { ?>
+                                                    · link → <code><?php echo htmlspecialchars((string) $d['link'], ENT_QUOTES); ?></code>
+                                                <?php } ?>
+                                                <?php if (!empty($d['sub'])) { ?>
+                                                    <br>
+                                                    <?php foreach ($d['sub'] as $nome => $n) { ?>
+                                                        <span class="badge bg-light text-dark me-1">
+                                                            <?php echo htmlspecialchars((string) $nome, ENT_QUOTES); ?>
+                                                            (<?php echo $n < 0 ? 'erro' : number_format($n, 0, ',', '.'); ?>)
+                                                        </span>
+                                                    <?php } ?>
+                                                <?php } ?>
+                                            <?php } ?>
+                                            <?php if ($d['erro']) { ?>
+                                                <br><span class="text-danger"><?php echo htmlspecialchars((string) $d['erro'], ENT_QUOTES); ?></span>
+                                            <?php } ?>
+                                        </div>
+                                    <?php } ?>
                                 </div>
                             </div>
 
