@@ -37,25 +37,18 @@ if (!class_exists('ZipArchive')) {
     exit('ZipArchive indisponível no servidor.');
 }
 
-$pastasDisponiveis = [
-    'img' => $BASE_para_PATH . '/app/assets/img',
-    'storage' => $BASE_para_PATH . '/app/storage',
-];
+require_once __DIR__ . '/_origens.php';
+
+// Cada prefixo pode vir de mais de uma pasta (storage na raiz ou dentro de app).
+$origensDisponiveis = exportacaoOrigens($BASE_para_PATH);
 
 $parte = strtolower(trim((string) ($_GET['parte'] ?? '')));
-if ($parte !== '' && !isset($pastasDisponiveis[$parte])) {
+if ($parte !== '' && !isset($origensDisponiveis[$parte])) {
     http_response_code(400);
     exit('Parte inválida. Use ?parte=img ou ?parte=storage.');
 }
 
-$pastas = $parte === '' ? $pastasDisponiveis : [$parte => $pastasDisponiveis[$parte]];
-
-/** Arquivos temporarios da assinatura nao entram no pacote. */
-function exportacaoIgnorar(string $caminho): bool
-{
-    $normalizado = str_replace('\\', '/', $caminho);
-    return str_contains($normalizado, '/assinatura/tmp/');
-}
+$pastas = $parte === '' ? $origensDisponiveis : [$parte => $origensDisponiveis[$parte]];
 
 $tmp = tempnam(sys_get_temp_dir(), 'legexp');
 if ($tmp === false) {
@@ -72,28 +65,11 @@ if ($zip->open($tmpZip, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
 }
 
 $total = 0;
-foreach ($pastas as $prefixo => $dir) {
-    if (!is_dir($dir)) {
-        continue;
-    }
-
-    $it = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::LEAVES_ONLY
-    );
-
-    foreach ($it as $arq) {
-        if (!$arq->isFile()) {
-            continue;
-        }
-        $caminho = $arq->getPathname();
-        if (exportacaoIgnorar($caminho)) {
-            continue;
-        }
-        $rel = str_replace('\\', '/', substr($caminho, strlen($dir) + 1));
-        $zip->addFile($caminho, $prefixo . '/' . $rel);
+foreach ($pastas as $prefixo => $origens) {
+    exportacaoVarrer($prefixo, $origens, function (string $abs, string $noZip) use ($zip, &$total) {
+        $zip->addFile($abs, $noZip);
         $total++;
-    }
+    });
 }
 
 if ($total === 0) {

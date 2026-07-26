@@ -34,33 +34,24 @@ if (!isset($_SESSION['Cod'])) {
 $SLUG = 'ibpbf-n743k';
 $rotaGerar = rtrim($BASE_para_URL, '/') . '/exportar-arquivos-' . $SLUG . '/gerar';
 
-/** Conta arquivos e soma bytes de uma pasta, ignorando o que nao vai no pacote. */
-function exportacaoResumo(string $dir): array
-{
-    if (!is_dir($dir)) {
-        return ['arquivos' => 0, 'bytes' => 0];
-    }
+require_once __DIR__ . '/_origens.php';
 
+/** Conta arquivos e soma bytes de um prefixo (pode vir de varias pastas). */
+function exportacaoResumo(string $prefixo, array $origens): array
+{
     $arquivos = 0;
     $bytes = 0;
-    $it = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
-        RecursiveIteratorIterator::LEAVES_ONLY
-    );
-
-    foreach ($it as $arq) {
-        if (!$arq->isFile()) {
-            continue;
-        }
-        $caminho = str_replace('\\', '/', $arq->getPathname());
-        if (str_contains($caminho, '/assinatura/tmp/')) {
-            continue;
-        }
+    exportacaoVarrer($prefixo, $origens, function (string $abs, string $noZip, int $tam) use (&$arquivos, &$bytes) {
         $arquivos++;
-        $bytes += (int) $arq->getSize();
-    }
-
+        $bytes += $tam;
+    });
     return ['arquivos' => $arquivos, 'bytes' => $bytes];
+}
+
+/** Conta arquivos de UMA pasta especifica (para o diagnostico por caminho). */
+function exportacaoResumoPasta(string $prefixo, string $dir): array
+{
+    return exportacaoResumo($prefixo, [$dir]);
 }
 
 function exportacaoTamanho(int $bytes): string
@@ -77,10 +68,25 @@ function exportacaoTamanho(int $bytes): string
     return $bytes . ' B';
 }
 
-$resumoImg = exportacaoResumo($BASE_para_PATH . '/app/assets/img');
-$resumoStorage = exportacaoResumo($BASE_para_PATH . '/app/storage');
+$origens = exportacaoOrigens($BASE_para_PATH);
+$resumoImg = exportacaoResumo('img', $origens['img'] ?? []);
+$resumoStorage = exportacaoResumo('storage', $origens['storage'] ?? []);
 $totalArquivos = $resumoImg['arquivos'] + $resumoStorage['arquivos'];
 $totalBytes = $resumoImg['bytes'] + $resumoStorage['bytes'];
+
+// Diagnostico: mostra todos os candidatos, existam ou nao, com a contagem
+$diagnostico = [];
+foreach (exportacaoCandidatos($BASE_para_PATH) as $prefixo => $candidatos) {
+    foreach ($candidatos as $dir) {
+        $existe = is_dir($dir);
+        $diagnostico[] = [
+            'prefixo' => $prefixo,
+            'caminho' => $dir,
+            'existe' => $existe,
+            'arquivos' => $existe ? exportacaoResumoPasta($prefixo, $dir)['arquivos'] : 0,
+        ];
+    }
+}
 
 $espacoLivre = @disk_free_space(sys_get_temp_dir());
 $espacoOk = $espacoLivre === false ? true : ($espacoLivre > $totalBytes * 1.2);
@@ -148,10 +154,17 @@ $espacoOk = $espacoLivre === false ? true : ($espacoLivre > $totalBytes * 1.2);
                                         </div>
                                     <?php } ?>
 
+                                    <?php if ($resumoStorage['arquivos'] === 0) { ?>
+                                        <div class="alert alert-warning">
+                                            Nenhum PDF encontrado. Veja no quadro
+                                            <strong>Caminhos verificados</strong> onde o sistema procurou — se a sua
+                                            pasta de storage estiver em outro lugar, me avise o caminho.
+                                        </div>
+                                    <?php } ?>
+
                                     <?php if ($totalArquivos === 0) { ?>
                                         <div class="alert alert-danger mb-0">
-                                            Nenhum arquivo encontrado em <code>app/assets/img</code> nem em
-                                            <code>app/storage</code>. Confirme se os volumes estão montados.
+                                            Nenhum arquivo encontrado. Confirme se os volumes estão montados.
                                         </div>
                                     <?php } else { ?>
                                         <a class="btn btn-primary" href="<?php echo htmlspecialchars($rotaGerar, ENT_QUOTES); ?>">
@@ -175,6 +188,34 @@ $espacoOk = $espacoLivre === false ? true : ($espacoLivre > $totalBytes * 1.2);
                         </div>
 
                         <div class="col-12 col-lg-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Caminhos verificados</h5>
+                                    <h6 class="card-subtitle text-muted">Onde o sistema procurou os arquivos</h6>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm mb-0" style="font-size: 12px;">
+                                        <tbody>
+                                            <?php foreach ($diagnostico as $d) { ?>
+                                                <tr>
+                                                    <td style="word-break: break-all;">
+                                                        <span class="badge bg-secondary"><?php echo htmlspecialchars($d['prefixo'], ENT_QUOTES); ?></span>
+                                                        <code><?php echo htmlspecialchars($d['caminho'], ENT_QUOTES); ?></code>
+                                                    </td>
+                                                    <td class="text-end text-nowrap">
+                                                        <?php if (!$d['existe']) { ?>
+                                                            <span class="text-muted">não existe</span>
+                                                        <?php } else { ?>
+                                                            <strong><?php echo number_format($d['arquivos'], 0, ',', '.'); ?></strong> arq.
+                                                        <?php } ?>
+                                                    </td>
+                                                </tr>
+                                            <?php } ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
                             <div class="card">
                                 <div class="card-header">
                                     <h5 class="card-title mb-0">Como usar o pacote</h5>
