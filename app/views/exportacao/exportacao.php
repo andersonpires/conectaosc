@@ -20,7 +20,16 @@ if ($BASE_para_PATH === '' || $BASE_para_URL === '') {
     exit();
 }
 
-require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
+/*
+ * Acesso: exige apenas estar logado (mesmo padrao do dashboard). Nao usa o
+ * checa-token.php porque ele valida "pagina permitida" (PaginasPermitidas) e
+ * esta rota nova nao esta cadastrada la — o que barrava quem nao e
+ * Superadministrador. O slug secreto continua sendo a segunda barreira.
+ */
+if (!isset($_SESSION['Cod'])) {
+    header('Location: ' . rtrim((string) $BASE_para_URL, '/') . '/login/?redirect=' . urlencode((string) ($_SERVER['REQUEST_URI'] ?? '/')));
+    exit();
+}
 
 $SLUG = 'ibpbf-n743k';
 $rotaGerar = rtrim($BASE_para_URL, '/') . '/exportar-arquivos-' . $SLUG . '/gerar';

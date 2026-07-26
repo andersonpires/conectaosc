@@ -21,7 +21,12 @@ if ($BASE_para_PATH === '') {
     exit('Runtime indisponível.');
 }
 
-require_once $BASE_para_PATH . '/api/legacy/checa-token.php';
+// Exige apenas estar logado (o checa-token.php valida "pagina permitida", que
+// barraria esta rota nova por nao estar em PaginasPermitidas).
+if (!isset($_SESSION['Cod'])) {
+    header('Location: ' . rtrim((string) $BASE_para_URL, '/') . '/login/');
+    exit();
+}
 
 @set_time_limit(0);
 @ini_set('memory_limit', '1024M');
